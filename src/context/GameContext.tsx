@@ -1,15 +1,17 @@
 import { createContext, useContext, type ReactNode } from 'react';
 import type { GameState } from '../models/GameState.ts';
-import type { BuildingId, ResearchId, ShipId } from '../models/types.ts';
+import type { BuildingId, DefenceId, ResearchId, ShipId } from '../models/types.ts';
 import type { ProductionRates } from '../engine/ResourceEngine.ts';
 import { useGameEngine } from '../hooks/useGameEngine';
 
 export interface GameContextType {
   gameState: GameState;
   productionRates: ProductionRates;
+  storageCaps: { metal: number; crystal: number; deuterium: number };
   upgradeBuilding: (id: BuildingId) => boolean;
   startResearchAction: (id: ResearchId) => boolean;
   buildShips: (id: ShipId, qty: number) => boolean;
+  buildDefences: (id: DefenceId, qty: number) => boolean;
   cancelBuilding: () => void;
   cancelResearch: () => void;
   resetGameAction: () => void;

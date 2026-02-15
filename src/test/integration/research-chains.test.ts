@@ -8,8 +8,8 @@ import {
 import { RESEARCH } from '../../data/research.ts';
 
 function completeCurrentBuilding(state: GameState): void {
-  const queueItem = state.planet.buildingQueue;
-  expect(queueItem).not.toBeNull();
+  const queueItem = state.planet.buildingQueue[0];
+  expect(state.planet.buildingQueue.length).toBeGreaterThan(0);
   if (!queueItem) return;
 
   const now = Date.now();
@@ -18,8 +18,8 @@ function completeCurrentBuilding(state: GameState): void {
 }
 
 function completeCurrentResearch(state: GameState): void {
-  const queueItem = state.researchQueue;
-  expect(queueItem).not.toBeNull();
+  const queueItem = state.researchQueue[0];
+  expect(state.researchQueue.length).toBeGreaterThan(0);
   if (!queueItem) return;
 
   const now = Date.now();
@@ -105,17 +105,17 @@ describe('Integration: research chains', () => {
 
     expect(startBuildingUpgrade(state, 'metalMine')).toBe(true);
     expect(startResearch(state, 'energyTechnology')).toBe(true);
-    expect(state.planet.buildingQueue).not.toBeNull();
-    expect(state.researchQueue).not.toBeNull();
+    expect(state.planet.buildingQueue.length).toBeGreaterThan(0);
+    expect(state.researchQueue.length).toBeGreaterThan(0);
 
     completeCurrentBuilding(state);
-    expect(state.planet.buildingQueue).toBeNull();
-    expect(state.researchQueue).not.toBeNull();
+    expect(state.planet.buildingQueue).toEqual([]);
+    expect(state.researchQueue.length).toBeGreaterThan(0);
     expect(state.planet.buildings.metalMine).toBe(1);
     expect(state.research.energyTechnology).toBe(0);
 
     completeCurrentResearch(state);
-    expect(state.researchQueue).toBeNull();
+    expect(state.researchQueue).toEqual([]);
     expect(state.research.energyTechnology).toBe(1);
   });
 });

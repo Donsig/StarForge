@@ -24,15 +24,15 @@ describe('StateManager', () => {
 
     const state = newGame();
 
-    expect(state.version).toBe(1);
+    expect(state.version).toBe(GAME_CONSTANTS.STATE_VERSION);
     expect(state.tickCount).toBe(0);
     expect(state.settings.gameSpeed).toBe(1);
     expect(state.planet.name).toBe('Homeworld');
     expect(state.planet.resources.metal).toBe(500);
     expect(state.planet.resources.crystal).toBe(500);
     expect(state.planet.resources.deuterium).toBe(0);
-    expect(state.planet.buildingQueue).toBeNull();
-    expect(state.researchQueue).toBeNull();
+    expect(state.planet.buildingQueue).toEqual([]);
+    expect(state.researchQueue).toEqual([]);
 
     const storedRaw = localStorage.getItem(GAME_CONSTANTS.STORAGE_KEY);
     expect(storedRaw).not.toBeNull();
@@ -131,19 +131,21 @@ describe('StateManager', () => {
     const state = createNewGameState();
     const startTime = 6_000_000;
     state.lastSaveTimestamp = startTime;
-    state.planet.buildingQueue = {
-      type: 'building',
-      id: 'metalMine',
-      targetLevel: 1,
-      startedAt: startTime,
-      completesAt: startTime + 10_000,
-    };
+    state.planet.buildingQueue = [
+      {
+        type: 'building',
+        id: 'metalMine',
+        targetLevel: 1,
+        startedAt: startTime,
+        completesAt: startTime + 10_000,
+      },
+    ];
 
     vi.spyOn(Date, 'now').mockReturnValue(startTime + 20_000);
     processOfflineTime(state);
 
     expect(state.planet.buildings.metalMine).toBe(1);
-    expect(state.planet.buildingQueue).toBeNull();
+    expect(state.planet.buildingQueue).toEqual([]);
   });
 
   it('processOfflineTime caps elapsed time at 7 days maximum', () => {
@@ -182,17 +184,19 @@ describe('StateManager', () => {
     state.planet.buildings.solarPlant = 10;
     const startTime = 8_000_000;
     state.lastSaveTimestamp = startTime;
-    state.planet.buildingQueue = {
-      type: 'building',
-      id: 'metalMine',
-      targetLevel: 1,
-      startedAt: startTime,
-      completesAt: startTime + 1800 * 1000,
-    };
+    state.planet.buildingQueue = [
+      {
+        type: 'building',
+        id: 'metalMine',
+        targetLevel: 1,
+        startedAt: startTime,
+        completesAt: startTime + 1800 * 1000,
+      },
+    ];
 
     const beforeRate = calculateProduction(state).metalPerHour;
     const afterState = structuredClone(state);
-    afterState.planet.buildingQueue = null;
+    afterState.planet.buildingQueue = [];
     afterState.planet.buildings.metalMine = 1;
     const afterRate = calculateProduction(afterState).metalPerHour;
 

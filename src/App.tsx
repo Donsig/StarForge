@@ -8,6 +8,7 @@ import { OverviewPanel } from './panels/OverviewPanel';
 import { BuildingsPanel } from './panels/BuildingsPanel';
 import { ResearchPanel } from './panels/ResearchPanel';
 import { ShipyardPanel } from './panels/ShipyardPanel';
+import { DefencePanel } from './panels/DefencePanel';
 import { FleetPanel } from './panels/FleetPanel';
 import { SettingsPanel } from './panels/SettingsPanel';
 
@@ -21,6 +22,8 @@ function ActivePanelContent({ activePanel }: { activePanel: ActivePanel }) {
       return <ResearchPanel />;
     case 'shipyard':
       return <ShipyardPanel />;
+    case 'defence':
+      return <DefencePanel />;
     case 'fleet':
       return <FleetPanel />;
     case 'settings':

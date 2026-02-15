@@ -127,6 +127,8 @@ export function shipBuildTime(
   return Math.max(1, Math.floor(hours * 3600));
 }
 
+export const defenceBuildTime = shipBuildTime;
+
 // ── Storage capacity ────────────────────────────────────────────
 
 export function storageCapacity(level: number): number {

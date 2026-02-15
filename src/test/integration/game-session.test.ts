@@ -16,8 +16,8 @@ import {
 } from '../../engine/FormulasEngine.ts';
 
 function completeCurrentBuilding(state: GameState): void {
-  const queueItem = state.planet.buildingQueue;
-  expect(queueItem).not.toBeNull();
+  const queueItem = state.planet.buildingQueue[0];
+  expect(state.planet.buildingQueue.length).toBeGreaterThan(0);
   if (!queueItem) return;
 
   const now = Date.now();

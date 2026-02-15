@@ -1,9 +1,10 @@
 import { BUILDINGS } from '../data/buildings.ts';
+import { DEFENCES } from '../data/defences.ts';
 import { RESEARCH } from '../data/research.ts';
 import { SHIPS } from '../data/ships.ts';
 import { useGame } from '../context/GameContext';
 import { useCountdown } from '../hooks/useCountdown';
-import type { BuildingId, ResearchId, ShipId } from '../models/types.ts';
+import type { BuildingId, DefenceId, ResearchId, ShipId } from '../models/types.ts';
 
 interface QueueRowProps {
   label: string;
@@ -34,8 +35,8 @@ function QueueRow({ label, subtitle, completesAt, onCancel }: QueueRowProps) {
 export function QueueDisplay() {
   const { gameState, cancelBuilding, cancelResearch } = useGame();
 
-  const buildingQueue = gameState.planet.buildingQueue;
-  const researchQueue = gameState.researchQueue;
+  const buildingQueue = gameState.planet.buildingQueue[0] ?? null;
+  const researchQueue = gameState.researchQueue[0] ?? null;
   const currentShipBatch = gameState.planet.shipyardQueue[0] ?? null;
 
   if (!buildingQueue && !researchQueue && !currentShipBatch) {
@@ -43,6 +44,11 @@ export function QueueDisplay() {
   }
 
   const shipBatchesQueuedBehind = Math.max(gameState.planet.shipyardQueue.length - 1, 0);
+  const currentShipyardName = currentShipBatch
+    ? currentShipBatch.type === 'defence'
+      ? DEFENCES[currentShipBatch.id as DefenceId].name
+      : SHIPS[currentShipBatch.id as ShipId].name
+    : '';
 
   return (
     <footer className="queue-bar">
@@ -66,7 +72,7 @@ export function QueueDisplay() {
 
       {currentShipBatch && (
         <QueueRow
-          label={`Shipyard: ${SHIPS[currentShipBatch.id as ShipId].name}`}
+          label={`Shipyard: ${currentShipyardName}`}
           subtitle={`Unit ${(currentShipBatch.completed ?? 0) + 1}/${currentShipBatch.quantity ?? 0}${
             shipBatchesQueuedBehind > 0 ? `, +${shipBatchesQueuedBehind} queued batch(es)` : ''
           }`}

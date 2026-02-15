@@ -44,7 +44,7 @@ function requirementLabel(prerequisite: Prerequisite): string {
 export function BuildingsPanel() {
   const { gameState, upgradeBuilding } = useGame();
 
-  const buildingQueueOccupied = gameState.planet.buildingQueue !== null;
+  const buildingQueueOccupied = gameState.planet.buildingQueue.length > 0;
   const fieldsUsed = usedFields(gameState);
   const maxFieldsReached = fieldsUsed >= gameState.planet.maxFields;
 
@@ -78,7 +78,7 @@ export function BuildingsPanel() {
                 );
                 const affordable = canAfford(cost, gameState);
                 const prereqMet = prerequisitesMet(definition.requires, gameState);
-                const currentlyUpgrading = gameState.planet.buildingQueue?.id === buildingId;
+                const currentlyUpgrading = gameState.planet.buildingQueue[0]?.id === buildingId;
                 const disabled =
                   !affordable ||
                   !prereqMet ||

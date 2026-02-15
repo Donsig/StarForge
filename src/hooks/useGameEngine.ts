@@ -1,18 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { GameState } from '../models/GameState.ts';
-import type { BuildingId, ResearchId, ShipId } from '../models/types.ts';
+import type { BuildingId, DefenceId, ResearchId, ShipId } from '../models/types.ts';
 import { GAME_CONSTANTS } from '../models/types.ts';
 import type { ProductionRates } from '../engine/ResourceEngine.ts';
 import {
   calculateProduction,
+  getStorageCaps,
   processTick as processResourceTick,
 } from '../engine/ResourceEngine.ts';
 import {
-  cancelBuildingUpgrade,
-  cancelResearch,
+  cancelBuildingAtIndex,
+  cancelResearchAtIndex,
   processTick as processQueueTick,
   rescaleQueueTimes,
   startBuildingUpgrade,
+  startDefenceBuild,
   startResearch,
   startShipBuild,
 } from '../engine/BuildQueue.ts';
@@ -29,9 +31,11 @@ import {
 export interface GameEngineState {
   gameState: GameState;
   productionRates: ProductionRates;
+  storageCaps: { metal: number; crystal: number; deuterium: number };
   upgradeBuilding: (id: BuildingId) => boolean;
   startResearchAction: (id: ResearchId) => boolean;
   buildShips: (id: ShipId, qty: number) => boolean;
+  buildDefences: (id: DefenceId, qty: number) => boolean;
   cancelBuilding: () => void;
   cancelResearch: () => void;
   resetGameAction: () => void;
@@ -52,12 +56,14 @@ export function useGameEngine(): GameEngineState {
   const [productionRates, setProductionRates] = useState<ProductionRates>(() =>
     calculateProduction(gameState),
   );
+  const [storageCaps, setStorageCaps] = useState(() => getStorageCaps(gameState));
   const stateRef = useRef<GameState>(gameState);
 
   const syncReactState = useCallback((): void => {
     const currentState = stateRef.current;
     setGameState({ ...currentState });
     setProductionRates(calculateProduction(currentState));
+    setStorageCaps(getStorageCaps(currentState));
   }, []);
 
   useEffect(() => {
@@ -102,14 +108,20 @@ export function useGameEngine(): GameEngineState {
       if (didProcessTick) {
         setGameState({ ...currentState });
         setProductionRates(calculateProduction(currentState));
+        setStorageCaps(getStorageCaps(currentState));
       }
 
       rafId = requestAnimationFrame(frame);
     };
 
     rafId = requestAnimationFrame(frame);
+    const handleBeforeUnload = (): void => {
+      saveState(stateRef.current);
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
 
     return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
       cancelAnimationFrame(rafId);
       saveState(stateRef.current);
     };
@@ -119,6 +131,9 @@ export function useGameEngine(): GameEngineState {
     (id: BuildingId): boolean => {
       const success = startBuildingUpgrade(stateRef.current, id);
       syncReactState();
+      if (success) {
+        saveState(stateRef.current);
+      }
       return success;
     },
     [syncReactState],
@@ -128,6 +143,9 @@ export function useGameEngine(): GameEngineState {
     (id: ResearchId): boolean => {
       const success = startResearch(stateRef.current, id);
       syncReactState();
+      if (success) {
+        saveState(stateRef.current);
+      }
       return success;
     },
     [syncReactState],
@@ -137,19 +155,36 @@ export function useGameEngine(): GameEngineState {
     (id: ShipId, qty: number): boolean => {
       const success = startShipBuild(stateRef.current, id, qty);
       syncReactState();
+      if (success) {
+        saveState(stateRef.current);
+      }
+      return success;
+    },
+    [syncReactState],
+  );
+
+  const buildDefences = useCallback(
+    (id: DefenceId, qty: number): boolean => {
+      const success = startDefenceBuild(stateRef.current, id, qty);
+      syncReactState();
+      if (success) {
+        saveState(stateRef.current);
+      }
       return success;
     },
     [syncReactState],
   );
 
   const cancelBuildingAction = useCallback((): void => {
-    cancelBuildingUpgrade(stateRef.current);
+    cancelBuildingAtIndex(stateRef.current, 0);
     syncReactState();
+    saveState(stateRef.current);
   }, [syncReactState]);
 
   const cancelResearchAction = useCallback((): void => {
-    cancelResearch(stateRef.current);
+    cancelResearchAtIndex(stateRef.current, 0);
     syncReactState();
+    saveState(stateRef.current);
   }, [syncReactState]);
 
   const resetGameAction = useCallback((): void => {
@@ -157,6 +192,7 @@ export function useGameEngine(): GameEngineState {
     stateRef.current = resetState;
     setGameState({ ...resetState });
     setProductionRates(calculateProduction(resetState));
+    setStorageCaps(getStorageCaps(resetState));
   }, []);
 
   const setGameSpeed = useCallback(
@@ -183,6 +219,7 @@ export function useGameEngine(): GameEngineState {
     stateRef.current = importedState;
     setGameState({ ...importedState });
     setProductionRates(calculateProduction(importedState));
+    setStorageCaps(getStorageCaps(importedState));
 
     return true;
   }, []);
@@ -190,9 +227,11 @@ export function useGameEngine(): GameEngineState {
   return {
     gameState,
     productionRates,
+    storageCaps,
     upgradeBuilding,
     startResearchAction,
     buildShips,
+    buildDefences,
     cancelBuilding: cancelBuildingAction,
     cancelResearch: cancelResearchAction,
     resetGameAction,

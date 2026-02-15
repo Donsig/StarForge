@@ -1,5 +1,6 @@
 import type { PlanetState } from './Planet.ts';
 import type { ResearchId, QueueItem } from './types.ts';
+import { GAME_CONSTANTS } from './types.ts';
 import { createDefaultPlanet } from './Planet.ts';
 
 export type ResearchLevels = Record<ResearchId, number>;
@@ -14,13 +15,13 @@ export interface GameState {
   tickCount: number;
   planet: PlanetState;
   research: ResearchLevels;
-  researchQueue: QueueItem | null;
+  researchQueue: QueueItem[];
   settings: GameSettings;
 }
 
 export function createNewGameState(): GameState {
   return {
-    version: 1,
+    version: GAME_CONSTANTS.STATE_VERSION,
     lastSaveTimestamp: Date.now(),
     tickCount: 0,
     planet: createDefaultPlanet(),
@@ -39,7 +40,7 @@ export function createNewGameState(): GameState {
       hyperspaceDrive: 0,
       hyperspaceTechnology: 0,
     },
-    researchQueue: null,
+    researchQueue: [],
     settings: {
       gameSpeed: 1,
     },

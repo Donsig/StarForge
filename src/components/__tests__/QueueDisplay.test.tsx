@@ -13,13 +13,15 @@ describe('QueueDisplay', () => {
     renderWithGame(<QueueDisplay />, {
       gameState: {
         planet: {
-          buildingQueue: {
-            type: 'building',
-            id: 'metalMine',
-            targetLevel: 2,
-            startedAt: Date.now(),
-            completesAt: Date.now() + 60_000,
-          },
+          buildingQueue: [
+            {
+              type: 'building',
+              id: 'metalMine',
+              targetLevel: 2,
+              startedAt: Date.now(),
+              completesAt: Date.now() + 60_000,
+            },
+          ],
         },
       },
     });
@@ -31,13 +33,15 @@ describe('QueueDisplay', () => {
   it('shows a research queue item', () => {
     renderWithGame(<QueueDisplay />, {
       gameState: {
-        researchQueue: {
-          type: 'research',
-          id: 'energyTechnology',
-          targetLevel: 1,
-          startedAt: Date.now(),
-          completesAt: Date.now() + 60_000,
-        },
+        researchQueue: [
+          {
+            type: 'research',
+            id: 'energyTechnology',
+            targetLevel: 1,
+            startedAt: Date.now(),
+            completesAt: Date.now() + 60_000,
+          },
+        ],
       },
     });
 
@@ -75,21 +79,25 @@ describe('QueueDisplay', () => {
     renderWithGame(<QueueDisplay />, {
       gameState: {
         planet: {
-          buildingQueue: {
-            type: 'building',
-            id: 'metalMine',
-            targetLevel: 2,
+          buildingQueue: [
+            {
+              type: 'building',
+              id: 'metalMine',
+              targetLevel: 2,
+              startedAt: Date.now(),
+              completesAt: Date.now() + 60_000,
+            },
+          ],
+        },
+        researchQueue: [
+          {
+            type: 'research',
+            id: 'energyTechnology',
+            targetLevel: 1,
             startedAt: Date.now(),
             completesAt: Date.now() + 60_000,
           },
-        },
-        researchQueue: {
-          type: 'research',
-          id: 'energyTechnology',
-          targetLevel: 1,
-          startedAt: Date.now(),
-          completesAt: Date.now() + 60_000,
-        },
+        ],
       },
       actions: {
         cancelBuilding,

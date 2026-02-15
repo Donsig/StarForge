@@ -61,16 +61,26 @@ export type ShipId =
   | 'destroyer'
   | 'battlecruiser';
 
-export type QueueItemType = 'building' | 'research' | 'ship';
+export type DefenceId =
+  | 'rocketLauncher'
+  | 'lightLaser'
+  | 'heavyLaser'
+  | 'gaussCannon'
+  | 'ionCannon'
+  | 'plasmaTurret'
+  | 'smallShieldDome'
+  | 'largeShieldDome';
+
+export type QueueItemType = 'building' | 'research' | 'ship' | 'defence';
 
 export interface QueueItem {
   type: QueueItemType;
   id: string;
   targetLevel?: number; // for buildings/research
-  quantity?: number;     // for ships (total ordered)
-  completed?: number;    // for ships (how many done)
+  quantity?: number;     // for ships/defences (total ordered)
+  completed?: number;    // for ships/defences (how many done)
   startedAt: number;     // timestamp ms
-  completesAt: number;   // timestamp ms (for current unit if ship)
+  completesAt: number;   // timestamp ms (for current unit if ship/defence)
 }
 
 export type ActivePanel =
@@ -78,6 +88,7 @@ export type ActivePanel =
   | 'buildings'
   | 'research'
   | 'shipyard'
+  | 'defence'
   | 'fleet'
   | 'settings';
 
@@ -88,5 +99,5 @@ export const GAME_CONSTANTS = {
   AUTO_SAVE_TICKS: 30,
   MAX_OFFLINE_SECONDS: 7 * 24 * 3600, // 7 days
   STORAGE_KEY: 'starforge_save',
-  STATE_VERSION: 1,
+  STATE_VERSION: 3,
 } as const;

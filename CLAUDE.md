@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Purpose
 
-Single-player OGame-inspired idle browser game called "Star Forge." Real-time resource production, building upgrades, research tree, and ship construction. No backend — all state in localStorage.
+Single-player OGame-inspired idle browser game called "Star Forge." Real-time resource production, building upgrades, research tree, ship construction, and planetary defences. No backend — all state in localStorage. See `PLAN.md` for Phase 2 roadmap (galaxy, combat, raids).
 
 ## Quick Start
 
@@ -41,12 +41,12 @@ npx vitest run src/engine/__tests__/FormulasEngine.test.ts  # run a single test 
 ### Directory Layout
 
 - `src/engine/` — Pure game logic, no React/DOM. GameEngine (rAF tick loop), ResourceEngine (production), BuildQueue (construction queues), FormulasEngine (all math), StateManager (localStorage).
-- `src/data/` — Static game definitions (buildings, research, ships). The "design spreadsheet." To rebalance or add content, edit these files.
+- `src/data/` — Static game definitions (buildings, research, ships, defences). The "design spreadsheet." To rebalance or add content, edit these files.
 - `src/models/` — TypeScript interfaces only. GameState, PlanetState, types. No logic.
 - `src/hooks/` — React hooks bridging engine to UI. `useGameEngine` owns the engine instance and pushes state into React.
 - `src/context/` — GameContext providing state + action functions to the component tree.
 - `src/components/` — Shared React components (ResourceBar, NavSidebar, QueueDisplay, CostDisplay).
-- `src/panels/` — Page-level panel components (Buildings, Research, Shipyard, Fleet, Overview, Settings).
+- `src/panels/` — Page-level panel components (Buildings, Research, Shipyard, Defence, Fleet, Overview, Settings).
 - `src/utils/` — Pure utility functions (number formatting, time formatting).
 
 ### Key Design Rules
@@ -75,7 +75,7 @@ On load, elapsed seconds since `lastSaveTimestamp` are calculated. Build queue c
 
 ### State Persistence
 
-localStorage key: `starforge_save`. State has a `version` field for schema migration via `StateManager.migrate()`.
+localStorage key: `starforge_save`. State has a `version` field (currently v3) for schema migration via `StateManager.migrate()`. Migrations: v1→v2 added defences, v2→v3 converted building/research queues from single-item to arrays.
 
 ## Formulas Reference
 
@@ -94,3 +94,6 @@ Energy penalty: if consumption > production, all output scaled by `available / r
 - **Energy balance** — negative energy proportionally reduces all mine output.
 - **Prerequisites** — buildings and research have prerequisite chains. Check before enabling upgrade buttons.
 - **Offline cap** — 7 days max to prevent exploits.
+- **Build queues are arrays** — building and research queues are `QueueItem[]`, not nullable. Always check `.length > 0` and access `[0]` for front item.
+- **Defences share shipyard queue** — `QueueItem.type === 'defence'` distinguishes them from ships. Shield domes have `maxCount: 1`.
+- **Save after mutations** — queue-mutating actions save immediately to localStorage (plus `beforeunload` handler).

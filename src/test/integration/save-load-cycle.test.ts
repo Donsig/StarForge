@@ -14,13 +14,13 @@ import {
 function shiftQueueTimestamps(state: GameState, shiftSeconds: number): void {
   const deltaMs = shiftSeconds * 1000;
   state.lastSaveTimestamp -= deltaMs;
-  if (state.planet.buildingQueue) {
-    state.planet.buildingQueue.startedAt -= deltaMs;
-    state.planet.buildingQueue.completesAt -= deltaMs;
+  for (const item of state.planet.buildingQueue) {
+    item.startedAt -= deltaMs;
+    item.completesAt -= deltaMs;
   }
-  if (state.researchQueue) {
-    state.researchQueue.startedAt -= deltaMs;
-    state.researchQueue.completesAt -= deltaMs;
+  for (const item of state.researchQueue) {
+    item.startedAt -= deltaMs;
+    item.completesAt -= deltaMs;
   }
   for (const item of state.planet.shipyardQueue) {
     item.startedAt -= deltaMs;
@@ -38,12 +38,12 @@ describe('Integration: save/load cycle', () => {
     state.planet.buildings.solarPlant = 1;
 
     expect(startBuildingUpgrade(state, 'metalMine')).toBe(true);
-    expect(state.planet.buildingQueue).not.toBeNull();
+    expect(state.planet.buildingQueue.length).toBeGreaterThan(0);
 
     saveState(state);
     const loaded = loadState();
     expect(loaded).not.toBeNull();
-    if (!loaded || !loaded.planet.buildingQueue) return;
+    if (!loaded || loaded.planet.buildingQueue.length === 0) return;
 
     const simulatedOfflineSeconds = 300;
     shiftQueueTimestamps(loaded, simulatedOfflineSeconds);
@@ -52,11 +52,11 @@ describe('Integration: save/load cycle', () => {
     const crystalAtSave = loaded.planet.resources.crystal;
     const oldRates = calculateProduction(loaded);
     const secondsToCompletion = Math.floor(
-      (loaded.planet.buildingQueue.completesAt - loaded.lastSaveTimestamp) / 1000,
+      (loaded.planet.buildingQueue[0].completesAt - loaded.lastSaveTimestamp) / 1000,
     );
 
     const { elapsedSeconds } = processOfflineTime(loaded);
-    expect(loaded.planet.buildingQueue).toBeNull();
+    expect(loaded.planet.buildingQueue).toEqual([]);
     expect(loaded.planet.buildings.metalMine).toBe(1);
 
     const newRates = calculateProduction(loaded);
@@ -156,20 +156,24 @@ describe('Integration: save/load cycle', () => {
     state.planet.resources.energyProduction = 260;
     state.planet.resources.energyConsumption = 200;
 
-    state.planet.buildingQueue = {
-      type: 'building',
-      id: 'solarPlant',
-      targetLevel: 8,
-      startedAt: now - 2000,
-      completesAt: now + 10_000,
-    };
-    state.researchQueue = {
-      type: 'research',
-      id: 'hyperspaceTechnology',
-      targetLevel: 1,
-      startedAt: now - 1000,
-      completesAt: now + 20_000,
-    };
+    state.planet.buildingQueue = [
+      {
+        type: 'building',
+        id: 'solarPlant',
+        targetLevel: 8,
+        startedAt: now - 2000,
+        completesAt: now + 10_000,
+      },
+    ];
+    state.researchQueue = [
+      {
+        type: 'research',
+        id: 'hyperspaceTechnology',
+        targetLevel: 1,
+        startedAt: now - 1000,
+        completesAt: now + 20_000,
+      },
+    ];
     state.planet.shipyardQueue = [
       {
         type: 'ship',

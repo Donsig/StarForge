@@ -1,7 +1,8 @@
-import type { BuildingId, ShipId, QueueItem } from './types.ts';
+import type { BuildingId, ShipId, DefenceId, QueueItem } from './types.ts';
 
 export type BuildingLevels = Record<BuildingId, number>;
 export type ShipCounts = Record<ShipId, number>;
+export type DefenceCounts = Record<DefenceId, number>;
 
 export interface ResourcesState {
   metal: number;
@@ -17,8 +18,9 @@ export interface PlanetState {
   maxFields: number;
   buildings: BuildingLevels;
   ships: ShipCounts;
+  defences: DefenceCounts;
   resources: ResourcesState;
-  buildingQueue: QueueItem | null;
+  buildingQueue: QueueItem[];
   shipyardQueue: QueueItem[];
 }
 
@@ -55,6 +57,16 @@ export function createDefaultPlanet(): PlanetState {
       destroyer: 0,
       battlecruiser: 0,
     },
+    defences: {
+      rocketLauncher: 0,
+      lightLaser: 0,
+      heavyLaser: 0,
+      gaussCannon: 0,
+      ionCannon: 0,
+      plasmaTurret: 0,
+      smallShieldDome: 0,
+      largeShieldDome: 0,
+    },
     resources: {
       metal: 500,
       crystal: 500,
@@ -62,7 +74,7 @@ export function createDefaultPlanet(): PlanetState {
       energyProduction: 0,
       energyConsumption: 0,
     },
-    buildingQueue: null,
+    buildingQueue: [],
     shipyardQueue: [],
   };
 }

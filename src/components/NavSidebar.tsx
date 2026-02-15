@@ -10,6 +10,7 @@ const NAV_ITEMS: Array<{ id: ActivePanel; label: string }> = [
   { id: 'buildings', label: 'Buildings' },
   { id: 'research', label: 'Research' },
   { id: 'shipyard', label: 'Shipyard' },
+  { id: 'defence', label: 'Defence' },
   { id: 'fleet', label: 'Fleet' },
   { id: 'settings', label: 'Settings' },
 ];

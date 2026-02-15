@@ -68,13 +68,15 @@ describe('ResearchPanel', () => {
             deuterium: 1_000_000,
           },
         },
-        researchQueue: {
-          type: 'research',
-          id: 'energyTechnology',
-          targetLevel: 1,
-          startedAt: Date.now(),
-          completesAt: Date.now() + 60_000,
-        },
+        researchQueue: [
+          {
+            type: 'research',
+            id: 'energyTechnology',
+            targetLevel: 1,
+            startedAt: Date.now(),
+            completesAt: Date.now() + 60_000,
+          },
+        ],
       },
     });
 

@@ -32,7 +32,7 @@ function requirementLabel(prerequisite: Prerequisite): string {
 
 export function ResearchPanel() {
   const { gameState, startResearchAction } = useGame();
-  const researchQueueOccupied = gameState.researchQueue !== null;
+  const researchQueueOccupied = gameState.researchQueue.length > 0;
 
   return (
     <section className="panel">
@@ -59,7 +59,7 @@ export function ResearchPanel() {
           );
           const affordable = canAfford(cost, gameState);
           const prereqMet = prerequisitesMet(definition.requires, gameState);
-          const currentlyResearching = gameState.researchQueue?.id === researchId;
+          const currentlyResearching = gameState.researchQueue[0]?.id === researchId;
           const disabled =
             !affordable || !prereqMet || researchQueueOccupied || currentlyResearching;
 

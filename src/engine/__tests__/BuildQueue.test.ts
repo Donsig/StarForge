@@ -13,8 +13,8 @@ import {
   shipBuildTime,
 } from '../FormulasEngine.ts';
 import {
-  cancelBuildingUpgrade,
-  cancelResearch,
+  cancelBuildingAtIndex,
+  cancelResearchAtIndex,
   canAfford,
   prerequisitesMet,
   processTick,
@@ -36,7 +36,7 @@ describe('BuildQueue', () => {
     vi.restoreAllMocks();
   });
 
-  it('starting a building upgrade deducts resources and sets the queue with correct completion time', () => {
+  it('starting a building upgrade deducts resources and enqueues with correct completion time', () => {
     const state = createNewGameState();
     fundState(state);
     state.planet.buildings.roboticsFactory = 2;
@@ -64,27 +64,34 @@ describe('BuildQueue', () => {
     expect(state.planet.resources.deuterium).toBe(
       startingResources.deuterium - cost.deuterium,
     );
-    expect(state.planet.buildingQueue).toEqual({
-      type: 'building',
-      id: 'metalMine',
-      targetLevel: 1,
-      startedAt: now,
-      completesAt: now + duration * 1000,
-    });
+    expect(state.planet.buildingQueue).toEqual([
+      {
+        type: 'building',
+        id: 'metalMine',
+        targetLevel: 1,
+        startedAt: now,
+        completesAt: now + duration * 1000,
+      },
+    ]);
   });
 
-  it('cannot start a building if the building queue is already occupied', () => {
+  it('can append a building while another building is already queued', () => {
     const state = createNewGameState();
     fundState(state);
-    state.planet.buildingQueue = {
-      type: 'building',
-      id: 'metalMine',
-      targetLevel: 1,
-      startedAt: 1,
-      completesAt: 2,
-    };
+    state.planet.buildingQueue = [
+      {
+        type: 'building',
+        id: 'metalMine',
+        targetLevel: 1,
+        startedAt: 1,
+        completesAt: 2,
+      },
+    ];
 
-    expect(startBuildingUpgrade(state, 'crystalMine')).toBe(false);
+    expect(startBuildingUpgrade(state, 'crystalMine')).toBe(true);
+    expect(state.planet.buildingQueue).toHaveLength(2);
+    expect(state.planet.buildingQueue[1].id).toBe('crystalMine');
+    expect(state.planet.buildingQueue[1].startedAt).toBe(2);
   });
 
   it('cannot start a building if resources are insufficient', () => {
@@ -94,7 +101,7 @@ describe('BuildQueue', () => {
     state.planet.resources.deuterium = 0;
 
     expect(startBuildingUpgrade(state, 'metalMine')).toBe(false);
-    expect(state.planet.buildingQueue).toBeNull();
+    expect(state.planet.buildingQueue).toEqual([]);
   });
 
   it('cannot start a building when prerequisites are not met (shipyard needs robotics factory 2)', () => {
@@ -121,10 +128,10 @@ describe('BuildQueue', () => {
     const before = { ...state.planet.resources };
     expect(startBuildingUpgrade(state, 'metalMine')).toBe(true);
 
-    cancelBuildingUpgrade(state);
+    cancelBuildingAtIndex(state, 0);
 
     expect(state.planet.resources).toEqual(before);
-    expect(state.planet.buildingQueue).toBeNull();
+    expect(state.planet.buildingQueue).toEqual([]);
   });
 
   it('processTick completes a building when completion time is reached', () => {
@@ -133,12 +140,12 @@ describe('BuildQueue', () => {
     vi.spyOn(Date, 'now').mockReturnValue(2_000_000);
 
     expect(startBuildingUpgrade(state, 'metalMine')).toBe(true);
-    const completesAt = state.planet.buildingQueue!.completesAt;
+    const completesAt = state.planet.buildingQueue[0].completesAt;
 
     processTick(state, completesAt);
 
     expect(state.planet.buildings.metalMine).toBe(1);
-    expect(state.planet.buildingQueue).toBeNull();
+    expect(state.planet.buildingQueue).toEqual([]);
   });
 
   it('processTick does not complete a building before completion time', () => {
@@ -147,12 +154,12 @@ describe('BuildQueue', () => {
     vi.spyOn(Date, 'now').mockReturnValue(2_500_000);
 
     expect(startBuildingUpgrade(state, 'metalMine')).toBe(true);
-    const completesAt = state.planet.buildingQueue!.completesAt;
+    const completesAt = state.planet.buildingQueue[0].completesAt;
 
     processTick(state, completesAt - 1);
 
     expect(state.planet.buildings.metalMine).toBe(0);
-    expect(state.planet.buildingQueue).not.toBeNull();
+    expect(state.planet.buildingQueue).toHaveLength(1);
   });
 
   it('starting research deducts resources and sets research queue', () => {
@@ -179,13 +186,15 @@ describe('BuildQueue', () => {
     expect(state.planet.resources.metal).toBe(before.metal - cost.metal);
     expect(state.planet.resources.crystal).toBe(before.crystal - cost.crystal);
     expect(state.planet.resources.deuterium).toBe(before.deuterium - cost.deuterium);
-    expect(state.researchQueue).toEqual({
-      type: 'research',
-      id: 'energyTechnology',
-      targetLevel: 1,
-      startedAt: now,
-      completesAt: now + duration * 1000,
-    });
+    expect(state.researchQueue).toEqual([
+      {
+        type: 'research',
+        id: 'energyTechnology',
+        targetLevel: 1,
+        startedAt: now,
+        completesAt: now + duration * 1000,
+      },
+    ]);
   });
 
   it('research prerequisite chains work (laser tech requires energy tech 2)', () => {
@@ -200,19 +209,25 @@ describe('BuildQueue', () => {
     expect(startResearch(state, 'laserTechnology')).toBe(true);
   });
 
-  it('cannot start research when research queue is occupied', () => {
+  it('can append research while another research item is already queued', () => {
     const state = createNewGameState();
     fundState(state);
     state.planet.buildings.researchLab = 1;
-    state.researchQueue = {
-      type: 'research',
-      id: 'energyTechnology',
-      targetLevel: 1,
-      startedAt: 1,
-      completesAt: 2,
-    };
+    state.researchQueue = [
+      {
+        type: 'research',
+        id: 'energyTechnology',
+        targetLevel: 1,
+        startedAt: 1,
+        completesAt: 2,
+      },
+    ];
 
-    expect(startResearch(state, 'laserTechnology')).toBe(false);
+    expect(startResearch(state, 'energyTechnology')).toBe(true);
+    expect(state.researchQueue).toHaveLength(2);
+    expect(state.researchQueue[1].id).toBe('energyTechnology');
+    expect(state.researchQueue[1].targetLevel).toBe(2);
+    expect(state.researchQueue[1].startedAt).toBe(2);
   });
 
   it('cancelling research refunds full cost', () => {
@@ -224,10 +239,10 @@ describe('BuildQueue', () => {
     const before = { ...state.planet.resources };
     expect(startResearch(state, 'energyTechnology')).toBe(true);
 
-    cancelResearch(state);
+    cancelResearchAtIndex(state, 0);
 
     expect(state.planet.resources).toEqual(before);
-    expect(state.researchQueue).toBeNull();
+    expect(state.researchQueue).toEqual([]);
   });
 
   it('starting ship building deducts batch cost and creates queue entry', () => {
@@ -373,7 +388,7 @@ describe('BuildQueue', () => {
     expect(usedFields(state)).toBe(9);
   });
 
-  it('cannot start building if queue item is present regardless of type shape', () => {
+  it('queues repeated upgrades for the same building with incrementing target levels', () => {
     const state = createNewGameState();
     fundState(state);
 
@@ -384,43 +399,49 @@ describe('BuildQueue', () => {
       startedAt: 10,
       completesAt: 20,
     };
-    state.planet.buildingQueue = occupied;
+    state.planet.buildingQueue = [occupied];
 
-    expect(startBuildingUpgrade(state, 'metalMine')).toBe(false);
+    expect(startBuildingUpgrade(state, 'solarPlant')).toBe(true);
+    expect(state.planet.buildingQueue).toHaveLength(2);
+    expect(state.planet.buildingQueue[1].targetLevel).toBe(2);
   });
 
   it('rescaleQueueTimes halves remaining building time when speed doubles', () => {
     const state = createNewGameState();
     const now = 10_000;
-    state.planet.buildingQueue = {
-      type: 'building',
-      id: 'metalMine',
-      targetLevel: 1,
-      startedAt: now - 5000,
-      completesAt: now + 20_000, // 20s remaining
-    };
+    state.planet.buildingQueue = [
+      {
+        type: 'building',
+        id: 'metalMine',
+        targetLevel: 1,
+        startedAt: now - 5000,
+        completesAt: now + 20_000, // 20s remaining
+      },
+    ];
 
     rescaleQueueTimes(state, 1, 2, now);
 
     // 20_000 remaining * (1/2) = 10_000
-    expect(state.planet.buildingQueue!.completesAt).toBe(now + 10_000);
+    expect(state.planet.buildingQueue[0].completesAt).toBe(now + 10_000);
   });
 
   it('rescaleQueueTimes doubles remaining research time when speed halves', () => {
     const state = createNewGameState();
     const now = 50_000;
-    state.researchQueue = {
-      type: 'research',
-      id: 'energyTechnology',
-      targetLevel: 1,
-      startedAt: now - 10_000,
-      completesAt: now + 30_000, // 30s remaining
-    };
+    state.researchQueue = [
+      {
+        type: 'research',
+        id: 'energyTechnology',
+        targetLevel: 1,
+        startedAt: now - 10_000,
+        completesAt: now + 30_000, // 30s remaining
+      },
+    ];
 
     rescaleQueueTimes(state, 2, 1, now);
 
     // 30_000 remaining * (2/1) = 60_000
-    expect(state.researchQueue!.completesAt).toBe(now + 60_000);
+    expect(state.researchQueue[0].completesAt).toBe(now + 60_000);
   });
 
   it('rescaleQueueTimes rescales front shipyard queue item', () => {
@@ -444,37 +465,43 @@ describe('BuildQueue', () => {
   it('rescaleQueueTimes is a no-op when old and new speed are equal', () => {
     const state = createNewGameState();
     const now = 10_000;
-    state.planet.buildingQueue = {
-      type: 'building',
-      id: 'metalMine',
-      targetLevel: 1,
-      startedAt: now - 5000,
-      completesAt: now + 20_000,
-    };
+    state.planet.buildingQueue = [
+      {
+        type: 'building',
+        id: 'metalMine',
+        targetLevel: 1,
+        startedAt: now - 5000,
+        completesAt: now + 20_000,
+      },
+    ];
 
     rescaleQueueTimes(state, 3, 3, now);
 
-    expect(state.planet.buildingQueue!.completesAt).toBe(now + 20_000);
+    expect(state.planet.buildingQueue[0].completesAt).toBe(now + 20_000);
   });
 
   it('rescaleQueueTimes rescales all queue types simultaneously', () => {
     const state = createNewGameState();
     const now = 100_000;
 
-    state.planet.buildingQueue = {
-      type: 'building',
-      id: 'metalMine',
-      targetLevel: 1,
-      startedAt: now - 5000,
-      completesAt: now + 10_000,
-    };
-    state.researchQueue = {
-      type: 'research',
-      id: 'energyTechnology',
-      targetLevel: 1,
-      startedAt: now - 5000,
-      completesAt: now + 20_000,
-    };
+    state.planet.buildingQueue = [
+      {
+        type: 'building',
+        id: 'metalMine',
+        targetLevel: 1,
+        startedAt: now - 5000,
+        completesAt: now + 10_000,
+      },
+    ];
+    state.researchQueue = [
+      {
+        type: 'research',
+        id: 'energyTechnology',
+        targetLevel: 1,
+        startedAt: now - 5000,
+        completesAt: now + 20_000,
+      },
+    ];
     state.planet.shipyardQueue.push({
       type: 'ship',
       id: 'lightFighter',
@@ -487,8 +514,8 @@ describe('BuildQueue', () => {
     // Speed 1 → 2: remaining times halved
     rescaleQueueTimes(state, 1, 2, now);
 
-    expect(state.planet.buildingQueue!.completesAt).toBe(now + 5000);
-    expect(state.researchQueue!.completesAt).toBe(now + 10_000);
+    expect(state.planet.buildingQueue[0].completesAt).toBe(now + 5000);
+    expect(state.researchQueue[0].completesAt).toBe(now + 10_000);
     expect(state.planet.shipyardQueue[0].completesAt).toBe(now + 2000);
   });
 });

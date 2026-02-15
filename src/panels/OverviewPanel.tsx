@@ -83,7 +83,7 @@ export function OverviewPanel() {
           </p>
           <p className="stat-line">
             <span className="label">Active Queue</span>
-            <span>{gameState.researchQueue ? 'Research in progress' : 'Idle'}</span>
+            <span>{gameState.researchQueue.length > 0 ? 'Research in progress' : 'Idle'}</span>
           </p>
         </article>
 

@@ -7,7 +7,11 @@
       "Bash(tasklist:*)",
       "Bash(taskkill:*)",
       "Bash(codex:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(npx vitest run)",
+      "Bash(npx.cmd tsc:*)",
+      "Bash(npx vitest run:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

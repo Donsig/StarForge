@@ -22,9 +22,9 @@ describe('ResourceBar', () => {
       },
     });
 
-    expect(screen.getByText('12,345')).toBeInTheDocument();
-    expect(screen.getByText('67,890')).toBeInTheDocument();
-    expect(screen.getByText('4,567')).toBeInTheDocument();
+    expect(screen.getByText(/12,345\s*\/\s*10,000/)).toBeInTheDocument();
+    expect(screen.getByText(/67,890\s*\/\s*10,000/)).toBeInTheDocument();
+    expect(screen.getByText(/4,567\s*\/\s*10,000/)).toBeInTheDocument();
 
     expect(screen.getByText('+1,500/h')).toBeInTheDocument();
     expect(screen.getByText('+2,600/h')).toBeInTheDocument();
@@ -81,9 +81,9 @@ describe('ResourceBar', () => {
       },
     });
 
-    expect(screen.getByText('111')).toBeInTheDocument();
-    expect(screen.getByText('222')).toBeInTheDocument();
-    expect(screen.getByText('333')).toBeInTheDocument();
+    expect(screen.getByText(/111\s*\/\s*10,000/)).toBeInTheDocument();
+    expect(screen.getByText(/222\s*\/\s*10,000/)).toBeInTheDocument();
+    expect(screen.getByText(/333\s*\/\s*10,000/)).toBeInTheDocument();
 
     rerenderWithGame(<ResourceBar />, {
       gameState: {
@@ -97,8 +97,8 @@ describe('ResourceBar', () => {
       },
     });
 
-    expect(screen.getByText('444')).toBeInTheDocument();
-    expect(screen.getByText('555')).toBeInTheDocument();
-    expect(screen.getByText('666')).toBeInTheDocument();
+    expect(screen.getByText(/444\s*\/\s*10,000/)).toBeInTheDocument();
+    expect(screen.getByText(/555\s*\/\s*10,000/)).toBeInTheDocument();
+    expect(screen.getByText(/666\s*\/\s*10,000/)).toBeInTheDocument();
   });
 });

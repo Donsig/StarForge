@@ -13,7 +13,8 @@ import {
 
 export * from '@testing-library/react';
 
-type GameActions = Omit<GameContextType, 'gameState' | 'productionRates'>;
+type GameActions = Omit<GameContextType, 'gameState' | 'productionRates' | 'storageCaps'>;
+type StorageCaps = GameContextType['storageCaps'];
 
 interface GameStateOverrides
   extends Partial<Omit<GameState, 'planet' | 'research' | 'settings'>> {
@@ -29,6 +30,7 @@ interface GameStateOverrides
 interface RenderWithGameOptions {
   gameState?: GameStateOverrides;
   productionRates?: Partial<ProductionRates>;
+  storageCaps?: Partial<StorageCaps>;
   actions?: Partial<GameActions>;
 }
 
@@ -36,6 +38,7 @@ const defaultActions: GameActions = {
   upgradeBuilding: () => false,
   startResearchAction: () => false,
   buildShips: () => false,
+  buildDefences: () => false,
   cancelBuilding: () => {},
   cancelResearch: () => {},
   resetGameAction: () => {},
@@ -101,10 +104,17 @@ export function createMockGameContext(
     ...calculateProduction(gameState),
     ...options.productionRates,
   };
+  const storageCaps: StorageCaps = {
+    metal: 10000,
+    crystal: 10000,
+    deuterium: 10000,
+    ...options.storageCaps,
+  };
 
   return {
     gameState,
     productionRates,
+    storageCaps,
     ...defaultActions,
     ...options.actions,
   };

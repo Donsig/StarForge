@@ -61,13 +61,15 @@ describe('BuildingsPanel', () => {
             crystal: 1_000_000,
             deuterium: 1_000_000,
           },
-          buildingQueue: {
-            type: 'building',
-            id: 'metalMine',
-            targetLevel: 1,
-            startedAt: Date.now(),
-            completesAt: Date.now() + 60_000,
-          },
+          buildingQueue: [
+            {
+              type: 'building',
+              id: 'metalMine',
+              targetLevel: 1,
+              startedAt: Date.now(),
+              completesAt: Date.now() + 60_000,
+            },
+          ],
         },
       },
     });

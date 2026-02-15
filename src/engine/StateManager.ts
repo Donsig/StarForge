@@ -3,9 +3,19 @@ import { createNewGameState } from '../models/GameState.ts';
 import { GAME_CONSTANTS } from '../models/types.ts';
 import { accumulateBulk } from './ResourceEngine.ts';
 import { getCompletionEvents } from './BuildQueue.ts';
-import type { BuildingId, ResearchId, ShipId } from '../models/types.ts';
+import type { BuildingId, DefenceId, ResearchId, ShipId } from '../models/types.ts';
+import { DEFENCES } from '../data/defences.ts';
+import { BUILDINGS } from '../data/buildings.ts';
+import { RESEARCH } from '../data/research.ts';
 import { SHIPS } from '../data/ships.ts';
-import { shipBuildTime } from './FormulasEngine.ts';
+import {
+  buildingCostAtLevel,
+  buildingTime,
+  defenceBuildTime,
+  researchCostAtLevel,
+  researchTime,
+  shipBuildTime,
+} from './FormulasEngine.ts';
 
 export function saveState(state: GameState): void {
   state.lastSaveTimestamp = Date.now();
@@ -57,8 +67,42 @@ export function importSave(json: string): GameState | null {
 }
 
 function migrate(state: GameState): GameState {
-  // Future migrations go here
-  // if (state.version < 2) { ... state.version = 2; }
+  if (state.version < 2) {
+    const existingDefences = state.planet.defences as
+      | Partial<Record<DefenceId, number>>
+      | undefined;
+    state.planet.defences = {
+      rocketLauncher: 0,
+      lightLaser: 0,
+      heavyLaser: 0,
+      gaussCannon: 0,
+      ionCannon: 0,
+      plasmaTurret: 0,
+      smallShieldDome: 0,
+      largeShieldDome: 0,
+      ...existingDefences,
+    };
+    state.version = 2;
+  }
+
+  if (state.version < 3) {
+    // Convert single-item queues to arrays
+    if (
+      (state.planet as any).buildingQueue === null ||
+      (state.planet as any).buildingQueue === undefined
+    ) {
+      (state.planet as any).buildingQueue = [];
+    } else if (!Array.isArray((state.planet as any).buildingQueue)) {
+      (state.planet as any).buildingQueue = [(state.planet as any).buildingQueue];
+    }
+    if ((state as any).researchQueue === null || (state as any).researchQueue === undefined) {
+      (state as any).researchQueue = [];
+    } else if (!Array.isArray((state as any).researchQueue)) {
+      (state as any).researchQueue = [(state as any).researchQueue];
+    }
+    state.version = 3;
+  }
+
   return state;
 }
 
@@ -97,26 +141,83 @@ export function processOfflineTime(state: GameState): { elapsedSeconds: number }
     // Apply the completion
     if (event.type === 'building') {
       state.planet.buildings[event.id as BuildingId] = event.targetLevel!;
-      state.planet.buildingQueue = null;
+      if (state.planet.buildingQueue.length > 0) {
+        state.planet.buildingQueue.shift();
+      }
+      const nextBuilding = state.planet.buildingQueue[0];
+      if (nextBuilding) {
+        const nextBuildingId = nextBuilding.id as BuildingId;
+        const buildingDef = BUILDINGS[nextBuildingId];
+        const nextBuildingCost = buildingCostAtLevel(
+          buildingDef.baseCost,
+          buildingDef.costMultiplier,
+          nextBuilding.targetLevel!,
+        );
+        const nextBuildingDuration = buildingTime(
+          nextBuildingCost.metal,
+          nextBuildingCost.crystal,
+          state.planet.buildings.roboticsFactory,
+          state.planet.buildings.naniteFactory,
+          state.settings.gameSpeed,
+        );
+        nextBuilding.startedAt = event.completesAt;
+        nextBuilding.completesAt = event.completesAt + nextBuildingDuration * 1000;
+      }
     } else if (event.type === 'research') {
       state.research[event.id as ResearchId] = event.targetLevel!;
-      state.researchQueue = null;
-    } else if (event.type === 'ship') {
-      state.planet.ships[event.id as ShipId] += 1;
+      if (state.researchQueue.length > 0) {
+        state.researchQueue.shift();
+      }
+      const nextResearch = state.researchQueue[0];
+      if (nextResearch) {
+        const nextResearchId = nextResearch.id as ResearchId;
+        const researchDef = RESEARCH[nextResearchId];
+        const nextResearchCost = researchCostAtLevel(
+          researchDef.baseCost,
+          researchDef.costMultiplier,
+          nextResearch.targetLevel!,
+        );
+        const nextResearchDuration = researchTime(
+          nextResearchCost.metal,
+          nextResearchCost.crystal,
+          state.planet.buildings.researchLab,
+          state.settings.gameSpeed,
+        );
+        nextResearch.startedAt = event.completesAt;
+        nextResearch.completesAt = event.completesAt + nextResearchDuration * 1000;
+      }
+    } else if (event.type === 'ship' || event.type === 'defence') {
+      if (event.type === 'defence') {
+        state.planet.defences[event.id as DefenceId] += 1;
+      } else {
+        state.planet.ships[event.id as ShipId] += 1;
+      }
+
       // Update the queue item
       const queueItem = state.planet.shipyardQueue[0];
-      if (queueItem && queueItem.id === event.id) {
+      if (
+        queueItem &&
+        queueItem.id === event.id &&
+        queueItem.type === event.type
+      ) {
         queueItem.completed = (queueItem.completed ?? 0) + 1;
         if (queueItem.completed >= queueItem.quantity!) {
           state.planet.shipyardQueue.shift();
         } else {
-          const def = SHIPS[event.id as ShipId];
-          const perUnitSec = shipBuildTime(
-            def.structuralIntegrity,
-            state.planet.buildings.shipyard,
-            state.planet.buildings.naniteFactory,
-            state.settings.gameSpeed,
-          );
+          const perUnitSec =
+            event.type === 'defence'
+              ? defenceBuildTime(
+                  DEFENCES[event.id as DefenceId].structuralIntegrity,
+                  state.planet.buildings.shipyard,
+                  state.planet.buildings.naniteFactory,
+                  state.settings.gameSpeed,
+                )
+              : shipBuildTime(
+                  SHIPS[event.id as ShipId].structuralIntegrity,
+                  state.planet.buildings.shipyard,
+                  state.planet.buildings.naniteFactory,
+                  state.settings.gameSpeed,
+                );
           queueItem.completesAt = event.completesAt + perUnitSec * 1000;
         }
       }

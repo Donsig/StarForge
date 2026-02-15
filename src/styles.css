@@ -118,6 +118,10 @@ body {
   color: var(--danger);
 }
 
+.resource-near-cap {
+  color: #ffa500;
+}
+
 .nav-sidebar {
   grid-area: nav;
   border-right: 1px solid var(--border);
