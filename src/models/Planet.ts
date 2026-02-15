@@ -1,0 +1,68 @@
+import type { BuildingId, ShipId, QueueItem } from './types.ts';
+
+export type BuildingLevels = Record<BuildingId, number>;
+export type ShipCounts = Record<ShipId, number>;
+
+export interface ResourcesState {
+  metal: number;
+  crystal: number;
+  deuterium: number;
+  energyProduction: number;
+  energyConsumption: number;
+}
+
+export interface PlanetState {
+  name: string;
+  maxTemperature: number;
+  maxFields: number;
+  buildings: BuildingLevels;
+  ships: ShipCounts;
+  resources: ResourcesState;
+  buildingQueue: QueueItem | null;
+  shipyardQueue: QueueItem[];
+}
+
+export function createDefaultPlanet(): PlanetState {
+  return {
+    name: 'Homeworld',
+    maxTemperature: 35,
+    maxFields: 163,
+    buildings: {
+      metalMine: 0,
+      crystalMine: 0,
+      deuteriumSynthesizer: 0,
+      solarPlant: 0,
+      fusionReactor: 0,
+      metalStorage: 0,
+      crystalStorage: 0,
+      deuteriumTank: 0,
+      roboticsFactory: 0,
+      naniteFactory: 0,
+      shipyard: 0,
+      researchLab: 0,
+    },
+    ships: {
+      lightFighter: 0,
+      heavyFighter: 0,
+      cruiser: 0,
+      battleship: 0,
+      smallCargo: 0,
+      largeCargo: 0,
+      colonyShip: 0,
+      recycler: 0,
+      espionageProbe: 0,
+      bomber: 0,
+      destroyer: 0,
+      battlecruiser: 0,
+    },
+    resources: {
+      metal: 500,
+      crystal: 500,
+      deuterium: 0,
+      energyProduction: 0,
+      energyConsumption: 0,
+    },
+    buildingQueue: null,
+    shipyardQueue: [],
+  };
+}

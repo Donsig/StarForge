@@ -1,0 +1,233 @@
+import type { ShipId, ResourceCost, Prerequisite } from '../models/types.ts';
+
+export interface ShipDefinition {
+  id: ShipId;
+  name: string;
+  description: string;
+  cost: ResourceCost;
+  structuralIntegrity: number;
+  shieldPower: number;
+  weaponPower: number;
+  cargoCapacity: number;
+  speed: number;
+  fuelConsumption: number;
+  requires: Prerequisite[];
+}
+
+export const SHIPS: Record<ShipId, ShipDefinition> = {
+  lightFighter: {
+    id: 'lightFighter',
+    name: 'Light Fighter',
+    description: 'Fast, cheap interceptor. The workhorse of early fleets.',
+    cost: { metal: 3000, crystal: 1000, deuterium: 0 },
+    structuralIntegrity: 4000,
+    shieldPower: 10,
+    weaponPower: 50,
+    cargoCapacity: 50,
+    speed: 12500,
+    fuelConsumption: 20,
+    requires: [
+      { type: 'building', id: 'shipyard', level: 1 },
+      { type: 'research', id: 'combustionDrive', level: 1 },
+    ],
+  },
+  heavyFighter: {
+    id: 'heavyFighter',
+    name: 'Heavy Fighter',
+    description: 'Armoured assault fighter with improved shielding.',
+    cost: { metal: 6000, crystal: 4000, deuterium: 0 },
+    structuralIntegrity: 10000,
+    shieldPower: 25,
+    weaponPower: 150,
+    cargoCapacity: 100,
+    speed: 10000,
+    fuelConsumption: 75,
+    requires: [
+      { type: 'building', id: 'shipyard', level: 3 },
+      { type: 'research', id: 'armourTechnology', level: 2 },
+      { type: 'research', id: 'impulseDrive', level: 2 },
+    ],
+  },
+  cruiser: {
+    id: 'cruiser',
+    name: 'Cruiser',
+    description: 'Versatile warship with rapid-fire capability against light fighters.',
+    cost: { metal: 20000, crystal: 7000, deuterium: 2000 },
+    structuralIntegrity: 27000,
+    shieldPower: 50,
+    weaponPower: 400,
+    cargoCapacity: 800,
+    speed: 15000,
+    fuelConsumption: 300,
+    requires: [
+      { type: 'building', id: 'shipyard', level: 5 },
+      { type: 'research', id: 'impulseDrive', level: 4 },
+      { type: 'research', id: 'ionTechnology', level: 2 },
+    ],
+  },
+  battleship: {
+    id: 'battleship',
+    name: 'Battleship',
+    description: 'Heavy capital ship. The backbone of any serious fleet.',
+    cost: { metal: 45000, crystal: 15000, deuterium: 5000 },
+    structuralIntegrity: 60000,
+    shieldPower: 200,
+    weaponPower: 1000,
+    cargoCapacity: 1500,
+    speed: 10000,
+    fuelConsumption: 500,
+    requires: [
+      { type: 'building', id: 'shipyard', level: 7 },
+      { type: 'research', id: 'hyperspaceDrive', level: 4 },
+    ],
+  },
+  smallCargo: {
+    id: 'smallCargo',
+    name: 'Small Cargo',
+    description: 'Light transport vessel for moving resources between planets.',
+    cost: { metal: 2000, crystal: 2000, deuterium: 0 },
+    structuralIntegrity: 4000,
+    shieldPower: 10,
+    weaponPower: 5,
+    cargoCapacity: 5000,
+    speed: 10000,
+    fuelConsumption: 20,
+    requires: [
+      { type: 'building', id: 'shipyard', level: 2 },
+      { type: 'research', id: 'combustionDrive', level: 2 },
+    ],
+  },
+  largeCargo: {
+    id: 'largeCargo',
+    name: 'Large Cargo',
+    description: 'Heavy transport with massive cargo hold.',
+    cost: { metal: 6000, crystal: 6000, deuterium: 0 },
+    structuralIntegrity: 12000,
+    shieldPower: 25,
+    weaponPower: 5,
+    cargoCapacity: 25000,
+    speed: 7500,
+    fuelConsumption: 50,
+    requires: [
+      { type: 'building', id: 'shipyard', level: 4 },
+      { type: 'research', id: 'combustionDrive', level: 6 },
+    ],
+  },
+  colonyShip: {
+    id: 'colonyShip',
+    name: 'Colony Ship',
+    description: 'Colonization vessel for settling new worlds. Consumed on use.',
+    cost: { metal: 10000, crystal: 20000, deuterium: 10000 },
+    structuralIntegrity: 30000,
+    shieldPower: 100,
+    weaponPower: 50,
+    cargoCapacity: 7500,
+    speed: 2500,
+    fuelConsumption: 1000,
+    requires: [
+      { type: 'building', id: 'shipyard', level: 4 },
+      { type: 'research', id: 'impulseDrive', level: 3 },
+    ],
+  },
+  recycler: {
+    id: 'recycler',
+    name: 'Recycler',
+    description: 'Salvage vessel that collects debris from battle sites.',
+    cost: { metal: 10000, crystal: 6000, deuterium: 2000 },
+    structuralIntegrity: 16000,
+    shieldPower: 10,
+    weaponPower: 1,
+    cargoCapacity: 20000,
+    speed: 2000,
+    fuelConsumption: 300,
+    requires: [
+      { type: 'building', id: 'shipyard', level: 4 },
+      { type: 'research', id: 'combustionDrive', level: 6 },
+      { type: 'research', id: 'shieldingTechnology', level: 2 },
+    ],
+  },
+  espionageProbe: {
+    id: 'espionageProbe',
+    name: 'Espionage Probe',
+    description: 'Unmanned drone for scouting enemy positions.',
+    cost: { metal: 0, crystal: 1000, deuterium: 0 },
+    structuralIntegrity: 1000,
+    shieldPower: 0,
+    weaponPower: 0,
+    cargoCapacity: 0,
+    speed: 100000000,
+    fuelConsumption: 1,
+    requires: [
+      { type: 'building', id: 'shipyard', level: 3 },
+      { type: 'research', id: 'espionageTechnology', level: 2 },
+      { type: 'research', id: 'combustionDrive', level: 3 },
+    ],
+  },
+  bomber: {
+    id: 'bomber',
+    name: 'Bomber',
+    description: 'Specialized anti-defense ship. Devastating against planetary defenses.',
+    cost: { metal: 50000, crystal: 25000, deuterium: 15000 },
+    structuralIntegrity: 75000,
+    shieldPower: 500,
+    weaponPower: 1000,
+    cargoCapacity: 500,
+    speed: 5000,
+    fuelConsumption: 700,
+    requires: [
+      { type: 'building', id: 'shipyard', level: 8 },
+      { type: 'research', id: 'impulseDrive', level: 6 },
+      { type: 'research', id: 'plasmaTechnology', level: 5 },
+    ],
+  },
+  destroyer: {
+    id: 'destroyer',
+    name: 'Destroyer',
+    description: 'Elite warship with unmatched firepower. Counters battlecruisers.',
+    cost: { metal: 60000, crystal: 50000, deuterium: 15000 },
+    structuralIntegrity: 110000,
+    shieldPower: 500,
+    weaponPower: 2000,
+    cargoCapacity: 2000,
+    speed: 5000,
+    fuelConsumption: 1000,
+    requires: [
+      { type: 'building', id: 'shipyard', level: 9 },
+      { type: 'research', id: 'hyperspaceDrive', level: 6 },
+      { type: 'research', id: 'hyperspaceTechnology', level: 5 },
+    ],
+  },
+  battlecruiser: {
+    id: 'battlecruiser',
+    name: 'Battlecruiser',
+    description: 'Fast capital ship designed to intercept and destroy cruiser groups.',
+    cost: { metal: 30000, crystal: 40000, deuterium: 15000 },
+    structuralIntegrity: 70000,
+    shieldPower: 400,
+    weaponPower: 700,
+    cargoCapacity: 750,
+    speed: 10000,
+    fuelConsumption: 250,
+    requires: [
+      { type: 'building', id: 'shipyard', level: 8 },
+      { type: 'research', id: 'hyperspaceDrive', level: 5 },
+      { type: 'research', id: 'hyperspaceTechnology', level: 5 },
+      { type: 'research', id: 'laserTechnology', level: 12 },
+    ],
+  },
+};
+
+export const SHIP_ORDER: ShipId[] = [
+  'lightFighter',
+  'heavyFighter',
+  'cruiser',
+  'battleship',
+  'bomber',
+  'destroyer',
+  'battlecruiser',
+  'smallCargo',
+  'largeCargo',
+  'colonyShip',
+  'recycler',
+  'espionageProbe',
+];
