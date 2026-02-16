@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { BUILDINGS } from '../data/buildings.ts';
 import { DEFENCES, DEFENCE_ORDER } from '../data/defences.ts';
 import { RESEARCH } from '../data/research.ts';
+import { SHIPS } from '../data/ships.ts';
 import { canAfford, prerequisitesMet } from '../engine/BuildQueue.ts';
 import { defenceBuildTime } from '../engine/FormulasEngine.ts';
 import { useGame } from '../context/GameContext';
@@ -14,6 +15,7 @@ import type {
   Prerequisite,
   ResearchId,
   ResourceCost,
+  ShipId,
 } from '../models/types.ts';
 
 const DEFAULT_QUANTITIES: Record<DefenceId, string> = DEFENCE_ORDER.reduce(
@@ -43,7 +45,7 @@ function requirementLabel(prerequisite: Prerequisite): string {
 }
 
 export function DefencePanel() {
-  const { gameState, buildDefences } = useGame();
+  const { gameState, buildDefences, cancelShipyard } = useGame();
   const [quantities, setQuantities] = useState<Record<DefenceId, string>>(DEFAULT_QUANTITIES);
 
   return (
@@ -180,6 +182,39 @@ export function DefencePanel() {
           );
         })}
       </div>
+
+      {gameState.planet.shipyardQueue.length > 0 && (
+        <section className="panel-group">
+          <h2 className="section-title">Shipyard Queue</h2>
+          <div className="queue-list">
+            {gameState.planet.shipyardQueue.map((item, index) => {
+              const name = item.type === 'ship'
+                ? SHIPS[item.id as ShipId].name
+                : DEFENCES[item.id as DefenceId].name;
+              const progress = index === 0
+                ? `${(item.completed ?? 0) + 1}/${item.quantity}`
+                : `0/${item.quantity}`;
+              return (
+                <div key={`${item.id}-${index}`} className="queue-entry">
+                  <span className="queue-name">{name} ({progress})</span>
+                  {index === 0 && (
+                    <span className="queue-timer number">
+                      {formatDuration(Math.max(0, (item.completesAt - Date.now()) / 1000))}
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    className="btn btn-danger btn-sm"
+                    onClick={() => cancelShipyard(index)}
+                  >
+                    ✕
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
     </section>
   );
 }

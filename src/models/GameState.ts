@@ -1,4 +1,5 @@
 import type { PlanetState } from './Planet.ts';
+import type { GalaxyState } from './Galaxy.ts';
 import type { ResearchId, QueueItem } from './types.ts';
 import { GAME_CONSTANTS } from './types.ts';
 import { createDefaultPlanet } from './Planet.ts';
@@ -13,7 +14,9 @@ export interface GameState {
   version: number;
   lastSaveTimestamp: number;
   tickCount: number;
-  planet: PlanetState;
+  planets: PlanetState[];
+  activePlanetIndex: number;
+  galaxy: GalaxyState;
   research: ResearchLevels;
   researchQueue: QueueItem[];
   settings: GameSettings;
@@ -24,7 +27,12 @@ export function createNewGameState(): GameState {
     version: GAME_CONSTANTS.STATE_VERSION,
     lastSaveTimestamp: Date.now(),
     tickCount: 0,
-    planet: createDefaultPlanet(),
+    planets: [createDefaultPlanet()],
+    activePlanetIndex: 0,
+    galaxy: {
+      seed: Math.floor(Math.random() * 1_000_000),
+      npcColonies: [],
+    },
     research: {
       energyTechnology: 0,
       laserTechnology: 0,

@@ -11,6 +11,7 @@ import {
 import {
   cancelBuildingAtIndex,
   cancelResearchAtIndex,
+  cancelShipyardAtIndex,
   processTick as processQueueTick,
   rescaleQueueTimes,
   startBuildingUpgrade,
@@ -36,8 +37,9 @@ export interface GameEngineState {
   startResearchAction: (id: ResearchId) => boolean;
   buildShips: (id: ShipId, qty: number) => boolean;
   buildDefences: (id: DefenceId, qty: number) => boolean;
-  cancelBuilding: () => void;
-  cancelResearch: () => void;
+  cancelBuilding: (index: number) => void;
+  cancelResearch: (index: number) => void;
+  cancelShipyard: (index: number) => void;
   resetGameAction: () => void;
   setGameSpeed: (n: number) => void;
   exportSaveAction: () => string;
@@ -175,14 +177,20 @@ export function useGameEngine(): GameEngineState {
     [syncReactState],
   );
 
-  const cancelBuildingAction = useCallback((): void => {
-    cancelBuildingAtIndex(stateRef.current, 0);
+  const cancelBuildingAction = useCallback((index: number): void => {
+    cancelBuildingAtIndex(stateRef.current, index);
     syncReactState();
     saveState(stateRef.current);
   }, [syncReactState]);
 
-  const cancelResearchAction = useCallback((): void => {
-    cancelResearchAtIndex(stateRef.current, 0);
+  const cancelResearchAction = useCallback((index: number): void => {
+    cancelResearchAtIndex(stateRef.current, index);
+    syncReactState();
+    saveState(stateRef.current);
+  }, [syncReactState]);
+
+  const cancelShipyardAction = useCallback((index: number): void => {
+    cancelShipyardAtIndex(stateRef.current, index);
     syncReactState();
     saveState(stateRef.current);
   }, [syncReactState]);
@@ -234,6 +242,7 @@ export function useGameEngine(): GameEngineState {
     buildDefences,
     cancelBuilding: cancelBuildingAction,
     cancelResearch: cancelResearchAction,
+    cancelShipyard: cancelShipyardAction,
     resetGameAction,
     setGameSpeed,
     exportSaveAction,

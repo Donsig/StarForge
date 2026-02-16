@@ -42,11 +42,11 @@ function requirementLabel(prerequisite: Prerequisite): string {
 }
 
 export function BuildingsPanel() {
-  const { gameState, upgradeBuilding } = useGame();
+  const { gameState, upgradeBuilding, cancelBuilding } = useGame();
 
-  const buildingQueueOccupied = gameState.planet.buildingQueue.length > 0;
   const fieldsUsed = usedFields(gameState);
-  const maxFieldsReached = fieldsUsed >= gameState.planet.maxFields;
+  const queuedUpgrades = gameState.planet.buildingQueue.length;
+  const maxFieldsReached = fieldsUsed + queuedUpgrades >= gameState.planet.maxFields;
 
   return (
     <section className="panel">
@@ -78,13 +78,11 @@ export function BuildingsPanel() {
                 );
                 const affordable = canAfford(cost, gameState);
                 const prereqMet = prerequisitesMet(definition.requires, gameState);
-                const currentlyUpgrading = gameState.planet.buildingQueue[0]?.id === buildingId;
+                const inQueue = gameState.planet.buildingQueue.some(q => q.id === buildingId);
                 const disabled =
                   !affordable ||
                   !prereqMet ||
-                  buildingQueueOccupied ||
-                  maxFieldsReached ||
-                  currentlyUpgrading;
+                  maxFieldsReached;
 
                 return (
                   <article key={buildingId} className="item-card">
@@ -129,11 +127,8 @@ export function BuildingsPanel() {
                           upgradeBuilding(buildingId);
                         }}
                       >
-                        {currentlyUpgrading ? 'In Progress' : `Upgrade to Lv ${nextLevel}`}
+                        {inQueue ? `Queue Lv ${nextLevel}` : `Upgrade to Lv ${nextLevel}`}
                       </button>
-                      {buildingQueueOccupied && !currentlyUpgrading && (
-                        <span className="hint">Building queue occupied</span>
-                      )}
                       {maxFieldsReached && (
                         <span className="hint danger">No free fields available</span>
                       )}
@@ -145,6 +140,33 @@ export function BuildingsPanel() {
           </div>
         </section>
       ))}
+
+      {gameState.planet.buildingQueue.length > 0 && (
+        <section className="panel-group">
+          <h2 className="section-title">Build Queue</h2>
+          <div className="queue-list">
+            {gameState.planet.buildingQueue.map((item, index) => (
+              <div key={`${item.id}-${item.targetLevel}-${index}`} className="queue-entry">
+                <span className="queue-name">
+                  {BUILDINGS[item.id as BuildingId].name} Lv {item.targetLevel}
+                </span>
+                {index === 0 && (
+                  <span className="queue-timer number">
+                    {formatDuration(Math.max(0, (item.completesAt - Date.now()) / 1000))}
+                  </span>
+                )}
+                <button
+                  type="button"
+                  className="btn btn-danger btn-sm"
+                  onClick={() => cancelBuilding(index)}
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
     </section>
   );
 }

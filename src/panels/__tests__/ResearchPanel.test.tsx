@@ -55,7 +55,7 @@ describe('ResearchPanel', () => {
     ).toBeDisabled();
   });
 
-  it('disables research buttons when the research queue is occupied', () => {
+  it('allows queuing additional research when the research queue has items', () => {
     renderWithGame(<ResearchPanel />, {
       gameState: {
         planet: {
@@ -83,7 +83,34 @@ describe('ResearchPanel', () => {
     const computerTechnologyCard = getResearchCard('Computer Technology');
     expect(
       within(computerTechnologyCard).getByRole('button', { name: /Research Lv/i }),
-    ).toBeDisabled();
+    ).not.toBeDisabled();
+  });
+
+  it('displays research queue items with cancel buttons', () => {
+    const cancelResearch = vi.fn();
+
+    renderWithGame(<ResearchPanel />, {
+      gameState: {
+        planet: {
+          buildings: { researchLab: 1 },
+          resources: { metal: 1_000_000, crystal: 1_000_000, deuterium: 1_000_000 },
+        },
+        researchQueue: [
+          {
+            type: 'research',
+            id: 'energyTechnology',
+            targetLevel: 1,
+            startedAt: Date.now(),
+            completesAt: Date.now() + 60_000,
+          },
+        ],
+      },
+      actions: { cancelResearch },
+    });
+
+    expect(screen.getByText('Research Queue')).toBeInTheDocument();
+    const cancelButtons = screen.getAllByRole('button', { name: '✕' });
+    expect(cancelButtons).toHaveLength(1);
   });
 
   it('calls startResearchAction with the correct research ID', async () => {

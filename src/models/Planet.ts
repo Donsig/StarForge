@@ -1,4 +1,5 @@
 import type { BuildingId, ShipId, DefenceId, QueueItem } from './types.ts';
+import type { Coordinates } from './Galaxy.ts';
 
 export type BuildingLevels = Record<BuildingId, number>;
 export type ShipCounts = Record<ShipId, number>;
@@ -14,6 +15,7 @@ export interface ResourcesState {
 
 export interface PlanetState {
   name: string;
+  coordinates: Coordinates;
   maxTemperature: number;
   maxFields: number;
   buildings: BuildingLevels;
@@ -27,6 +29,7 @@ export interface PlanetState {
 export function createDefaultPlanet(): PlanetState {
   return {
     name: 'Homeworld',
+    coordinates: { galaxy: 1, system: 1, slot: 4 },
     maxTemperature: 35,
     maxFields: 163,
     buildings: {

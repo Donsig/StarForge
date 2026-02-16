@@ -90,6 +90,7 @@ export type ActivePanel =
   | 'shipyard'
   | 'defence'
   | 'fleet'
+  | 'galaxy'
   | 'settings';
 
 export const GAME_CONSTANTS = {
@@ -99,5 +100,5 @@ export const GAME_CONSTANTS = {
   AUTO_SAVE_TICKS: 30,
   MAX_OFFLINE_SECONDS: 7 * 24 * 3600, // 7 days
   STORAGE_KEY: 'starforge_save',
-  STATE_VERSION: 3,
+  STATE_VERSION: 4,
 } as const;

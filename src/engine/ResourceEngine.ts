@@ -16,6 +16,7 @@ import {
   plasmaCrystalBonus,
   plasmaDeuteriumBonus,
 } from './FormulasEngine.ts';
+import { activePlanet } from './helpers.ts';
 
 export interface ProductionRates {
   metalPerHour: number;
@@ -27,7 +28,8 @@ export interface ProductionRates {
 
 /** Calculate current production rates from state (does not mutate) */
 export function calculateProduction(state: GameState): ProductionRates {
-  const { buildings } = state.planet;
+  const planet = activePlanet(state);
+  const { buildings } = planet;
   const plasmaLevel = state.research.plasmaTechnology;
   const energyTechLevel = state.research.energyTechnology;
 
@@ -60,7 +62,7 @@ export function calculateProduction(state: GameState): ProductionRates {
     (BASE_PRODUCTION.deuterium +
       deuteriumProductionPerHour(
         buildings.deuteriumSynthesizer,
-        state.planet.maxTemperature,
+        planet.maxTemperature,
       ) *
         eFactor -
       fusionReactorDeuteriumConsumption(buildings.fusionReactor)) *
@@ -77,7 +79,8 @@ export function calculateProduction(state: GameState): ProductionRates {
 
 /** Get storage caps for the current state */
 export function getStorageCaps(state: GameState) {
-  const { buildings } = state.planet;
+  const planet = activePlanet(state);
+  const { buildings } = planet;
   return {
     metal: BASE_STORAGE.metal + storageCapacity(buildings.metalStorage),
     crystal: BASE_STORAGE.crystal + storageCapacity(buildings.crystalStorage),
@@ -87,10 +90,11 @@ export function getStorageCaps(state: GameState) {
 
 /** Process one tick (1 second) of resource production. Mutates state. */
 export function processTick(state: GameState): void {
+  const planet = activePlanet(state);
   const rates = calculateProduction(state);
   const caps = getStorageCaps(state);
 
-  const res = state.planet.resources;
+  const res = planet.resources;
   res.metal = Math.min(caps.metal, res.metal + rates.metalPerHour / 3600);
   res.crystal = Math.min(caps.crystal, res.crystal + rates.crystalPerHour / 3600);
   res.deuterium = Math.min(
@@ -103,10 +107,11 @@ export function processTick(state: GameState): void {
 
 /** Accumulate resources for `seconds` at current rates. Mutates state. */
 export function accumulateBulk(state: GameState, seconds: number): void {
+  const planet = activePlanet(state);
   const rates = calculateProduction(state);
   const caps = getStorageCaps(state);
 
-  const res = state.planet.resources;
+  const res = planet.resources;
   res.metal = Math.min(caps.metal, res.metal + (rates.metalPerHour / 3600) * seconds);
   res.crystal = Math.min(
     caps.crystal,

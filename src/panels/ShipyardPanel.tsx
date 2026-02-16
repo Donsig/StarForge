@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { BUILDINGS } from '../data/buildings.ts';
+import { DEFENCES } from '../data/defences.ts';
 import { RESEARCH } from '../data/research.ts';
 import { SHIP_ORDER, SHIPS } from '../data/ships.ts';
 import { canAfford, prerequisitesMet } from '../engine/BuildQueue.ts';
@@ -10,6 +11,7 @@ import { formatDuration } from '../utils/time.ts';
 import type { GameState } from '../models/GameState.ts';
 import type {
   BuildingId,
+  DefenceId,
   Prerequisite,
   ResearchId,
   ResourceCost,
@@ -43,7 +45,7 @@ function requirementLabel(prerequisite: Prerequisite): string {
 }
 
 export function ShipyardPanel() {
-  const { gameState, buildShips } = useGame();
+  const { gameState, buildShips, cancelShipyard } = useGame();
   const [quantities, setQuantities] = useState<Record<ShipId, string>>(DEFAULT_QUANTITIES);
 
   return (
@@ -156,6 +158,39 @@ export function ShipyardPanel() {
           );
         })}
       </div>
+
+      {gameState.planet.shipyardQueue.length > 0 && (
+        <section className="panel-group">
+          <h2 className="section-title">Shipyard Queue</h2>
+          <div className="queue-list">
+            {gameState.planet.shipyardQueue.map((item, index) => {
+              const name = item.type === 'ship'
+                ? SHIPS[item.id as ShipId].name
+                : DEFENCES[item.id as DefenceId].name;
+              const progress = index === 0
+                ? `${(item.completed ?? 0) + 1}/${item.quantity}`
+                : `0/${item.quantity}`;
+              return (
+                <div key={`${item.id}-${index}`} className="queue-entry">
+                  <span className="queue-name">{name} ({progress})</span>
+                  {index === 0 && (
+                    <span className="queue-timer number">
+                      {formatDuration(Math.max(0, (item.completesAt - Date.now()) / 1000))}
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    className="btn btn-danger btn-sm"
+                    onClick={() => cancelShipyard(index)}
+                  >
+                    ✕
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
     </section>
   );
 }

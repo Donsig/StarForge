@@ -12,8 +12,9 @@ export interface GameContextType {
   startResearchAction: (id: ResearchId) => boolean;
   buildShips: (id: ShipId, qty: number) => boolean;
   buildDefences: (id: DefenceId, qty: number) => boolean;
-  cancelBuilding: () => void;
-  cancelResearch: () => void;
+  cancelBuilding: (index: number) => void;
+  cancelResearch: (index: number) => void;
+  cancelShipyard: (index: number) => void;
   resetGameAction: () => void;
   setGameSpeed: (n: number) => void;
   exportSaveAction: () => string;

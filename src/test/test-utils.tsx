@@ -17,11 +17,11 @@ type GameActions = Omit<GameContextType, 'gameState' | 'productionRates' | 'stor
 type StorageCaps = GameContextType['storageCaps'];
 
 interface GameStateOverrides
-  extends Partial<Omit<GameState, 'planet' | 'research' | 'settings'>> {
-  planet?: Partial<Omit<GameState['planet'], 'buildings' | 'ships' | 'resources'>> & {
-    buildings?: Partial<GameState['planet']['buildings']>;
-    ships?: Partial<GameState['planet']['ships']>;
-    resources?: Partial<GameState['planet']['resources']>;
+  extends Partial<Omit<GameState, 'planets' | 'research' | 'settings'>> {
+  planet?: Partial<Omit<GameState['planets'][0], 'buildings' | 'ships' | 'resources'>> & {
+    buildings?: Partial<GameState['planets'][0]['buildings']>;
+    ships?: Partial<GameState['planets'][0]['ships']>;
+    resources?: Partial<GameState['planets'][0]['resources']>;
   };
   research?: Partial<GameState['research']>;
   settings?: Partial<GameState['settings']>;
@@ -39,8 +39,9 @@ const defaultActions: GameActions = {
   startResearchAction: () => false,
   buildShips: () => false,
   buildDefences: () => false,
-  cancelBuilding: () => {},
-  cancelResearch: () => {},
+  cancelBuilding: (_index: number) => {},
+  cancelResearch: (_index: number) => {},
+  cancelShipyard: (_index: number) => {},
   resetGameAction: () => {},
   setGameSpeed: () => {},
   exportSaveAction: () => '',
@@ -50,37 +51,40 @@ const defaultActions: GameActions = {
 function buildGameState(overrides?: GameStateOverrides): GameState {
   const baseState = createNewGameState();
 
-  if (!overrides) {
-    return baseState;
-  }
+  if (!overrides) return baseState;
+
+  const basePlanet = baseState.planets[0];
+  const planetOverrides = overrides.planet;
+
+  const planet = {
+    ...basePlanet,
+    ...planetOverrides,
+    buildings: {
+      ...basePlanet.buildings,
+      ...planetOverrides?.buildings,
+    },
+    ships: {
+      ...basePlanet.ships,
+      ...planetOverrides?.ships,
+    },
+    resources: {
+      ...basePlanet.resources,
+      ...planetOverrides?.resources,
+    },
+    buildingQueue:
+      planetOverrides?.buildingQueue === undefined
+        ? basePlanet.buildingQueue
+        : planetOverrides.buildingQueue,
+    shipyardQueue:
+      planetOverrides?.shipyardQueue === undefined
+        ? basePlanet.shipyardQueue
+        : planetOverrides.shipyardQueue,
+  };
 
   return {
     ...baseState,
     ...overrides,
-    planet: {
-      ...baseState.planet,
-      ...overrides.planet,
-      buildings: {
-        ...baseState.planet.buildings,
-        ...overrides.planet?.buildings,
-      },
-      ships: {
-        ...baseState.planet.ships,
-        ...overrides.planet?.ships,
-      },
-      resources: {
-        ...baseState.planet.resources,
-        ...overrides.planet?.resources,
-      },
-      buildingQueue:
-        overrides.planet?.buildingQueue === undefined
-          ? baseState.planet.buildingQueue
-          : overrides.planet.buildingQueue,
-      shipyardQueue:
-        overrides.planet?.shipyardQueue === undefined
-          ? baseState.planet.shipyardQueue
-          : overrides.planet.shipyardQueue,
-    },
+    planets: [planet],
     research: {
       ...baseState.research,
       ...overrides.research,

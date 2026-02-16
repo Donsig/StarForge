@@ -33,7 +33,8 @@ function QueueRow({ label, subtitle, completesAt, onCancel }: QueueRowProps) {
 }
 
 export function QueueDisplay() {
-  const { gameState, cancelBuilding, cancelResearch } = useGame();
+  const { gameState, cancelBuilding, cancelResearch, cancelShipyard } = useGame();
+  void cancelShipyard;
 
   const buildingQueue = gameState.planet.buildingQueue[0] ?? null;
   const researchQueue = gameState.researchQueue[0] ?? null;
@@ -57,7 +58,7 @@ export function QueueDisplay() {
           label={`Building: ${BUILDINGS[buildingQueue.id as BuildingId].name}`}
           subtitle={`Target level ${buildingQueue.targetLevel ?? 0}`}
           completesAt={buildingQueue.completesAt}
-          onCancel={cancelBuilding}
+          onCancel={() => cancelBuilding(0)}
         />
       )}
 
@@ -66,7 +67,7 @@ export function QueueDisplay() {
           label={`Research: ${RESEARCH[researchQueue.id as ResearchId].name}`}
           subtitle={`Target level ${researchQueue.targetLevel ?? 0}`}
           completesAt={researchQueue.completesAt}
-          onCancel={cancelResearch}
+          onCancel={() => cancelResearch(0)}
         />
       )}
 

@@ -14,7 +14,7 @@ import {
 function shiftQueueTimestamps(state: GameState, shiftSeconds: number): void {
   const deltaMs = shiftSeconds * 1000;
   state.lastSaveTimestamp -= deltaMs;
-  for (const item of state.planet.buildingQueue) {
+  for (const item of state.planets[0].buildingQueue) {
     item.startedAt -= deltaMs;
     item.completesAt -= deltaMs;
   }
@@ -22,7 +22,7 @@ function shiftQueueTimestamps(state: GameState, shiftSeconds: number): void {
     item.startedAt -= deltaMs;
     item.completesAt -= deltaMs;
   }
-  for (const item of state.planet.shipyardQueue) {
+  for (const item of state.planets[0].shipyardQueue) {
     item.startedAt -= deltaMs;
     item.completesAt -= deltaMs;
   }
@@ -35,29 +35,29 @@ describe('Integration: save/load cycle', () => {
 
   it('save mid-build, load, and construction completes', () => {
     const state = createNewGameState();
-    state.planet.buildings.solarPlant = 1;
+    state.planets[0].buildings.solarPlant = 1;
 
     expect(startBuildingUpgrade(state, 'metalMine')).toBe(true);
-    expect(state.planet.buildingQueue.length).toBeGreaterThan(0);
+    expect(state.planets[0].buildingQueue.length).toBeGreaterThan(0);
 
     saveState(state);
     const loaded = loadState();
     expect(loaded).not.toBeNull();
-    if (!loaded || loaded.planet.buildingQueue.length === 0) return;
+    if (!loaded || loaded.planets[0].buildingQueue.length === 0) return;
 
     const simulatedOfflineSeconds = 300;
     shiftQueueTimestamps(loaded, simulatedOfflineSeconds);
 
-    const metalAtSave = loaded.planet.resources.metal;
-    const crystalAtSave = loaded.planet.resources.crystal;
+    const metalAtSave = loaded.planets[0].resources.metal;
+    const crystalAtSave = loaded.planets[0].resources.crystal;
     const oldRates = calculateProduction(loaded);
     const secondsToCompletion = Math.floor(
-      (loaded.planet.buildingQueue[0].completesAt - loaded.lastSaveTimestamp) / 1000,
+      (loaded.planets[0].buildingQueue[0].completesAt - loaded.lastSaveTimestamp) / 1000,
     );
 
     const { elapsedSeconds } = processOfflineTime(loaded);
-    expect(loaded.planet.buildingQueue).toEqual([]);
-    expect(loaded.planet.buildings.metalMine).toBe(1);
+    expect(loaded.planets[0].buildingQueue).toEqual([]);
+    expect(loaded.planets[0].buildings.metalMine).toBe(1);
 
     const newRates = calculateProduction(loaded);
     const secondsAfterCompletion = elapsedSeconds - secondsToCompletion;
@@ -73,26 +73,26 @@ describe('Integration: save/load cycle', () => {
       (oldRates.crystalPerHour / 3600) * secondsToCompletion +
       (newRates.crystalPerHour / 3600) * secondsAfterCompletion;
 
-    expect(Math.abs(loaded.planet.resources.metal - expectedMetal)).toBeLessThan(0.1);
-    expect(Math.abs(loaded.planet.resources.crystal - expectedCrystal)).toBeLessThan(0.1);
+    expect(Math.abs(loaded.planets[0].resources.metal - expectedMetal)).toBeLessThan(0.1);
+    expect(Math.abs(loaded.planets[0].resources.crystal - expectedCrystal)).toBeLessThan(0.1);
   });
 
   it('offline for 1 hour with active production', () => {
     const state = createNewGameState();
-    state.planet.buildings.metalMine = 5;
-    state.planet.buildings.crystalMine = 3;
-    state.planet.buildings.solarPlant = 4;
-    state.planet.resources.metal = 1000;
-    state.planet.resources.crystal = 1000;
-    state.planet.resources.deuterium = 500;
+    state.planets[0].buildings.metalMine = 5;
+    state.planets[0].buildings.crystalMine = 3;
+    state.planets[0].buildings.solarPlant = 4;
+    state.planets[0].resources.metal = 1000;
+    state.planets[0].resources.crystal = 1000;
+    state.planets[0].resources.deuterium = 500;
 
     saveState(state);
     state.lastSaveTimestamp -= 3600 * 1000;
 
     const rates = calculateProduction(state);
-    const startMetal = state.planet.resources.metal;
-    const startCrystal = state.planet.resources.crystal;
-    const startDeuterium = state.planet.resources.deuterium;
+    const startMetal = state.planets[0].resources.metal;
+    const startCrystal = state.planets[0].resources.crystal;
+    const startDeuterium = state.planets[0].resources.deuterium;
 
     const { elapsedSeconds } = processOfflineTime(state);
     const expectedMetal = startMetal + (rates.metalPerHour / 3600) * elapsedSeconds;
@@ -100,16 +100,16 @@ describe('Integration: save/load cycle', () => {
     const expectedDeuterium =
       startDeuterium + (rates.deuteriumPerHour / 3600) * elapsedSeconds;
 
-    expect(state.planet.resources.metal).toBeCloseTo(expectedMetal, 5);
-    expect(state.planet.resources.crystal).toBeCloseTo(expectedCrystal, 5);
-    expect(state.planet.resources.deuterium).toBeCloseTo(expectedDeuterium, 5);
+    expect(state.planets[0].resources.metal).toBeCloseTo(expectedMetal, 5);
+    expect(state.planets[0].resources.crystal).toBeCloseTo(expectedCrystal, 5);
+    expect(state.planets[0].resources.deuterium).toBeCloseTo(expectedDeuterium, 5);
   });
 
   it('offline for 8 days caps at 7 days', () => {
     const state = createNewGameState();
-    state.planet.buildings.metalMine = 6;
-    state.planet.buildings.crystalMine = 4;
-    state.planet.buildings.solarPlant = 6;
+    state.planets[0].buildings.metalMine = 6;
+    state.planets[0].buildings.crystalMine = 4;
+    state.planets[0].buildings.solarPlant = 6;
     saveState(state);
 
     state.lastSaveTimestamp = Date.now() - 8 * 24 * 3600 * 1000;
@@ -124,20 +124,20 @@ describe('Integration: save/load cycle', () => {
     state.tickCount = 1234;
     state.lastSaveTimestamp = now - 55_000;
     state.settings.gameSpeed = 2.5;
-    state.planet.name = 'Forge Prime';
-    state.planet.maxTemperature = -20;
-    state.planet.maxFields = 200;
+    state.planets[0].name = 'Forge Prime';
+    state.planets[0].maxTemperature = -20;
+    state.planets[0].maxFields = 200;
 
-    state.planet.buildings.metalMine = 8;
-    state.planet.buildings.crystalMine = 6;
-    state.planet.buildings.deuteriumSynthesizer = 4;
-    state.planet.buildings.solarPlant = 7;
-    state.planet.buildings.roboticsFactory = 3;
-    state.planet.buildings.shipyard = 4;
-    state.planet.buildings.researchLab = 5;
-    state.planet.buildings.metalStorage = 2;
-    state.planet.buildings.crystalStorage = 1;
-    state.planet.buildings.deuteriumTank = 1;
+    state.planets[0].buildings.metalMine = 8;
+    state.planets[0].buildings.crystalMine = 6;
+    state.planets[0].buildings.deuteriumSynthesizer = 4;
+    state.planets[0].buildings.solarPlant = 7;
+    state.planets[0].buildings.roboticsFactory = 3;
+    state.planets[0].buildings.shipyard = 4;
+    state.planets[0].buildings.researchLab = 5;
+    state.planets[0].buildings.metalStorage = 2;
+    state.planets[0].buildings.crystalStorage = 1;
+    state.planets[0].buildings.deuteriumTank = 1;
 
     state.research.energyTechnology = 5;
     state.research.laserTechnology = 6;
@@ -146,17 +146,17 @@ describe('Integration: save/load cycle', () => {
     state.research.impulseDrive = 2;
     state.research.armourTechnology = 2;
 
-    state.planet.ships.lightFighter = 12;
-    state.planet.ships.smallCargo = 4;
-    state.planet.ships.heavyFighter = 2;
+    state.planets[0].ships.lightFighter = 12;
+    state.planets[0].ships.smallCargo = 4;
+    state.planets[0].ships.heavyFighter = 2;
 
-    state.planet.resources.metal = 54321.5;
-    state.planet.resources.crystal = 32109.25;
-    state.planet.resources.deuterium = 12000.75;
-    state.planet.resources.energyProduction = 260;
-    state.planet.resources.energyConsumption = 200;
+    state.planets[0].resources.metal = 54321.5;
+    state.planets[0].resources.crystal = 32109.25;
+    state.planets[0].resources.deuterium = 12000.75;
+    state.planets[0].resources.energyProduction = 260;
+    state.planets[0].resources.energyConsumption = 200;
 
-    state.planet.buildingQueue = [
+    state.planets[0].buildingQueue = [
       {
         type: 'building',
         id: 'solarPlant',
@@ -174,7 +174,7 @@ describe('Integration: save/load cycle', () => {
         completesAt: now + 20_000,
       },
     ];
-    state.planet.shipyardQueue = [
+    state.planets[0].shipyardQueue = [
       {
         type: 'ship',
         id: 'lightFighter',

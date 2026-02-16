@@ -27,25 +27,25 @@ import {
 describe('ResourceEngine', () => {
   it('processTick increases resources by the correct per-second amount', () => {
     const state = createNewGameState();
-    state.planet.resources.metal = 0;
-    state.planet.resources.crystal = 0;
-    state.planet.resources.deuterium = 0;
-    state.planet.buildings.metalMine = 5;
-    state.planet.buildings.crystalMine = 4;
-    state.planet.buildings.deuteriumSynthesizer = 3;
-    state.planet.buildings.solarPlant = 20;
+    state.planets[0].resources.metal = 0;
+    state.planets[0].resources.crystal = 0;
+    state.planets[0].resources.deuterium = 0;
+    state.planets[0].buildings.metalMine = 5;
+    state.planets[0].buildings.crystalMine = 4;
+    state.planets[0].buildings.deuteriumSynthesizer = 3;
+    state.planets[0].buildings.solarPlant = 20;
 
     const rates = calculateProduction(state);
     processTick(state);
 
-    expect(state.planet.resources.metal).toBeCloseTo(rates.metalPerHour / 3600, 10);
-    expect(state.planet.resources.crystal).toBeCloseTo(rates.crystalPerHour / 3600, 10);
-    expect(state.planet.resources.deuterium).toBeCloseTo(
+    expect(state.planets[0].resources.metal).toBeCloseTo(rates.metalPerHour / 3600, 10);
+    expect(state.planets[0].resources.crystal).toBeCloseTo(rates.crystalPerHour / 3600, 10);
+    expect(state.planets[0].resources.deuterium).toBeCloseTo(
       rates.deuteriumPerHour / 3600,
       10,
     );
-    expect(state.planet.resources.energyProduction).toBeCloseTo(rates.energyProduction, 10);
-    expect(state.planet.resources.energyConsumption).toBeCloseTo(
+    expect(state.planets[0].resources.energyProduction).toBeCloseTo(rates.energyProduction, 10);
+    expect(state.planets[0].resources.energyConsumption).toBeCloseTo(
       rates.energyConsumption,
       10,
     );
@@ -53,32 +53,32 @@ describe('ResourceEngine', () => {
 
   it('processTick clamps resources at storage capacity with no overflow', () => {
     const state = createNewGameState();
-    state.planet.buildings.metalMine = 20;
-    state.planet.buildings.crystalMine = 20;
-    state.planet.buildings.deuteriumSynthesizer = 20;
-    state.planet.buildings.solarPlant = 30;
+    state.planets[0].buildings.metalMine = 20;
+    state.planets[0].buildings.crystalMine = 20;
+    state.planets[0].buildings.deuteriumSynthesizer = 20;
+    state.planets[0].buildings.solarPlant = 30;
 
     const caps = getStorageCaps(state);
-    state.planet.resources.metal = caps.metal - 0.001;
-    state.planet.resources.crystal = caps.crystal - 0.001;
-    state.planet.resources.deuterium = caps.deuterium - 0.001;
+    state.planets[0].resources.metal = caps.metal - 0.001;
+    state.planets[0].resources.crystal = caps.crystal - 0.001;
+    state.planets[0].resources.deuterium = caps.deuterium - 0.001;
 
     processTick(state);
 
-    expect(state.planet.resources.metal).toBeCloseTo(caps.metal, 10);
-    expect(state.planet.resources.crystal).toBeCloseTo(caps.crystal, 10);
-    expect(state.planet.resources.deuterium).toBeCloseTo(caps.deuterium, 10);
+    expect(state.planets[0].resources.metal).toBeCloseTo(caps.metal, 10);
+    expect(state.planets[0].resources.crystal).toBeCloseTo(caps.crystal, 10);
+    expect(state.planets[0].resources.deuterium).toBeCloseTo(caps.deuterium, 10);
   });
 
   it('processTick applies energy deficit as a proportional reduction across mine output', () => {
     const state = createNewGameState();
-    state.planet.resources.metal = 0;
-    state.planet.resources.crystal = 0;
-    state.planet.resources.deuterium = 0;
-    state.planet.buildings.metalMine = 10;
-    state.planet.buildings.crystalMine = 8;
-    state.planet.buildings.deuteriumSynthesizer = 6;
-    state.planet.buildings.solarPlant = 2;
+    state.planets[0].resources.metal = 0;
+    state.planets[0].resources.crystal = 0;
+    state.planets[0].resources.deuterium = 0;
+    state.planets[0].buildings.metalMine = 10;
+    state.planets[0].buildings.crystalMine = 8;
+    state.planets[0].buildings.deuteriumSynthesizer = 6;
+    state.planets[0].buildings.solarPlant = 2;
 
     const rates = calculateProduction(state);
     const factor = rates.energyProduction / rates.energyConsumption;
@@ -92,51 +92,51 @@ describe('ResourceEngine', () => {
       BASE_PRODUCTION.crystal + crystalProductionPerHour(8) * factor;
     const expectedDeutPerHour =
       BASE_PRODUCTION.deuterium +
-      deuteriumProductionPerHour(6, state.planet.maxTemperature) * factor;
+      deuteriumProductionPerHour(6, state.planets[0].maxTemperature) * factor;
 
     expect(rates.metalPerHour).toBeCloseTo(expectedMetalPerHour, 8);
     expect(rates.crystalPerHour).toBeCloseTo(expectedCrystalPerHour, 8);
     expect(rates.deuteriumPerHour).toBeCloseTo(expectedDeutPerHour, 8);
 
     processTick(state);
-    expect(state.planet.resources.metal).toBeCloseTo(expectedMetalPerHour / 3600, 8);
-    expect(state.planet.resources.crystal).toBeCloseTo(expectedCrystalPerHour / 3600, 8);
-    expect(state.planet.resources.deuterium).toBeCloseTo(expectedDeutPerHour / 3600, 8);
+    expect(state.planets[0].resources.metal).toBeCloseTo(expectedMetalPerHour / 3600, 8);
+    expect(state.planets[0].resources.crystal).toBeCloseTo(expectedCrystalPerHour / 3600, 8);
+    expect(state.planets[0].resources.deuterium).toBeCloseTo(expectedDeutPerHour / 3600, 8);
   });
 
   it('processTick includes base production even with no mines', () => {
     const state = createNewGameState();
-    state.planet.resources.metal = 0;
-    state.planet.resources.crystal = 0;
-    state.planet.resources.deuterium = 0;
+    state.planets[0].resources.metal = 0;
+    state.planets[0].resources.crystal = 0;
+    state.planets[0].resources.deuterium = 0;
 
     processTick(state);
 
-    expect(state.planet.resources.metal).toBeCloseTo(30 / 3600, 10);
-    expect(state.planet.resources.crystal).toBeCloseTo(15 / 3600, 10);
-    expect(state.planet.resources.deuterium).toBe(0);
+    expect(state.planets[0].resources.metal).toBeCloseTo(30 / 3600, 10);
+    expect(state.planets[0].resources.crystal).toBeCloseTo(15 / 3600, 10);
+    expect(state.planets[0].resources.deuterium).toBe(0);
   });
 
   it('processTick handles fusion reactor deuterium consumption and never drops below zero', () => {
     const state = createNewGameState();
-    state.planet.resources.deuterium = 0.1;
-    state.planet.buildings.fusionReactor = 20;
-    state.planet.buildings.solarPlant = 50;
+    state.planets[0].resources.deuterium = 0.1;
+    state.planets[0].buildings.fusionReactor = 20;
+    state.planets[0].buildings.solarPlant = 50;
 
     const rates = calculateProduction(state);
     expect(rates.deuteriumPerHour).toBeLessThan(0);
 
     processTick(state);
 
-    expect(state.planet.resources.deuterium).toBe(0);
+    expect(state.planets[0].resources.deuterium).toBe(0);
   });
 
   it('processTick production is increased by plasma technology bonuses', () => {
     const state = createNewGameState();
-    state.planet.buildings.metalMine = 10;
-    state.planet.buildings.crystalMine = 10;
-    state.planet.buildings.deuteriumSynthesizer = 10;
-    state.planet.buildings.solarPlant = 25;
+    state.planets[0].buildings.metalMine = 10;
+    state.planets[0].buildings.crystalMine = 10;
+    state.planets[0].buildings.deuteriumSynthesizer = 10;
+    state.planets[0].buildings.solarPlant = 25;
 
     const baseRates = calculateProduction(state);
 
@@ -159,25 +159,25 @@ describe('ResourceEngine', () => {
 
   it('accumulateBulk for 3600 seconds equals one hour of production', () => {
     const state = createNewGameState();
-    state.planet.resources.metal = 100;
-    state.planet.resources.crystal = 200;
-    state.planet.resources.deuterium = 300;
-    state.planet.buildings.metalMine = 5;
-    state.planet.buildings.crystalMine = 4;
-    state.planet.buildings.deuteriumSynthesizer = 3;
-    state.planet.buildings.solarPlant = 20;
+    state.planets[0].resources.metal = 100;
+    state.planets[0].resources.crystal = 200;
+    state.planets[0].resources.deuterium = 300;
+    state.planets[0].buildings.metalMine = 5;
+    state.planets[0].buildings.crystalMine = 4;
+    state.planets[0].buildings.deuteriumSynthesizer = 3;
+    state.planets[0].buildings.solarPlant = 20;
 
     const rates = calculateProduction(state);
-    const start = { ...state.planet.resources };
+    const start = { ...state.planets[0].resources };
 
     accumulateBulk(state, 3600);
 
-    expect(state.planet.resources.metal).toBeCloseTo(start.metal + rates.metalPerHour, 8);
-    expect(state.planet.resources.crystal).toBeCloseTo(
+    expect(state.planets[0].resources.metal).toBeCloseTo(start.metal + rates.metalPerHour, 8);
+    expect(state.planets[0].resources.crystal).toBeCloseTo(
       start.crystal + rates.crystalPerHour,
       8,
     );
-    expect(state.planet.resources.deuterium).toBeCloseTo(
+    expect(state.planets[0].resources.deuterium).toBeCloseTo(
       start.deuterium + rates.deuteriumPerHour,
       8,
     );
@@ -185,30 +185,30 @@ describe('ResourceEngine', () => {
 
   it('accumulateBulk respects storage caps', () => {
     const state = createNewGameState();
-    state.planet.buildings.metalMine = 20;
-    state.planet.buildings.crystalMine = 20;
-    state.planet.buildings.deuteriumSynthesizer = 20;
-    state.planet.buildings.solarPlant = 30;
-    state.planet.resources.metal = 0;
-    state.planet.resources.crystal = 0;
-    state.planet.resources.deuterium = 0;
+    state.planets[0].buildings.metalMine = 20;
+    state.planets[0].buildings.crystalMine = 20;
+    state.planets[0].buildings.deuteriumSynthesizer = 20;
+    state.planets[0].buildings.solarPlant = 30;
+    state.planets[0].resources.metal = 0;
+    state.planets[0].resources.crystal = 0;
+    state.planets[0].resources.deuterium = 0;
 
     const caps = getStorageCaps(state);
 
     accumulateBulk(state, 1_000_000);
 
-    expect(state.planet.resources.metal).toBeCloseTo(caps.metal, 10);
-    expect(state.planet.resources.crystal).toBeCloseTo(caps.crystal, 10);
-    expect(state.planet.resources.deuterium).toBeCloseTo(caps.deuterium, 10);
+    expect(state.planets[0].resources.metal).toBeCloseTo(caps.metal, 10);
+    expect(state.planets[0].resources.crystal).toBeCloseTo(caps.crystal, 10);
+    expect(state.planets[0].resources.deuterium).toBeCloseTo(caps.deuterium, 10);
   });
 
   it('calculateProduction returns rates that match mines, energy, bonuses, and game speed', () => {
     const state = createNewGameState();
-    state.planet.buildings.metalMine = 8;
-    state.planet.buildings.crystalMine = 6;
-    state.planet.buildings.deuteriumSynthesizer = 5;
-    state.planet.buildings.solarPlant = 7;
-    state.planet.buildings.fusionReactor = 3;
+    state.planets[0].buildings.metalMine = 8;
+    state.planets[0].buildings.crystalMine = 6;
+    state.planets[0].buildings.deuteriumSynthesizer = 5;
+    state.planets[0].buildings.solarPlant = 7;
+    state.planets[0].buildings.fusionReactor = 3;
     state.research.energyTechnology = 4;
     state.research.plasmaTechnology = 5;
     state.settings.gameSpeed = 3;
@@ -232,7 +232,7 @@ describe('ResourceEngine', () => {
       plasmaCrystalBonus(5);
     const expectedDeuterium =
       (BASE_PRODUCTION.deuterium +
-        deuteriumProductionPerHour(5, state.planet.maxTemperature) * factor -
+        deuteriumProductionPerHour(5, state.planets[0].maxTemperature) * factor -
         fusionReactorDeuteriumConsumption(3)) *
       plasmaDeuteriumBonus(5);
 
@@ -245,9 +245,9 @@ describe('ResourceEngine', () => {
 
   it('getStorageCaps returns base storage plus building contribution', () => {
     const state = createNewGameState();
-    state.planet.buildings.metalStorage = 2;
-    state.planet.buildings.crystalStorage = 1;
-    state.planet.buildings.deuteriumTank = 3;
+    state.planets[0].buildings.metalStorage = 2;
+    state.planets[0].buildings.crystalStorage = 1;
+    state.planets[0].buildings.deuteriumTank = 3;
 
     const caps = getStorageCaps(state);
 

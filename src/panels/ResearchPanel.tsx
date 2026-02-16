@@ -31,9 +31,7 @@ function requirementLabel(prerequisite: Prerequisite): string {
 }
 
 export function ResearchPanel() {
-  const { gameState, startResearchAction } = useGame();
-  const researchQueueOccupied = gameState.researchQueue.length > 0;
-
+  const { gameState, startResearchAction, cancelResearch } = useGame();
   return (
     <section className="panel">
       <h1 className="panel-title">Research</h1>
@@ -59,9 +57,8 @@ export function ResearchPanel() {
           );
           const affordable = canAfford(cost, gameState);
           const prereqMet = prerequisitesMet(definition.requires, gameState);
-          const currentlyResearching = gameState.researchQueue[0]?.id === researchId;
-          const disabled =
-            !affordable || !prereqMet || researchQueueOccupied || currentlyResearching;
+          const inQueue = gameState.researchQueue.some(q => q.id === researchId);
+          const disabled = !affordable || !prereqMet;
 
           return (
             <article key={researchId} className="item-card">
@@ -106,16 +103,40 @@ export function ResearchPanel() {
                     startResearchAction(researchId);
                   }}
                 >
-                  {currentlyResearching ? 'In Progress' : `Research Lv ${nextLevel}`}
+                  {inQueue ? `Queue Lv ${nextLevel}` : `Research Lv ${nextLevel}`}
                 </button>
-                {researchQueueOccupied && !currentlyResearching && (
-                  <span className="hint">Research queue occupied</span>
-                )}
               </div>
             </article>
           );
         })}
       </div>
+
+      {gameState.researchQueue.length > 0 && (
+        <section className="panel-group">
+          <h2 className="section-title">Research Queue</h2>
+          <div className="queue-list">
+            {gameState.researchQueue.map((item, index) => (
+              <div key={`${item.id}-${item.targetLevel}-${index}`} className="queue-entry">
+                <span className="queue-name">
+                  {RESEARCH[item.id as ResearchId].name} Lv {item.targetLevel}
+                </span>
+                {index === 0 && (
+                  <span className="queue-timer number">
+                    {formatDuration(Math.max(0, (item.completesAt - Date.now()) / 1000))}
+                  </span>
+                )}
+                <button
+                  type="button"
+                  className="btn btn-danger btn-sm"
+                  onClick={() => cancelResearch(index)}
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
     </section>
   );
 }

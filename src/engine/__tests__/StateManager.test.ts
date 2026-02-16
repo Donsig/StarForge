@@ -27,11 +27,11 @@ describe('StateManager', () => {
     expect(state.version).toBe(GAME_CONSTANTS.STATE_VERSION);
     expect(state.tickCount).toBe(0);
     expect(state.settings.gameSpeed).toBe(1);
-    expect(state.planet.name).toBe('Homeworld');
-    expect(state.planet.resources.metal).toBe(500);
-    expect(state.planet.resources.crystal).toBe(500);
-    expect(state.planet.resources.deuterium).toBe(0);
-    expect(state.planet.buildingQueue).toEqual([]);
+    expect(state.planets[0].name).toBe('Homeworld');
+    expect(state.planets[0].resources.metal).toBe(500);
+    expect(state.planets[0].resources.crystal).toBe(500);
+    expect(state.planets[0].resources.deuterium).toBe(0);
+    expect(state.planets[0].buildingQueue).toEqual([]);
     expect(state.researchQueue).toEqual([]);
 
     const storedRaw = localStorage.getItem(GAME_CONSTANTS.STORAGE_KEY);
@@ -41,9 +41,9 @@ describe('StateManager', () => {
 
   it('saveState writes to localStorage and loadState reads it back identically', () => {
     const state = createNewGameState();
-    state.planet.buildings.metalMine = 4;
+    state.planets[0].buildings.metalMine = 4;
     state.research.energyTechnology = 2;
-    state.planet.resources.deuterium = 250;
+    state.planets[0].resources.deuterium = 250;
 
     vi.spyOn(Date, 'now').mockReturnValue(2_000_000);
     saveState(state);
@@ -69,15 +69,15 @@ describe('StateManager', () => {
     const loaded = loadState();
 
     expect(state.lastSaveTimestamp).toBe(3_000_000);
-    expect(state.planet.resources.metal).toBe(500);
+    expect(state.planets[0].resources.metal).toBe(500);
     expect(loaded).toEqual(state);
   });
 
   it('exportSave returns JSON and importSave restores state from it', () => {
     const source = createNewGameState();
-    source.planet.buildings.metalMine = 7;
+    source.planets[0].buildings.metalMine = 7;
     source.research.energyTechnology = 3;
-    source.planet.resources.deuterium = 1234;
+    source.planets[0].resources.deuterium = 1234;
 
     const exported = exportSave(source);
     expect(typeof exported).toBe('string');
@@ -87,9 +87,9 @@ describe('StateManager', () => {
     const imported = importSave(exported);
 
     expect(imported).not.toBeNull();
-    expect(imported!.planet.buildings.metalMine).toBe(7);
+    expect(imported!.planets[0].buildings.metalMine).toBe(7);
     expect(imported!.research.energyTechnology).toBe(3);
-    expect(imported!.planet.resources.deuterium).toBe(1234);
+    expect(imported!.planets[0].resources.deuterium).toBe(1234);
     expect(imported!.lastSaveTimestamp).toBe(4_000_000);
     expect(loadState()).toEqual(imported);
   });
@@ -102,12 +102,12 @@ describe('StateManager', () => {
 
   it('processOfflineTime accumulates resources for elapsed time', () => {
     const state = createNewGameState();
-    state.planet.buildings.metalMine = 5;
-    state.planet.buildings.crystalMine = 4;
-    state.planet.buildings.deuteriumSynthesizer = 3;
-    state.planet.buildings.solarPlant = 20;
+    state.planets[0].buildings.metalMine = 5;
+    state.planets[0].buildings.crystalMine = 4;
+    state.planets[0].buildings.deuteriumSynthesizer = 3;
+    state.planets[0].buildings.solarPlant = 20;
 
-    const start = { ...state.planet.resources };
+    const start = { ...state.planets[0].resources };
     const rates = calculateProduction(state);
     const startTime = 5_000_000;
     state.lastSaveTimestamp = startTime;
@@ -116,12 +116,12 @@ describe('StateManager', () => {
     const result = processOfflineTime(state);
 
     expect(result.elapsedSeconds).toBe(3600);
-    expect(state.planet.resources.metal).toBeCloseTo(start.metal + rates.metalPerHour, 8);
-    expect(state.planet.resources.crystal).toBeCloseTo(
+    expect(state.planets[0].resources.metal).toBeCloseTo(start.metal + rates.metalPerHour, 8);
+    expect(state.planets[0].resources.crystal).toBeCloseTo(
       start.crystal + rates.crystalPerHour,
       8,
     );
-    expect(state.planet.resources.deuterium).toBeCloseTo(
+    expect(state.planets[0].resources.deuterium).toBeCloseTo(
       start.deuterium + rates.deuteriumPerHour,
       8,
     );
@@ -131,7 +131,7 @@ describe('StateManager', () => {
     const state = createNewGameState();
     const startTime = 6_000_000;
     state.lastSaveTimestamp = startTime;
-    state.planet.buildingQueue = [
+    state.planets[0].buildingQueue = [
       {
         type: 'building',
         id: 'metalMine',
@@ -144,13 +144,13 @@ describe('StateManager', () => {
     vi.spyOn(Date, 'now').mockReturnValue(startTime + 20_000);
     processOfflineTime(state);
 
-    expect(state.planet.buildings.metalMine).toBe(1);
-    expect(state.planet.buildingQueue).toEqual([]);
+    expect(state.planets[0].buildings.metalMine).toBe(1);
+    expect(state.planets[0].buildingQueue).toEqual([]);
   });
 
   it('processOfflineTime caps elapsed time at 7 days maximum', () => {
     const state = createNewGameState();
-    const startMetal = state.planet.resources.metal;
+    const startMetal = state.planets[0].resources.metal;
     const rate = calculateProduction(state).metalPerHour;
     const startTime = 7_000_000;
     const cappedSeconds = GAME_CONSTANTS.MAX_OFFLINE_SECONDS;
@@ -160,7 +160,7 @@ describe('StateManager', () => {
     const result = processOfflineTime(state);
 
     expect(result.elapsedSeconds).toBe(cappedSeconds);
-    expect(state.planet.resources.metal).toBeCloseTo(
+    expect(state.planets[0].resources.metal).toBeCloseTo(
       startMetal + (rate / 3600) * cappedSeconds,
       8,
     );
@@ -168,7 +168,7 @@ describe('StateManager', () => {
 
   it('processOfflineTime with zero elapsed time leaves state unchanged', () => {
     const state = createNewGameState();
-    state.planet.buildings.metalMine = 5;
+    state.planets[0].buildings.metalMine = 5;
     const snapshot = structuredClone(state);
 
     vi.spyOn(Date, 'now').mockReturnValue(state.lastSaveTimestamp);
@@ -180,11 +180,11 @@ describe('StateManager', () => {
 
   it('after offline building completion, later accumulation uses the upgraded production rate', () => {
     const state = createNewGameState();
-    state.planet.resources.metal = 0;
-    state.planet.buildings.solarPlant = 10;
+    state.planets[0].resources.metal = 0;
+    state.planets[0].buildings.solarPlant = 10;
     const startTime = 8_000_000;
     state.lastSaveTimestamp = startTime;
-    state.planet.buildingQueue = [
+    state.planets[0].buildingQueue = [
       {
         type: 'building',
         id: 'metalMine',
@@ -196,8 +196,8 @@ describe('StateManager', () => {
 
     const beforeRate = calculateProduction(state).metalPerHour;
     const afterState = structuredClone(state);
-    afterState.planet.buildingQueue = [];
-    afterState.planet.buildings.metalMine = 1;
+    afterState.planets[0].buildingQueue = [];
+    afterState.planets[0].buildings.metalMine = 1;
     const afterRate = calculateProduction(afterState).metalPerHour;
 
     vi.spyOn(Date, 'now').mockReturnValue(startTime + 3600 * 1000);
@@ -206,7 +206,107 @@ describe('StateManager', () => {
     const expectedMetal = (beforeRate / 3600) * 1800 + (afterRate / 3600) * 1800;
 
     expect(result.elapsedSeconds).toBe(3600);
-    expect(state.planet.buildings.metalMine).toBe(1);
-    expect(state.planet.resources.metal).toBeCloseTo(expectedMetal, 8);
+    expect(state.planets[0].buildings.metalMine).toBe(1);
+    expect(state.planets[0].resources.metal).toBeCloseTo(expectedMetal, 8);
+  });
+});
+
+describe('StateManager migration', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it('migrates v3 save to v4 with planets array', async () => {
+    const { loadState } = await import('../StateManager.ts');
+
+    const v3Save = {
+      version: 3,
+      lastSaveTimestamp: Date.now(),
+      tickCount: 100,
+      planet: {
+        name: 'Homeworld',
+        maxTemperature: 35,
+        maxFields: 163,
+        buildings: {
+          metalMine: 5,
+          crystalMine: 3,
+          deuteriumSynthesizer: 1,
+          solarPlant: 4,
+          fusionReactor: 0,
+          metalStorage: 2,
+          crystalStorage: 1,
+          deuteriumTank: 0,
+          roboticsFactory: 2,
+          naniteFactory: 0,
+          shipyard: 1,
+          researchLab: 1,
+        },
+        ships: {
+          lightFighter: 10,
+          heavyFighter: 0,
+          cruiser: 0,
+          battleship: 0,
+          smallCargo: 5,
+          largeCargo: 0,
+          colonyShip: 0,
+          recycler: 0,
+          espionageProbe: 0,
+          bomber: 0,
+          destroyer: 0,
+          battlecruiser: 0,
+        },
+        defences: {
+          rocketLauncher: 3,
+          lightLaser: 0,
+          heavyLaser: 0,
+          gaussCannon: 0,
+          ionCannon: 0,
+          plasmaTurret: 0,
+          smallShieldDome: 0,
+          largeShieldDome: 0,
+        },
+        resources: {
+          metal: 5000,
+          crystal: 3000,
+          deuterium: 1000,
+          energyProduction: 50,
+          energyConsumption: 30,
+        },
+        buildingQueue: [],
+        shipyardQueue: [],
+      },
+      research: {
+        energyTechnology: 2,
+        laserTechnology: 0,
+        ionTechnology: 0,
+        plasmaTechnology: 0,
+        espionageTechnology: 0,
+        computerTechnology: 0,
+        weaponsTechnology: 0,
+        shieldingTechnology: 0,
+        armourTechnology: 0,
+        combustionDrive: 1,
+        impulseDrive: 0,
+        hyperspaceDrive: 0,
+        hyperspaceTechnology: 0,
+      },
+      researchQueue: [],
+      settings: { gameSpeed: 1 },
+    };
+
+    localStorage.setItem(GAME_CONSTANTS.STORAGE_KEY, JSON.stringify(v3Save));
+    const loaded = loadState();
+
+    expect(loaded).not.toBeNull();
+    expect(loaded!.version).toBe(GAME_CONSTANTS.STATE_VERSION);
+    expect(loaded!.planets).toHaveLength(1);
+    expect(loaded!.planets[0].name).toBe('Homeworld');
+    expect(loaded!.planets[0].buildings.metalMine).toBe(5);
+    expect(loaded!.planets[0].ships.lightFighter).toBe(10);
+    expect(loaded!.planets[0].coordinates).toEqual({ galaxy: 1, system: 1, slot: 4 });
+    expect(loaded!.activePlanetIndex).toBe(0);
+    expect(loaded!.galaxy).toBeDefined();
+    expect(loaded!.galaxy.npcColonies).toEqual([]);
+    expect((loaded as any).planet).toBeUndefined();
   });
 });

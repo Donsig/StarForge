@@ -16,8 +16,8 @@ import {
 } from '../../engine/FormulasEngine.ts';
 
 function completeCurrentBuilding(state: GameState): void {
-  const queueItem = state.planet.buildingQueue[0];
-  expect(state.planet.buildingQueue.length).toBeGreaterThan(0);
+  const queueItem = state.planets[0].buildingQueue[0];
+  expect(state.planets[0].buildingQueue.length).toBeGreaterThan(0);
   if (!queueItem) return;
 
   const now = Date.now();
@@ -32,48 +32,48 @@ describe('Integration: game session', () => {
 
   it('new player first 10 minutes', () => {
     const state = createNewGameState();
-    expect(state.planet.resources.metal).toBe(500);
-    expect(state.planet.resources.crystal).toBe(500);
-    expect(state.planet.resources.deuterium).toBe(0);
+    expect(state.planets[0].resources.metal).toBe(500);
+    expect(state.planets[0].resources.crystal).toBe(500);
+    expect(state.planets[0].resources.deuterium).toBe(0);
 
     const initialRates = calculateProduction(state);
 
     expect(startBuildingUpgrade(state, 'metalMine')).toBe(true);
-    expect(state.planet.resources.metal).toBe(440);
-    expect(state.planet.resources.crystal).toBe(485);
+    expect(state.planets[0].resources.metal).toBe(440);
+    expect(state.planets[0].resources.crystal).toBe(485);
 
     completeCurrentBuilding(state);
-    expect(state.planet.buildings.metalMine).toBe(1);
+    expect(state.planets[0].buildings.metalMine).toBe(1);
 
     const afterMetalMineRates = calculateProduction(state);
     expect(afterMetalMineRates.energyConsumption).toBeGreaterThan(
       initialRates.energyConsumption,
     );
-    expect(metalProductionPerHour(state.planet.buildings.metalMine)).toBeGreaterThan(
+    expect(metalProductionPerHour(state.planets[0].buildings.metalMine)).toBeGreaterThan(
       metalProductionPerHour(0),
     );
 
-    const metalBeforeFiveMinutes = state.planet.resources.metal;
-    const crystalBeforeFiveMinutes = state.planet.resources.crystal;
+    const metalBeforeFiveMinutes = state.planets[0].resources.metal;
+    const crystalBeforeFiveMinutes = state.planets[0].resources.crystal;
     accumulateBulk(state, 5 * 60);
-    expect(state.planet.resources.metal).toBeCloseTo(
+    expect(state.planets[0].resources.metal).toBeCloseTo(
       metalBeforeFiveMinutes + (afterMetalMineRates.metalPerHour / 3600) * 300,
       6,
     );
-    expect(state.planet.resources.crystal).toBeCloseTo(
+    expect(state.planets[0].resources.crystal).toBeCloseTo(
       crystalBeforeFiveMinutes + (afterMetalMineRates.crystalPerHour / 3600) * 300,
       6,
     );
 
     expect(startBuildingUpgrade(state, 'crystalMine')).toBe(true);
     completeCurrentBuilding(state);
-    expect(state.planet.buildings.crystalMine).toBe(1);
+    expect(state.planets[0].buildings.crystalMine).toBe(1);
 
     const afterBothMinesRates = calculateProduction(state);
     expect(afterBothMinesRates.energyConsumption).toBeGreaterThan(
       afterMetalMineRates.energyConsumption,
     );
-    expect(crystalProductionPerHour(state.planet.buildings.crystalMine)).toBeGreaterThan(
+    expect(crystalProductionPerHour(state.planets[0].buildings.crystalMine)).toBeGreaterThan(
       crystalProductionPerHour(0),
     );
 
@@ -85,7 +85,7 @@ describe('Integration: game session', () => {
 
     expect(startBuildingUpgrade(state, 'solarPlant')).toBe(true);
     completeCurrentBuilding(state);
-    expect(state.planet.buildings.solarPlant).toBe(1);
+    expect(state.planets[0].buildings.solarPlant).toBe(1);
 
     const restoredRates = calculateProduction(state);
     const restoredFactor = energyFactor(
@@ -99,11 +99,11 @@ describe('Integration: game session', () => {
 
   it('energy crisis', () => {
     const state = createNewGameState();
-    state.planet.resources.metal = 5000;
-    state.planet.resources.crystal = 5000;
-    state.planet.buildings.metalMine = 5;
-    state.planet.buildings.crystalMine = 5;
-    state.planet.buildings.solarPlant = 3;
+    state.planets[0].resources.metal = 5000;
+    state.planets[0].resources.crystal = 5000;
+    state.planets[0].buildings.metalMine = 5;
+    state.planets[0].buildings.crystalMine = 5;
+    state.planets[0].buildings.solarPlant = 3;
 
     const deficitRates = calculateProduction(state);
     const deficitFactor = energyFactor(
@@ -129,7 +129,7 @@ describe('Integration: game session', () => {
     completeCurrentBuilding(state);
     expect(startBuildingUpgrade(state, 'solarPlant')).toBe(true);
     completeCurrentBuilding(state);
-    expect(state.planet.buildings.solarPlant).toBe(5);
+    expect(state.planets[0].buildings.solarPlant).toBe(5);
 
     const restoredRates = calculateProduction(state);
     const restoredFactor = energyFactor(
@@ -143,29 +143,29 @@ describe('Integration: game session', () => {
 
   it('storage overflow', () => {
     const state = createNewGameState();
-    state.planet.buildings.metalMine = 10;
-    state.planet.buildings.solarPlant = 10;
-    state.planet.resources.metal = 50000;
-    state.planet.resources.crystal = 500;
+    state.planets[0].buildings.metalMine = 10;
+    state.planets[0].buildings.solarPlant = 10;
+    state.planets[0].resources.metal = 50000;
+    state.planets[0].resources.crystal = 500;
 
-    expect(state.planet.buildings.metalStorage).toBe(0);
-    expect(state.planet.buildings.crystalStorage).toBe(0);
-    expect(state.planet.buildings.deuteriumTank).toBe(0);
+    expect(state.planets[0].buildings.metalStorage).toBe(0);
+    expect(state.planets[0].buildings.crystalStorage).toBe(0);
+    expect(state.planets[0].buildings.deuteriumTank).toBe(0);
 
     const baseCaps = getStorageCaps(state);
-    state.planet.resources.metal = baseCaps.metal - 50;
+    state.planets[0].resources.metal = baseCaps.metal - 50;
     accumulateBulk(state, 3600);
-    expect(state.planet.resources.metal).toBe(baseCaps.metal);
+    expect(state.planets[0].resources.metal).toBe(baseCaps.metal);
 
     expect(startBuildingUpgrade(state, 'metalStorage')).toBe(true);
     completeCurrentBuilding(state);
-    expect(state.planet.buildings.metalStorage).toBe(1);
+    expect(state.planets[0].buildings.metalStorage).toBe(1);
 
     const expandedCaps = getStorageCaps(state);
     expect(expandedCaps.metal).toBeGreaterThan(baseCaps.metal);
 
-    state.planet.resources.metal = expandedCaps.metal - 25;
+    state.planets[0].resources.metal = expandedCaps.metal - 25;
     accumulateBulk(state, 3600);
-    expect(state.planet.resources.metal).toBe(expandedCaps.metal);
+    expect(state.planets[0].resources.metal).toBe(expandedCaps.metal);
   });
 });
