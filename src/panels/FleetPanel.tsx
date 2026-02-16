@@ -4,12 +4,13 @@ import { formatNumber } from '../utils/format.ts';
 
 export function FleetPanel() {
   const { gameState } = useGame();
+  const planet = gameState.planets[gameState.activePlanetIndex];
 
-  const ownedShips = SHIP_ORDER.filter((shipId) => gameState.planet.ships[shipId] > 0);
+  const ownedShips = SHIP_ORDER.filter((shipId) => planet.ships[shipId] > 0);
 
   let totalFleetPower = 0;
   for (const shipId of SHIP_ORDER) {
-    const count = gameState.planet.ships[shipId];
+    const count = planet.ships[shipId];
     totalFleetPower += count * SHIPS[shipId].weaponPower;
   }
 
@@ -42,7 +43,7 @@ export function FleetPanel() {
             </thead>
             <tbody>
               {ownedShips.map((shipId) => {
-                const count = gameState.planet.ships[shipId];
+                const count = planet.ships[shipId];
                 const unitAttack = SHIPS[shipId].weaponPower;
                 const totalAttack = count * unitAttack;
 

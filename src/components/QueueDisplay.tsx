@@ -4,7 +4,7 @@ import { RESEARCH } from '../data/research.ts';
 import { SHIPS } from '../data/ships.ts';
 import { useGame } from '../context/GameContext';
 import { useCountdown } from '../hooks/useCountdown';
-import type { BuildingId, DefenceId, ResearchId, ShipId } from '../models/types.ts';
+import type { BuildingId, DefenceId, QueueItem, ResearchId, ShipId } from '../models/types.ts';
 
 interface QueueRowProps {
   label: string;
@@ -22,7 +22,7 @@ function QueueRow({ label, subtitle, completesAt, onCancel }: QueueRowProps) {
         <div className="queue-label">{label}</div>
         <div className="queue-subtitle">{subtitle}</div>
       </div>
-      <div className="queue-time number">{countdown}</div>
+      {countdown && <div className="queue-time number">{countdown}</div>}
       {onCancel && (
         <button type="button" className="btn btn-danger" onClick={onCancel}>
           Cancel
@@ -32,54 +32,61 @@ function QueueRow({ label, subtitle, completesAt, onCancel }: QueueRowProps) {
   );
 }
 
+function getShipyardItemName(item: QueueItem): string {
+  return item.type === 'defence'
+    ? DEFENCES[item.id as DefenceId].name
+    : SHIPS[item.id as ShipId].name;
+}
+
 export function QueueDisplay() {
   const { gameState, cancelBuilding, cancelResearch, cancelShipyard } = useGame();
-  void cancelShipyard;
+  const planet = gameState.planets[gameState.activePlanetIndex];
 
-  const buildingQueue = gameState.planet.buildingQueue[0] ?? null;
-  const researchQueue = gameState.researchQueue[0] ?? null;
-  const currentShipBatch = gameState.planet.shipyardQueue[0] ?? null;
+  const hasBuildingQueue = planet.buildingQueue.length > 0;
+  const hasResearchQueue = gameState.researchQueue.length > 0;
+  const hasShipyardQueue = planet.shipyardQueue.length > 0;
 
-  if (!buildingQueue && !researchQueue && !currentShipBatch) {
+  if (!hasBuildingQueue && !hasResearchQueue && !hasShipyardQueue) {
     return null;
   }
 
-  const shipBatchesQueuedBehind = Math.max(gameState.planet.shipyardQueue.length - 1, 0);
-  const currentShipyardName = currentShipBatch
-    ? currentShipBatch.type === 'defence'
-      ? DEFENCES[currentShipBatch.id as DefenceId].name
-      : SHIPS[currentShipBatch.id as ShipId].name
-    : '';
-
   return (
     <footer className="queue-bar">
-      {buildingQueue && (
+      {planet.buildingQueue.map((item, index) => (
         <QueueRow
-          label={`Building: ${BUILDINGS[buildingQueue.id as BuildingId].name}`}
-          subtitle={`Target level ${buildingQueue.targetLevel ?? 0}`}
-          completesAt={buildingQueue.completesAt}
-          onCancel={() => cancelBuilding(0)}
+          key={`b-${item.id}-${item.targetLevel}-${index}`}
+          label={`Building: ${BUILDINGS[item.id as BuildingId].name}`}
+          subtitle={`Lv ${item.targetLevel ?? 0}${index > 0 ? ' (queued)' : ''}`}
+          completesAt={index === 0 ? item.completesAt : null}
+          onCancel={() => cancelBuilding(index)}
         />
-      )}
+      ))}
 
-      {researchQueue && (
+      {gameState.researchQueue.map((item, index) => (
         <QueueRow
-          label={`Research: ${RESEARCH[researchQueue.id as ResearchId].name}`}
-          subtitle={`Target level ${researchQueue.targetLevel ?? 0}`}
-          completesAt={researchQueue.completesAt}
-          onCancel={() => cancelResearch(0)}
+          key={`r-${item.id}-${item.targetLevel}-${index}`}
+          label={`Research: ${RESEARCH[item.id as ResearchId].name}`}
+          subtitle={`Lv ${item.targetLevel ?? 0}${index > 0 ? ' (queued)' : ''}`}
+          completesAt={index === 0 ? item.completesAt : null}
+          onCancel={() => cancelResearch(index)}
         />
-      )}
+      ))}
 
-      {currentShipBatch && (
-        <QueueRow
-          label={`Shipyard: ${currentShipyardName}`}
-          subtitle={`Unit ${(currentShipBatch.completed ?? 0) + 1}/${currentShipBatch.quantity ?? 0}${
-            shipBatchesQueuedBehind > 0 ? `, +${shipBatchesQueuedBehind} queued batch(es)` : ''
-          }`}
-          completesAt={currentShipBatch.completesAt}
-        />
-      )}
+      {planet.shipyardQueue.map((item, index) => {
+        const name = getShipyardItemName(item);
+        const progress = index === 0
+          ? `${(item.completed ?? 0) + 1}/${item.quantity}`
+          : `0/${item.quantity}`;
+        return (
+          <QueueRow
+            key={`s-${item.id}-${index}`}
+            label={`Shipyard: ${name}`}
+            subtitle={`${progress}${index > 0 ? ' (queued)' : ''}`}
+            completesAt={index === 0 ? item.completesAt : null}
+            onCancel={() => cancelShipyard(index)}
+          />
+        );
+      })}
     </footer>
   );
 }

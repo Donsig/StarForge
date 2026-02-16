@@ -86,33 +86,6 @@ describe('ResearchPanel', () => {
     ).not.toBeDisabled();
   });
 
-  it('displays research queue items with cancel buttons', () => {
-    const cancelResearch = vi.fn();
-
-    renderWithGame(<ResearchPanel />, {
-      gameState: {
-        planet: {
-          buildings: { researchLab: 1 },
-          resources: { metal: 1_000_000, crystal: 1_000_000, deuterium: 1_000_000 },
-        },
-        researchQueue: [
-          {
-            type: 'research',
-            id: 'energyTechnology',
-            targetLevel: 1,
-            startedAt: Date.now(),
-            completesAt: Date.now() + 60_000,
-          },
-        ],
-      },
-      actions: { cancelResearch },
-    });
-
-    expect(screen.getByText('Research Queue')).toBeInTheDocument();
-    const cancelButtons = screen.getAllByRole('button', { name: '✕' });
-    expect(cancelButtons).toHaveLength(1);
-  });
-
   it('calls startResearchAction with the correct research ID', async () => {
     const user = userEvent.setup();
     const startResearchAction = vi.fn(() => true);

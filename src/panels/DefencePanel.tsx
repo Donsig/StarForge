@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { BUILDINGS } from '../data/buildings.ts';
 import { DEFENCES, DEFENCE_ORDER } from '../data/defences.ts';
 import { RESEARCH } from '../data/research.ts';
-import { SHIPS } from '../data/ships.ts';
 import { canAfford, prerequisitesMet } from '../engine/BuildQueue.ts';
 import { defenceBuildTime } from '../engine/FormulasEngine.ts';
 import { useGame } from '../context/GameContext';
@@ -15,7 +14,6 @@ import type {
   Prerequisite,
   ResearchId,
   ResourceCost,
-  ShipId,
 } from '../models/types.ts';
 
 const DEFAULT_QUANTITIES: Record<DefenceId, string> = DEFENCE_ORDER.reduce(
@@ -27,8 +25,9 @@ const DEFAULT_QUANTITIES: Record<DefenceId, string> = DEFENCE_ORDER.reduce(
 );
 
 function requirementMet(prerequisite: Prerequisite, gameState: GameState): boolean {
+  const planet = gameState.planets[gameState.activePlanetIndex];
   if (prerequisite.type === 'building') {
-    const level = gameState.planet.buildings[prerequisite.id as BuildingId];
+    const level = planet.buildings[prerequisite.id as BuildingId];
     return level >= prerequisite.level;
   }
 
@@ -45,8 +44,9 @@ function requirementLabel(prerequisite: Prerequisite): string {
 }
 
 export function DefencePanel() {
-  const { gameState, buildDefences, cancelShipyard } = useGame();
+  const { gameState, buildDefences } = useGame();
   const [quantities, setQuantities] = useState<Record<DefenceId, string>>(DEFAULT_QUANTITIES);
+  const planet = gameState.planets[gameState.activePlanetIndex];
 
   return (
     <section className="panel">
@@ -62,7 +62,7 @@ export function DefencePanel() {
           const parsedQuantity = Number.parseInt(quantityInput, 10);
           const quantity = Number.isInteger(parsedQuantity) && parsedQuantity > 0 ? parsedQuantity : 0;
           const unlocked = prerequisitesMet(definition.requires, gameState);
-          const ownedCount = gameState.planet.defences[defenceId];
+          const ownedCount = planet.defences[defenceId];
           const remainingMax =
             definition.maxCount === undefined
               ? null
@@ -84,8 +84,8 @@ export function DefencePanel() {
             !exceedsMax;
           const unitBuildSeconds = defenceBuildTime(
             definition.structuralIntegrity,
-            gameState.planet.buildings.shipyard,
-            gameState.planet.buildings.naniteFactory,
+            planet.buildings.shipyard,
+            planet.buildings.naniteFactory,
             gameState.settings.gameSpeed,
           );
 
@@ -138,7 +138,7 @@ export function DefencePanel() {
 
               <div className="item-meta">
                 <span className="label">Batch Cost</span>
-                <CostDisplay cost={totalCost} available={gameState.planet.resources} />
+                <CostDisplay cost={totalCost} available={planet.resources} />
               </div>
 
               {!unlocked && (
@@ -183,38 +183,6 @@ export function DefencePanel() {
         })}
       </div>
 
-      {gameState.planet.shipyardQueue.length > 0 && (
-        <section className="panel-group">
-          <h2 className="section-title">Shipyard Queue</h2>
-          <div className="queue-list">
-            {gameState.planet.shipyardQueue.map((item, index) => {
-              const name = item.type === 'ship'
-                ? SHIPS[item.id as ShipId].name
-                : DEFENCES[item.id as DefenceId].name;
-              const progress = index === 0
-                ? `${(item.completed ?? 0) + 1}/${item.quantity}`
-                : `0/${item.quantity}`;
-              return (
-                <div key={`${item.id}-${index}`} className="queue-entry">
-                  <span className="queue-name">{name} ({progress})</span>
-                  {index === 0 && (
-                    <span className="queue-timer number">
-                      {formatDuration(Math.max(0, (item.completesAt - Date.now()) / 1000))}
-                    </span>
-                  )}
-                  <button
-                    type="button"
-                    className="btn btn-danger btn-sm"
-                    onClick={() => cancelShipyard(index)}
-                  >
-                    ✕
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
     </section>
   );
 }

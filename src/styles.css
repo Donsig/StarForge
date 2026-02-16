@@ -507,6 +507,148 @@ body {
   font-size: 0.85rem;
 }
 
+/* Galaxy panel */
+
+.galaxy-nav {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.6rem 0;
+}
+
+.galaxy-system-label {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+
+.galaxy-system-prefix {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.galaxy-system-number {
+  font-size: 1.1rem;
+  color: var(--text);
+}
+
+.galaxy-system-total {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+.galaxy-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.galaxy-table th {
+  padding: 0.55rem 0.65rem;
+  border-bottom: 2px solid var(--border);
+  text-align: left;
+  color: var(--text-dim);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.galaxy-table td {
+  padding: 0.5rem 0.65rem;
+  border-bottom: 1px solid rgba(30, 45, 74, 0.5);
+  font-size: 0.88rem;
+  vertical-align: middle;
+}
+
+.galaxy-table tbody tr {
+  transition: background 100ms ease;
+}
+
+.galaxy-table tbody tr:hover {
+  background: rgba(26, 37, 64, 0.5);
+}
+
+.galaxy-table tbody tr.galaxy-row-player {
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.galaxy-table tbody tr.galaxy-row-player:hover {
+  background: rgba(59, 130, 246, 0.15);
+}
+
+.galaxy-table tbody tr.galaxy-row-npc {
+  background: rgba(239, 68, 68, 0.06);
+}
+
+.galaxy-table tbody tr.galaxy-row-npc:hover {
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.galaxy-badge {
+  display: inline-block;
+  padding: 0.12rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border: 1px solid;
+}
+
+.galaxy-badge-player {
+  color: var(--accent);
+  border-color: rgba(59, 130, 246, 0.5);
+  background: rgba(59, 130, 246, 0.15);
+}
+
+.galaxy-badge-npc {
+  color: var(--danger);
+  border-color: rgba(239, 68, 68, 0.5);
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.galaxy-badge-empty {
+  color: var(--text-dim);
+  border-color: var(--border);
+  background: rgba(10, 14, 23, 0.4);
+}
+
+.galaxy-uninhabited {
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.galaxy-strength {
+  font-size: 0.78rem;
+  color: var(--danger);
+}
+
+.galaxy-hint {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.btn-sm {
+  padding: 0.28rem 0.55rem;
+  font-size: 0.76rem;
+}
+
+.planet-switcher {
+  padding: 0 1rem;
+}
+
+.planet-switcher select {
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  background: rgba(10, 14, 23, 0.8);
+  color: var(--text);
+  padding: 0.3rem 0.5rem;
+  font-family: inherit;
+  font-size: 0.82rem;
+}
+
 @media (max-width: 900px) {
   .app-shell {
     grid-template-columns: 1fr;

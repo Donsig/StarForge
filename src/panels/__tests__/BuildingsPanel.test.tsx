@@ -80,39 +80,6 @@ describe('BuildingsPanel', () => {
     ).not.toBeDisabled();
   });
 
-  it('displays building queue items with cancel buttons', () => {
-    const cancelBuilding = vi.fn();
-
-    renderWithGame(<BuildingsPanel />, {
-      gameState: {
-        planet: {
-          resources: { metal: 1_000_000, crystal: 1_000_000, deuterium: 1_000_000 },
-          buildingQueue: [
-            {
-              type: 'building',
-              id: 'metalMine',
-              targetLevel: 1,
-              startedAt: Date.now(),
-              completesAt: Date.now() + 60_000,
-            },
-            {
-              type: 'building',
-              id: 'crystalMine',
-              targetLevel: 1,
-              startedAt: Date.now() + 60_000,
-              completesAt: Date.now() + 120_000,
-            },
-          ],
-        },
-      },
-      actions: { cancelBuilding },
-    });
-
-    expect(screen.getByText('Build Queue')).toBeInTheDocument();
-    const cancelButtons = screen.getAllByRole('button', { name: '✕' });
-    expect(cancelButtons).toHaveLength(2);
-  });
-
   it('calls upgradeBuilding with the correct building ID', async () => {
     const user = userEvent.setup();
     const upgradeBuilding = vi.fn(() => true);

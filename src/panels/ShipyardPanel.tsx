@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { BUILDINGS } from '../data/buildings.ts';
-import { DEFENCES } from '../data/defences.ts';
 import { RESEARCH } from '../data/research.ts';
 import { SHIP_ORDER, SHIPS } from '../data/ships.ts';
 import { canAfford, prerequisitesMet } from '../engine/BuildQueue.ts';
@@ -11,7 +10,6 @@ import { formatDuration } from '../utils/time.ts';
 import type { GameState } from '../models/GameState.ts';
 import type {
   BuildingId,
-  DefenceId,
   Prerequisite,
   ResearchId,
   ResourceCost,
@@ -27,8 +25,9 @@ const DEFAULT_QUANTITIES: Record<ShipId, string> = SHIP_ORDER.reduce(
 );
 
 function requirementMet(prerequisite: Prerequisite, gameState: GameState): boolean {
+  const planet = gameState.planets[gameState.activePlanetIndex];
   if (prerequisite.type === 'building') {
-    const level = gameState.planet.buildings[prerequisite.id as BuildingId];
+    const level = planet.buildings[prerequisite.id as BuildingId];
     return level >= prerequisite.level;
   }
 
@@ -45,8 +44,9 @@ function requirementLabel(prerequisite: Prerequisite): string {
 }
 
 export function ShipyardPanel() {
-  const { gameState, buildShips, cancelShipyard } = useGame();
+  const { gameState, buildShips } = useGame();
   const [quantities, setQuantities] = useState<Record<ShipId, string>>(DEFAULT_QUANTITIES);
+  const planet = gameState.planets[gameState.activePlanetIndex];
 
   return (
     <section className="panel">
@@ -71,8 +71,8 @@ export function ShipyardPanel() {
           const canBuild = unlocked && affordable && quantity > 0;
           const unitBuildSeconds = shipBuildTime(
             definition.structuralIntegrity,
-            gameState.planet.buildings.shipyard,
-            gameState.planet.buildings.naniteFactory,
+            planet.buildings.shipyard,
+            planet.buildings.naniteFactory,
             gameState.settings.gameSpeed,
           );
 
@@ -81,7 +81,7 @@ export function ShipyardPanel() {
               <div className="item-header">
                 <h3>{definition.name}</h3>
                 <span className="item-level number">
-                  Owned: {gameState.planet.ships[shipId]}
+                  Owned: {planet.ships[shipId]}
                 </span>
               </div>
 
@@ -120,7 +120,7 @@ export function ShipyardPanel() {
 
               <div className="item-meta">
                 <span className="label">Batch Cost</span>
-                <CostDisplay cost={totalCost} available={gameState.planet.resources} />
+                <CostDisplay cost={totalCost} available={planet.resources} />
               </div>
 
               {!unlocked && (
@@ -159,38 +159,6 @@ export function ShipyardPanel() {
         })}
       </div>
 
-      {gameState.planet.shipyardQueue.length > 0 && (
-        <section className="panel-group">
-          <h2 className="section-title">Shipyard Queue</h2>
-          <div className="queue-list">
-            {gameState.planet.shipyardQueue.map((item, index) => {
-              const name = item.type === 'ship'
-                ? SHIPS[item.id as ShipId].name
-                : DEFENCES[item.id as DefenceId].name;
-              const progress = index === 0
-                ? `${(item.completed ?? 0) + 1}/${item.quantity}`
-                : `0/${item.quantity}`;
-              return (
-                <div key={`${item.id}-${index}`} className="queue-entry">
-                  <span className="queue-name">{name} ({progress})</span>
-                  {index === 0 && (
-                    <span className="queue-timer number">
-                      {formatDuration(Math.max(0, (item.completesAt - Date.now()) / 1000))}
-                    </span>
-                  )}
-                  <button
-                    type="button"
-                    className="btn btn-danger btn-sm"
-                    onClick={() => cancelShipyard(index)}
-                  >
-                    ✕
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
     </section>
   );
 }

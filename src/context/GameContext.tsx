@@ -1,5 +1,6 @@
 import { createContext, useContext, type ReactNode } from 'react';
 import type { GameState } from '../models/GameState.ts';
+import type { Coordinates } from '../models/Galaxy.ts';
 import type { BuildingId, DefenceId, ResearchId, ShipId } from '../models/types.ts';
 import type { ProductionRates } from '../engine/ResourceEngine.ts';
 import { useGameEngine } from '../hooks/useGameEngine';
@@ -12,10 +13,12 @@ export interface GameContextType {
   startResearchAction: (id: ResearchId) => boolean;
   buildShips: (id: ShipId, qty: number) => boolean;
   buildDefences: (id: DefenceId, qty: number) => boolean;
+  colonizeAction: (coords: Coordinates) => boolean;
   cancelBuilding: (index: number) => void;
   cancelResearch: (index: number) => void;
   cancelShipyard: (index: number) => void;
   resetGameAction: () => void;
+  setActivePlanet: (index: number) => void;
   setGameSpeed: (n: number) => void;
   exportSaveAction: () => string;
   importSaveAction: (json: string) => boolean;

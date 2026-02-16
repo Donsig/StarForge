@@ -27,7 +27,7 @@ describe('QueueDisplay', () => {
     });
 
     expect(screen.getByText('Building: Metal Mine')).toBeInTheDocument();
-    expect(screen.getByText('Target level 2')).toBeInTheDocument();
+    expect(screen.getByText('Lv 2')).toBeInTheDocument();
   });
 
   it('shows a research queue item', () => {
@@ -46,7 +46,7 @@ describe('QueueDisplay', () => {
     });
 
     expect(screen.getByText('Research: Energy Technology')).toBeInTheDocument();
-    expect(screen.getByText('Target level 1')).toBeInTheDocument();
+    expect(screen.getByText('Lv 1')).toBeInTheDocument();
   });
 
   it('shows shipyard queue items when ships are building', () => {
@@ -68,13 +68,44 @@ describe('QueueDisplay', () => {
     });
 
     expect(screen.getByText('Shipyard: Light Fighter')).toBeInTheDocument();
-    expect(screen.getByText('Unit 2/5')).toBeInTheDocument();
+    expect(screen.getByText('2/5')).toBeInTheDocument();
   });
 
-  it('calls cancel actions when cancel buttons are clicked', async () => {
+  it('shows all queued items with cancel buttons', () => {
+    renderWithGame(<QueueDisplay />, {
+      gameState: {
+        planet: {
+          buildingQueue: [
+            {
+              type: 'building',
+              id: 'metalMine',
+              targetLevel: 1,
+              startedAt: Date.now(),
+              completesAt: Date.now() + 60_000,
+            },
+            {
+              type: 'building',
+              id: 'crystalMine',
+              targetLevel: 1,
+              startedAt: Date.now() + 60_000,
+              completesAt: Date.now() + 120_000,
+            },
+          ],
+        },
+      },
+    });
+
+    expect(screen.getByText('Building: Metal Mine')).toBeInTheDocument();
+    expect(screen.getByText('Building: Crystal Mine')).toBeInTheDocument();
+    const cancelButtons = screen.getAllByRole('button', { name: 'Cancel' });
+    expect(cancelButtons).toHaveLength(2);
+  });
+
+  it('calls cancel actions with correct index when cancel buttons are clicked', async () => {
     const user = userEvent.setup();
     const cancelBuilding = vi.fn();
     const cancelResearch = vi.fn();
+    const cancelShipyard = vi.fn();
 
     renderWithGame(<QueueDisplay />, {
       gameState: {
@@ -102,6 +133,7 @@ describe('QueueDisplay', () => {
       actions: {
         cancelBuilding,
         cancelResearch,
+        cancelShipyard,
       },
     });
 
@@ -122,7 +154,7 @@ describe('QueueDisplay', () => {
       within(researchQueueRow as HTMLElement).getByRole('button', { name: 'Cancel' }),
     );
 
-    expect(cancelBuilding).toHaveBeenCalledTimes(1);
-    expect(cancelResearch).toHaveBeenCalledTimes(1);
+    expect(cancelBuilding).toHaveBeenCalledWith(0);
+    expect(cancelResearch).toHaveBeenCalledWith(0);
   });
 });

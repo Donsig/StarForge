@@ -3,7 +3,7 @@ import { formatNumber, formatRate } from '../utils/format.ts';
 
 export function ResourceBar() {
   const { gameState, productionRates, storageCaps } = useGame();
-  const { resources } = gameState.planet;
+  const { resources } = gameState.planets[gameState.activePlanetIndex];
   const speed = gameState.settings.gameSpeed;
   const energyOk = productionRates.energyProduction >= productionRates.energyConsumption;
   const metalNearCap = resources.metal > storageCaps.metal * 0.9;

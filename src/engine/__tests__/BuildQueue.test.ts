@@ -351,6 +351,41 @@ describe('BuildQueue', () => {
     );
   });
 
+  it('cancelShipyardAtIndex initializes next batch when front item is canceled', () => {
+    const state = createNewGameState();
+    fundState(state);
+    state.planets[0].buildings.shipyard = 1;
+    const now = 7_000_000;
+    vi.spyOn(Date, 'now').mockReturnValue(now);
+
+    state.planets[0].shipyardQueue = [
+      {
+        type: 'ship',
+        id: 'lightFighter',
+        quantity: 2,
+        completed: 0,
+        startedAt: now - 1000,
+        completesAt: now + 5000,
+      },
+      {
+        type: 'ship',
+        id: 'lightFighter',
+        quantity: 3,
+        completed: 0,
+        startedAt: 0,
+        completesAt: 0,
+      },
+    ];
+
+    cancelShipyardAtIndex(state, 0);
+
+    expect(state.planets[0].shipyardQueue).toHaveLength(1);
+    const nextItem = state.planets[0].shipyardQueue[0];
+    expect(nextItem.quantity).toBe(3);
+    expect(nextItem.startedAt).toBe(now);
+    expect(nextItem.completesAt).toBeGreaterThan(now);
+  });
+
   it('cancelShipyardAtIndex is a no-op for out-of-range indexes', () => {
     const state = createNewGameState();
     state.planets[0].shipyardQueue = [

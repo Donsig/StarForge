@@ -25,8 +25,9 @@ const CATEGORY_LABELS: Record<BuildingCategory, string> = {
 };
 
 function requirementMet(prerequisite: Prerequisite, buildingState: GameState): boolean {
+  const planet = buildingState.planets[buildingState.activePlanetIndex];
   if (prerequisite.type === 'building') {
-    const level = buildingState.planet.buildings[prerequisite.id as BuildingId];
+    const level = planet.buildings[prerequisite.id as BuildingId];
     return level >= prerequisite.level;
   }
 
@@ -42,11 +43,12 @@ function requirementLabel(prerequisite: Prerequisite): string {
 }
 
 export function BuildingsPanel() {
-  const { gameState, upgradeBuilding, cancelBuilding } = useGame();
+  const { gameState, upgradeBuilding } = useGame();
+  const planet = gameState.planets[gameState.activePlanetIndex];
 
   const fieldsUsed = usedFields(gameState);
-  const queuedUpgrades = gameState.planet.buildingQueue.length;
-  const maxFieldsReached = fieldsUsed + queuedUpgrades >= gameState.planet.maxFields;
+  const queuedUpgrades = planet.buildingQueue.length;
+  const maxFieldsReached = fieldsUsed + queuedUpgrades >= planet.maxFields;
 
   return (
     <section className="panel">
@@ -62,7 +64,7 @@ export function BuildingsPanel() {
             {BUILDING_ORDER.filter((buildingId) => BUILDINGS[buildingId].category === category).map(
               (buildingId) => {
                 const definition = BUILDINGS[buildingId];
-                const currentLevel = gameState.planet.buildings[buildingId];
+                const currentLevel = planet.buildings[buildingId];
                 const nextLevel = currentLevel + 1;
                 const cost = buildingCostAtLevel(
                   definition.baseCost,
@@ -72,13 +74,13 @@ export function BuildingsPanel() {
                 const timeSeconds = buildingTime(
                   cost.metal,
                   cost.crystal,
-                  gameState.planet.buildings.roboticsFactory,
-                  gameState.planet.buildings.naniteFactory,
+                  planet.buildings.roboticsFactory,
+                  planet.buildings.naniteFactory,
                   gameState.settings.gameSpeed,
                 );
                 const affordable = canAfford(cost, gameState);
                 const prereqMet = prerequisitesMet(definition.requires, gameState);
-                const inQueue = gameState.planet.buildingQueue.some(q => q.id === buildingId);
+                const inQueue = planet.buildingQueue.some(q => q.id === buildingId);
                 const disabled =
                   !affordable ||
                   !prereqMet ||
@@ -95,7 +97,7 @@ export function BuildingsPanel() {
 
                     <div className="item-meta">
                       <span className="label">Upgrade Cost</span>
-                      <CostDisplay cost={cost} available={gameState.planet.resources} />
+                      <CostDisplay cost={cost} available={planet.resources} />
                     </div>
 
                     <div className="item-meta">
@@ -141,32 +143,6 @@ export function BuildingsPanel() {
         </section>
       ))}
 
-      {gameState.planet.buildingQueue.length > 0 && (
-        <section className="panel-group">
-          <h2 className="section-title">Build Queue</h2>
-          <div className="queue-list">
-            {gameState.planet.buildingQueue.map((item, index) => (
-              <div key={`${item.id}-${item.targetLevel}-${index}`} className="queue-entry">
-                <span className="queue-name">
-                  {BUILDINGS[item.id as BuildingId].name} Lv {item.targetLevel}
-                </span>
-                {index === 0 && (
-                  <span className="queue-timer number">
-                    {formatDuration(Math.max(0, (item.completesAt - Date.now()) / 1000))}
-                  </span>
-                )}
-                <button
-                  type="button"
-                  className="btn btn-danger btn-sm"
-                  onClick={() => cancelBuilding(index)}
-                >
-                  ✕
-                </button>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
     </section>
   );
 }

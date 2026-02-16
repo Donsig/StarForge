@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { GameState } from '../models/GameState.ts';
+import type { Coordinates } from '../models/Galaxy.ts';
 import type { BuildingId, DefenceId, ResearchId, ShipId } from '../models/types.ts';
 import { GAME_CONSTANTS } from '../models/types.ts';
 import type { ProductionRates } from '../engine/ResourceEngine.ts';
@@ -19,6 +20,7 @@ import {
   startResearch,
   startShipBuild,
 } from '../engine/BuildQueue.ts';
+import { colonize } from '../engine/GalaxyEngine.ts';
 import {
   exportSave,
   importSave,
@@ -37,10 +39,12 @@ export interface GameEngineState {
   startResearchAction: (id: ResearchId) => boolean;
   buildShips: (id: ShipId, qty: number) => boolean;
   buildDefences: (id: DefenceId, qty: number) => boolean;
+  colonizeAction: (coords: Coordinates) => boolean;
   cancelBuilding: (index: number) => void;
   cancelResearch: (index: number) => void;
   cancelShipyard: (index: number) => void;
   resetGameAction: () => void;
+  setActivePlanet: (index: number) => void;
   setGameSpeed: (n: number) => void;
   exportSaveAction: () => string;
   importSaveAction: (json: string) => boolean;
@@ -177,6 +181,18 @@ export function useGameEngine(): GameEngineState {
     [syncReactState],
   );
 
+  const colonizeAction = useCallback(
+    (coords: Coordinates): boolean => {
+      const result = colonize(stateRef.current, coords);
+      syncReactState();
+      if (result) {
+        saveState(stateRef.current);
+      }
+      return result !== null;
+    },
+    [syncReactState],
+  );
+
   const cancelBuildingAction = useCallback((index: number): void => {
     cancelBuildingAtIndex(stateRef.current, index);
     syncReactState();
@@ -202,6 +218,13 @@ export function useGameEngine(): GameEngineState {
     setProductionRates(calculateProduction(resetState));
     setStorageCaps(getStorageCaps(resetState));
   }, []);
+
+  const setActivePlanetAction = useCallback((index: number): void => {
+    if (index >= 0 && index < stateRef.current.planets.length) {
+      stateRef.current.activePlanetIndex = index;
+      syncReactState();
+    }
+  }, [syncReactState]);
 
   const setGameSpeed = useCallback(
     (n: number): void => {
@@ -240,10 +263,12 @@ export function useGameEngine(): GameEngineState {
     startResearchAction,
     buildShips,
     buildDefences,
+    colonizeAction,
     cancelBuilding: cancelBuildingAction,
     cancelResearch: cancelResearchAction,
     cancelShipyard: cancelShipyardAction,
     resetGameAction,
+    setActivePlanet: setActivePlanetAction,
     setGameSpeed,
     exportSaveAction,
     importSaveAction,

@@ -13,8 +13,9 @@ import type {
 } from '../models/types.ts';
 
 function requirementMet(prerequisite: Prerequisite, gameState: GameState): boolean {
+  const planet = gameState.planets[gameState.activePlanetIndex];
   if (prerequisite.type === 'building') {
-    const level = gameState.planet.buildings[prerequisite.id as BuildingId];
+    const level = planet.buildings[prerequisite.id as BuildingId];
     return level >= prerequisite.level;
   }
 
@@ -31,7 +32,8 @@ function requirementLabel(prerequisite: Prerequisite): string {
 }
 
 export function ResearchPanel() {
-  const { gameState, startResearchAction, cancelResearch } = useGame();
+  const { gameState, startResearchAction } = useGame();
+  const planet = gameState.planets[gameState.activePlanetIndex];
   return (
     <section className="panel">
       <h1 className="panel-title">Research</h1>
@@ -52,7 +54,7 @@ export function ResearchPanel() {
           const timeSeconds = researchTime(
             cost.metal,
             cost.crystal,
-            gameState.planet.buildings.researchLab,
+            planet.buildings.researchLab,
             gameState.settings.gameSpeed,
           );
           const affordable = canAfford(cost, gameState);
@@ -71,7 +73,7 @@ export function ResearchPanel() {
 
               <div className="item-meta">
                 <span className="label">Research Cost</span>
-                <CostDisplay cost={cost} available={gameState.planet.resources} />
+                <CostDisplay cost={cost} available={planet.resources} />
               </div>
 
               <div className="item-meta">
@@ -111,32 +113,6 @@ export function ResearchPanel() {
         })}
       </div>
 
-      {gameState.researchQueue.length > 0 && (
-        <section className="panel-group">
-          <h2 className="section-title">Research Queue</h2>
-          <div className="queue-list">
-            {gameState.researchQueue.map((item, index) => (
-              <div key={`${item.id}-${item.targetLevel}-${index}`} className="queue-entry">
-                <span className="queue-name">
-                  {RESEARCH[item.id as ResearchId].name} Lv {item.targetLevel}
-                </span>
-                {index === 0 && (
-                  <span className="queue-timer number">
-                    {formatDuration(Math.max(0, (item.completesAt - Date.now()) / 1000))}
-                  </span>
-                )}
-                <button
-                  type="button"
-                  className="btn btn-danger btn-sm"
-                  onClick={() => cancelResearch(index)}
-                >
-                  ✕
-                </button>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
     </section>
   );
 }

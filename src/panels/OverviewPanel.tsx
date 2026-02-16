@@ -5,6 +5,7 @@ import { formatNumber, formatRate } from '../utils/format.ts';
 
 export function OverviewPanel() {
   const { gameState, productionRates } = useGame();
+  const planet = gameState.planets[gameState.activePlanetIndex];
   const speed = gameState.settings.gameSpeed;
 
   const fieldsUsed = usedFields(gameState);
@@ -20,7 +21,7 @@ export function OverviewPanel() {
   let totalFleetPower = 0;
 
   for (const shipId of SHIP_ORDER) {
-    const count = gameState.planet.ships[shipId];
+    const count = planet.ships[shipId];
     totalShips += count;
     totalFleetPower += count * SHIPS[shipId].weaponPower;
   }
@@ -34,16 +35,16 @@ export function OverviewPanel() {
           <h2 className="section-title">Colony Status</h2>
           <p className="stat-line">
             <span className="label">Name</span>
-            <span>{gameState.planet.name}</span>
+            <span>{planet.name}</span>
           </p>
           <p className="stat-line">
             <span className="label">Temperature</span>
-            <span className="number">{gameState.planet.maxTemperature}&deg;C</span>
+            <span className="number">{planet.maxTemperature}&deg;C</span>
           </p>
           <p className="stat-line">
             <span className="label">Fields</span>
             <span className="number">
-              {fieldsUsed} / {gameState.planet.maxFields}
+              {fieldsUsed} / {planet.maxFields}
             </span>
           </p>
         </article>
@@ -99,7 +100,7 @@ export function OverviewPanel() {
           </p>
           <p className="stat-line">
             <span className="label">Shipyard Queue</span>
-            <span className="number">{gameState.planet.shipyardQueue.length}</span>
+            <span className="number">{planet.shipyardQueue.length}</span>
           </p>
         </article>
       </div>

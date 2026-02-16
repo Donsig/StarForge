@@ -380,6 +380,28 @@ export function cancelShipyardAtIndex(state: GameState, index: number): void {
   planet.resources.metal += unitCost.metal * refundableUnits;
   planet.resources.crystal += unitCost.crystal * refundableUnits;
   planet.resources.deuterium += unitCost.deuterium * refundableUnits;
+
+  // Start the next batch if we canceled the front item
+  if (index === 0 && queue.length > 0) {
+    const nextItem = queue[0];
+    const now = Date.now();
+    const perUnitSeconds =
+      nextItem.type === 'defence'
+        ? defenceBuildTime(
+            DEFENCES[nextItem.id as DefenceId].structuralIntegrity,
+            planet.buildings.shipyard,
+            planet.buildings.naniteFactory,
+            state.settings.gameSpeed,
+          )
+        : shipBuildTime(
+            SHIPS[nextItem.id as ShipId].structuralIntegrity,
+            planet.buildings.shipyard,
+            planet.buildings.naniteFactory,
+            state.settings.gameSpeed,
+          );
+    nextItem.startedAt = now;
+    nextItem.completesAt = now + perUnitSeconds * 1000;
+  }
 }
 
 export function processTick(state: GameState, now: number = Date.now()): void {
