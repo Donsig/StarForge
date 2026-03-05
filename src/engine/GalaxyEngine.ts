@@ -206,7 +206,11 @@ export function buildNPCShipsForTier(tier: number): Record<string, number> {
     bomber: 0,
     destroyer: 0,
     battlecruiser: 0,
+    solarSatellite: 0,
   };
+
+  // Solar satellites: scale with tier, more for high-tier colonies
+  ships.solarSatellite = Math.floor(safeTier * 1.5);
 
   ships.smallCargo = safeTier * 2;
 
@@ -243,6 +247,9 @@ export function createNPCColonyForTier(
   const intervalMs = initialUpgradeIntervalMsForTier(safeTier);
   const specialty = specialtyForCoordinates(seed, coordinates);
   const stats = planetStatsForSlot(seed, coordinates);
+  if (specialty === 'miner') {
+    baseShips.solarSatellite = (baseShips.solarSatellite ?? 0) * 2;
+  }
 
   return {
     coordinates: { ...coordinates },
@@ -329,6 +336,7 @@ function createNPCProductionPlanet(colony: NPCColony): PlanetState {
       bomber: 0,
       destroyer: 0,
       battlecruiser: 0,
+      solarSatellite: 0,
     },
     defences: {
       rocketLauncher: 0,

@@ -60,7 +60,8 @@ export type ShipId =
   | 'espionageProbe'
   | 'bomber'
   | 'destroyer'
-  | 'battlecruiser';
+  | 'battlecruiser'
+  | 'solarSatellite';
 
 export type DefenceId =
   | 'rocketLauncher'

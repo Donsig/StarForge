@@ -61,6 +61,7 @@ export function createDefaultPlanet(): PlanetState {
       bomber: 0,
       destroyer: 0,
       battlecruiser: 0,
+      solarSatellite: 0,
     },
     defences: {
       rocketLauncher: 0,
