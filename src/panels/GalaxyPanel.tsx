@@ -231,6 +231,7 @@ export function GalaxyPanel({ onNavigate }: GalaxyPanelProps = {}) {
     espionageReports,
     colonizeAction,
     setFleetTarget,
+    setPendingMissionTarget,
     dispatchEspionage,
     dispatchHarvest,
     adminForceColonize,
@@ -349,6 +350,11 @@ export function GalaxyPanel({ onNavigate }: GalaxyPanelProps = {}) {
               const targetKey = coordsKey(targetCoords);
               const report = latestReportsByCoords.get(coordsKey(targetCoords)) ?? null;
               const debrisField = debrisByCoord.get(targetKey) ?? null;
+              const isActivePlayerSlot =
+                slot.type === 'player' &&
+                activePlanet.coordinates.galaxy === targetCoords.galaxy &&
+                activePlanet.coordinates.system === targetCoords.system &&
+                activePlanet.coordinates.slot === targetCoords.slot;
 
               let harvestDisabledReason: string | null = null;
               if (debrisField) {
@@ -387,6 +393,15 @@ export function GalaxyPanel({ onNavigate }: GalaxyPanelProps = {}) {
                   }}
                   onAttackNpc={(coords) => {
                     setFleetTarget(coords);
+                    onNavigate?.('fleet');
+                  }}
+                  showTransportAction={slot.type === 'player' && !isActivePlayerSlot}
+                  onTransportPlayer={(coords) => {
+                    setFleetTarget(null);
+                    setPendingMissionTarget({
+                      type: 'transport',
+                      coords,
+                    });
                     onNavigate?.('fleet');
                   }}
                   onSpyNpc={(coords) => {
@@ -435,6 +450,8 @@ function GalaxySlotRow({
   onColonize,
   onHarvest,
   onAttackNpc,
+  showTransportAction,
+  onTransportPlayer,
   onSpyNpc,
   onGodColonize,
   onGodRaid,
@@ -455,6 +472,8 @@ function GalaxySlotRow({
   onColonize: (coords: Coordinates) => boolean;
   onHarvest: (coords: Coordinates) => void;
   onAttackNpc: (coords: Coordinates) => void;
+  showTransportAction: boolean;
+  onTransportPlayer: (coords: Coordinates) => void;
   onSpyNpc: (coords: Coordinates) => void;
   onGodColonize: (coords: Coordinates) => void;
   onGodRaid: (coords: Coordinates) => void;
@@ -501,6 +520,18 @@ function GalaxySlotRow({
       <td>
         {slot.type === 'player' && (
           <span className="galaxy-badge galaxy-badge-player">You</span>
+        )}
+        {slot.type === 'player' && showTransportAction && (
+          <button
+            type="button"
+            className="btn btn-sm"
+            onClick={(event) => {
+              event.stopPropagation();
+              onTransportPlayer(targetCoords);
+            }}
+          >
+            Transport
+          </button>
         )}
         {slot.type === 'npc' && (
           <span className="galaxy-badge galaxy-badge-npc">NPC</span>

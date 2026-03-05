@@ -21,6 +21,11 @@ describe('GalaxyPanel', () => {
     expect(screen.getByText('Homeworld')).toBeInTheDocument();
   });
 
+  it('shows Transport button on player-owned slots that are not the active planet', () => {
+    renderWithGame(<GalaxyPanel />, { withMultiplePlanets: true });
+    expect(screen.getByRole('button', { name: 'Transport' })).toBeInTheDocument();
+  });
+
   it('shows colonize hint when no colony ship available', () => {
     renderWithGame(<GalaxyPanel />);
     expect(screen.getByText(/Build a Colony Ship/)).toBeInTheDocument();
@@ -107,6 +112,30 @@ describe('GalaxyPanel', () => {
 
     await user.click(screen.getByRole('button', { name: 'Attack' }));
     expect(setFleetTarget).toHaveBeenCalledWith({ galaxy: 1, system: 1, slot: 5 });
+    expect(onNavigate).toHaveBeenCalledWith('fleet');
+  });
+
+  it('prefills transport mission target and navigates to fleet panel', async () => {
+    const user = userEvent.setup();
+    const setPendingMissionTarget = vi.fn();
+    const setFleetTarget = vi.fn();
+    const onNavigate = vi.fn();
+
+    renderWithGame(<GalaxyPanel onNavigate={onNavigate} />, {
+      withMultiplePlanets: true,
+      actions: {
+        setPendingMissionTarget,
+        setFleetTarget,
+      },
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Transport' }));
+
+    expect(setFleetTarget).toHaveBeenCalledWith(null);
+    expect(setPendingMissionTarget).toHaveBeenCalledWith({
+      type: 'transport',
+      coords: { galaxy: 1, system: 1, slot: 5 },
+    });
     expect(onNavigate).toHaveBeenCalledWith('fleet');
   });
 
