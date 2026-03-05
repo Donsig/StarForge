@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { GameState } from '../models/GameState.ts';
 import type { CombatResult } from '../models/Combat.ts';
 import type { EspionageReport, FleetMission } from '../models/Fleet.ts';
-import type { Coordinates, NPCColony } from '../models/Galaxy.ts';
+import type { Coordinates, NPCColony, NPCSpecialty } from '../models/Galaxy.ts';
 import { createDefaultPlanet, type PlanetState } from '../models/Planet.ts';
 import type { BuildingId, DefenceId, ResearchId, ShipId } from '../models/types.ts';
 import { GAME_CONSTANTS } from '../models/types.ts';
@@ -28,17 +28,22 @@ import {
   startShipBuild,
 } from '../engine/BuildQueue.ts';
 import {
+  adminAddNPC as addNPCToGalaxy,
   addDebris,
   buildNPCBuildingsForTier,
   buildNPCDefencesForTier,
   buildNPCShipsForTier,
   colonize,
-  createNPCColonyForTier,
   generateNPCColonies,
   getNPCCurrentForce,
   getNPCResources,
   isSlotEmpty,
 } from '../engine/GalaxyEngine.ts';
+import {
+  applyUpgradeIncrement,
+  processUpgrades as processNPCUpgrades,
+  recordRaid,
+} from '../engine/NPCUpgradeEngine.ts';
 import { simulate as simulateCombat } from '../engine/CombatEngine.ts';
 import {
   buildingCostAtLevel,
@@ -96,6 +101,7 @@ export interface GameEngineState {
   recallFleet: (missionId: string) => void;
   markReportRead: (reportId: string) => void;
   setGameSpeed: (n: number) => void;
+  setMaxProbeCount: (n: number) => void;
   setGodMode: (enabled: boolean) => void;
   adminSetResources: (
     planetIndex: number,
@@ -127,6 +133,7 @@ export interface GameEngineState {
   adminRemoveNPC: (coords: Coordinates) => void;
   adminAddNPC: (coords: Coordinates, tier: number) => NPCColony | null;
   adminSetNPCTier: (coords: Coordinates, tier: number) => void;
+  adminSetNPCSpecialty: (coords: Coordinates, specialty: NPCSpecialty) => void;
   adminSetNPCBuildings: (
     coords: Coordinates,
     buildings: Partial<Record<BuildingId, number>>,
@@ -143,6 +150,10 @@ export interface GameEngineState {
   ) => void;
   adminResetNPC: (coords: Coordinates) => void;
   adminWipeNPC: (coords: Coordinates) => void;
+  adminNPCTriggerUpgrade: (coords: Coordinates) => void;
+  adminClearNPCRaidHistory: (coords: Coordinates) => void;
+  adminForceAbandonNPC: (coords: Coordinates) => void;
+  adminSetPlanetFieldCount: (planetIndex: number, fieldCount: number) => void;
   adminCompleteBuilding: (planetIndex: number) => void;
   adminCompleteResearch: () => void;
   adminCompleteShipyard: (planetIndex: number) => void;
@@ -309,6 +320,7 @@ export function useGameEngine(): GameEngineState {
         processResourceTick(currentState);
         processQueueTick(currentState, now);
         processFleetTick(currentState, now);
+        processNPCUpgrades(currentState, now);
         currentState.tickCount += 1;
 
         if (currentState.tickCount % GAME_CONSTANTS.AUTO_SAVE_TICKS === 0) {
@@ -449,6 +461,15 @@ export function useGameEngine(): GameEngineState {
       rescaleQueueTimes(stateRef.current, oldSpeed, clampedSpeed, now);
       rescaleMissionETAs(stateRef.current, oldSpeed, clampedSpeed, now);
       stateRef.current.settings.gameSpeed = clampedSpeed;
+      syncReactState();
+      saveState(stateRef.current);
+    },
+    [syncReactState],
+  );
+
+  const setMaxProbeCount = useCallback(
+    (n: number): void => {
+      stateRef.current.settings.maxProbeCount = clampInt(1, n, 999);
       syncReactState();
       saveState(stateRef.current);
     },
@@ -662,13 +683,14 @@ export function useGameEngine(): GameEngineState {
 
   const adminAddNPC = useCallback(
     (coords: Coordinates, tier: number): NPCColony | null => {
-      if (!isSlotEmpty(stateRef.current, coords)) {
+      const colony = addNPCToGalaxy(
+        stateRef.current,
+        coords,
+        clampInt(1, tier, 10),
+      );
+      if (!colony) {
         return null;
       }
-
-      const safeTier = clampInt(1, tier, 10);
-      const colony = createNPCColonyForTier(coords, safeTier, stateRef.current.galaxy.seed);
-      stateRef.current.galaxy.npcColonies.push(colony);
       syncReactState();
       saveState(stateRef.current);
       return colony;
@@ -686,14 +708,103 @@ export function useGameEngine(): GameEngineState {
       const safeTier = clampInt(1, tier, 10);
       const baseDefences = buildNPCDefencesForTier(safeTier);
       const baseShips = buildNPCShipsForTier(safeTier);
+      const intervalMs =
+        safeTier <= 3 ? 21_600_000 : safeTier <= 6 ? 10_800_000 : 5_400_000;
+      const maxTier = safeTier <= 3 ? 5 : safeTier <= 6 ? 8 : 10;
 
       colony.tier = safeTier;
+      colony.maxTier = maxTier;
+      colony.initialUpgradeIntervalMs = intervalMs;
+      colony.currentUpgradeIntervalMs = intervalMs;
       colony.buildings = buildNPCBuildingsForTier(safeTier);
       colony.baseDefences = { ...baseDefences };
       colony.baseShips = { ...baseShips };
       colony.currentDefences = { ...baseDefences };
       colony.currentShips = { ...baseShips };
       colony.lastRaidedAt = 0;
+      colony.lastUpgradeAt = 0;
+      colony.upgradeTickCount = 0;
+      colony.raidCount = 0;
+      colony.recentRaidTimestamps = [];
+      colony.abandonedAt = undefined;
+      colony.resourcesAtLastRaid = { metal: 0, crystal: 0, deuterium: 0 };
+      syncReactState();
+      saveState(stateRef.current);
+    },
+    [syncReactState],
+  );
+
+  const adminSetNPCSpecialty = useCallback(
+    (coords: Coordinates, specialty: NPCSpecialty): void => {
+      const colony = stateRef.current.galaxy.npcColonies.find((item) =>
+        matchingCoords(item.coordinates, coords),
+      );
+      if (!colony) return;
+
+      colony.specialty = specialty;
+      syncReactState();
+      saveState(stateRef.current);
+    },
+    [syncReactState],
+  );
+
+  const adminNPCTriggerUpgrade = useCallback(
+    (coords: Coordinates): void => {
+      const colony = stateRef.current.galaxy.npcColonies.find((item) =>
+        matchingCoords(item.coordinates, coords),
+      );
+      if (!colony) return;
+
+      const rng = mulberry32(
+        stateRef.current.galaxy.seed ^
+          (coords.system * 100 + coords.slot) ^
+          colony.upgradeTickCount,
+      );
+      applyUpgradeIncrement(colony, rng);
+      colony.upgradeTickCount += 1;
+      colony.lastUpgradeAt = Date.now();
+      syncReactState();
+      saveState(stateRef.current);
+    },
+    [syncReactState],
+  );
+
+  const adminClearNPCRaidHistory = useCallback(
+    (coords: Coordinates): void => {
+      const colony = stateRef.current.galaxy.npcColonies.find((item) =>
+        matchingCoords(item.coordinates, coords),
+      );
+      if (!colony) return;
+
+      colony.raidCount = 0;
+      colony.recentRaidTimestamps = [];
+      colony.abandonedAt = undefined;
+      syncReactState();
+      saveState(stateRef.current);
+    },
+    [syncReactState],
+  );
+
+  const adminForceAbandonNPC = useCallback(
+    (coords: Coordinates): void => {
+      const colony = stateRef.current.galaxy.npcColonies.find((item) =>
+        matchingCoords(item.coordinates, coords),
+      );
+      if (!colony) return;
+
+      colony.abandonedAt = Date.now();
+      syncReactState();
+      saveState(stateRef.current);
+    },
+    [syncReactState],
+  );
+
+  const adminSetPlanetFieldCount = useCallback(
+    (planetIndex: number, fieldCount: number): void => {
+      const planet = stateRef.current.planets[planetIndex];
+      if (!planet) return;
+
+      planet.fieldCount = clampInt(40, fieldCount, 250);
       syncReactState();
       saveState(stateRef.current);
     },
@@ -785,6 +896,7 @@ export function useGameEngine(): GameEngineState {
       colony.currentDefences = { ...colony.baseDefences };
       colony.currentShips = { ...colony.baseShips };
       colony.lastRaidedAt = 0;
+      colony.abandonedAt = undefined;
       syncReactState();
       saveState(stateRef.current);
     },
@@ -1092,7 +1204,16 @@ export function useGameEngine(): GameEngineState {
         resultWithLoot.defenderEnd.defences,
       );
       colony.currentShips = applyNpcForceResult(colony.baseShips, resultWithLoot.defenderEnd.ships);
+      colony.resourcesAtLastRaid = {
+        metal: Math.max(0, Math.floor(npcResources.metal - resultWithLoot.loot.metal)),
+        crystal: Math.max(0, Math.floor(npcResources.crystal - resultWithLoot.loot.crystal)),
+        deuterium: Math.max(
+          0,
+          Math.floor(npcResources.deuterium - resultWithLoot.loot.deuterium),
+        ),
+      };
       colony.lastRaidedAt = now;
+      recordRaid(colony, now, stateRef.current.settings.gameSpeed);
 
       for (const shipId of SHIP_ORDER) {
         const loss = Math.max(0, Math.floor(resultWithLoot.attackerLosses.ships[shipId] ?? 0));
@@ -1239,7 +1360,15 @@ export function useGameEngine(): GameEngineState {
       targetCoords: Coordinates,
       probeCount: number,
     ): FleetMission | null => {
-      const safeProbeCount = Math.max(0, Math.floor(probeCount));
+      const sourcePlanet = stateRef.current.planets[sourcePlanetIndex];
+      if (!sourcePlanet) {
+        return null;
+      }
+      const maxProbes = Math.min(
+        sourcePlanet.ships.espionageProbe ?? 0,
+        stateRef.current.settings.maxProbeCount,
+      );
+      const safeProbeCount = clampInt(0, probeCount, maxProbes);
       if (safeProbeCount <= 0) {
         return null;
       }
@@ -1316,6 +1445,7 @@ export function useGameEngine(): GameEngineState {
     recallFleet,
     markReportRead,
     setGameSpeed,
+    setMaxProbeCount,
     setGodMode,
     adminSetResources,
     adminAddResources,
@@ -1328,11 +1458,16 @@ export function useGameEngine(): GameEngineState {
     adminRemoveNPC,
     adminAddNPC,
     adminSetNPCTier,
+    adminSetNPCSpecialty,
     adminSetNPCBuildings,
     adminSetNPCCurrentFleet,
     adminSetNPCCurrentDefences,
     adminResetNPC,
     adminWipeNPC,
+    adminNPCTriggerUpgrade,
+    adminClearNPCRaidHistory,
+    adminForceAbandonNPC,
+    adminSetPlanetFieldCount,
     adminCompleteBuilding,
     adminCompleteResearch,
     adminCompleteShipyard,

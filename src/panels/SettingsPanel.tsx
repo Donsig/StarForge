@@ -3,9 +3,11 @@ import { useGame } from '../context/GameContext';
 
 export function SettingsPanel() {
   const {
+    gameState,
     resetGameAction,
     exportSaveAction,
     importSaveAction,
+    setMaxProbeCount,
   } = useGame();
   const [importText, setImportText] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
@@ -71,6 +73,26 @@ export function SettingsPanel() {
             <button type="button" className="btn btn-danger" onClick={handleReset}>
               Reset Game
             </button>
+          </div>
+
+          <div className="admin-form-section">
+            <label className="label" htmlFor="max-probes-input">
+              Max Probes per Mission
+            </label>
+            <input
+              id="max-probes-input"
+              type="number"
+              className="input quantity-input"
+              min={1}
+              max={999}
+              step={1}
+              value={gameState.settings.maxProbeCount}
+              onChange={(event) => {
+                const parsed = Number.parseInt(event.target.value, 10);
+                const nextValue = Number.isFinite(parsed) ? parsed : 1;
+                setMaxProbeCount(nextValue);
+              }}
+            />
           </div>
 
           <textarea

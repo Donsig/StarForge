@@ -17,6 +17,11 @@ function npcStrengthLabel(tier: number): string {
   return 'Massive';
 }
 
+function formatSpecialtyLabel(specialty: string): string {
+  if (!specialty) return '';
+  return specialty.charAt(0).toUpperCase() + specialty.slice(1);
+}
+
 function coordsKey(coords: Coordinates): string {
   return `${coords.galaxy}:${coords.system}:${coords.slot}`;
 }
@@ -104,6 +109,14 @@ function EspionageHoverPanel({ report, now }: EspionageHoverPanelProps) {
       </div>
 
       <p className="galaxy-intel-meta">{formatScannedAgo(report.timestamp, now)}</p>
+
+      {report.specialty && (
+        <div className="galaxy-intel-block">
+          <p className="galaxy-intel-line">
+            Specialty: <span className="number">{formatSpecialtyLabel(report.specialty)}</span>
+          </p>
+        </div>
+      )}
 
       {report.resources && (
         <div className="galaxy-intel-block">
@@ -197,7 +210,10 @@ export function GalaxyPanel({ onNavigate }: GalaxyPanelProps = {}) {
   );
   const hasColonyShip = canColonize(gameState);
   const activePlanet = gameState.planets[gameState.activePlanetIndex];
-  const availableProbes = activePlanet.ships.espionageProbe;
+  const availableProbes = Math.min(
+    activePlanet.ships.espionageProbe,
+    gameState.settings.maxProbeCount,
+  );
 
   const latestReportsByCoords = useMemo(() => {
     const latest = new Map<string, EspionageReport>();
@@ -358,6 +374,7 @@ function GalaxySlotRow({
     slot.type === 'npc' &&
     (slot.npc?.lastRaidedAt ?? 0) > 0 &&
     now - (slot.npc?.lastRaidedAt ?? 0) < 48 * 3600 * 1000;
+  const isAbandoning = slot.type === 'npc' && slot.npc?.abandonedAt !== undefined;
 
   const targetCoords = { galaxy: 1, system, slot: slotNumber };
   const isHovered =
@@ -367,9 +384,9 @@ function GalaxySlotRow({
 
   return (
     <tr
-      className={`galaxy-row-${slot.type} ${slot.type === 'npc' ? 'galaxy-row-clickable' : ''}`}
+      className={`galaxy-row-${slot.type} ${slot.type === 'npc' && !isAbandoning ? 'galaxy-row-clickable' : ''} ${isAbandoning ? 'galaxy-row-abandoning' : ''}`}
       onClick={() => {
-        if (slot.type === 'npc') {
+        if (slot.type === 'npc' && !isAbandoning) {
           onAttackNpc(targetCoords);
         }
       }}
@@ -404,10 +421,13 @@ function GalaxySlotRow({
         )}
       </td>
       <td>
-        {slot.type === 'npc' && (
+        {slot.type === 'npc' && !isAbandoning && (
           <span className={`galaxy-strength number ${isRebuilding ? 'galaxy-strength-dim' : ''}`}>
             Strength {npcStrengthLabel(slot.npc?.tier ?? 1)}
           </span>
+        )}
+        {isAbandoning && (
+          <span className="galaxy-strength galaxy-strength-dim number">Abandoning</span>
         )}
         {isRebuilding && <span className="galaxy-rebuilding">Rebuilding</span>}
         {hasDebris && <span className="galaxy-debris number">Debris Field</span>}
@@ -415,50 +435,54 @@ function GalaxySlotRow({
       <td className="galaxy-actions-cell">
         {slot.type === 'npc' && (
           <div className="galaxy-actions">
-            <button
-              type="button"
-              className="btn btn-primary btn-sm"
-              onClick={(event) => {
-                event.stopPropagation();
-                onAttackNpc(targetCoords);
-              }}
-            >
-              Attack
-            </button>
-            <button
-              type="button"
-              className="btn btn-sm"
-              disabled={!canSpy}
-              title={canSpy ? 'Send all available probes' : 'No probes available'}
-              onClick={(event) => {
-                event.stopPropagation();
-                onSpyNpc(targetCoords);
-              }}
-            >
-              Spy
-            </button>
-            {godMode && (
+            {!isAbandoning && (
               <>
                 <button
                   type="button"
-                  className="btn btn-sm"
+                  className="btn btn-primary btn-sm"
                   onClick={(event) => {
                     event.stopPropagation();
-                    onGodRaid(targetCoords);
+                    onAttackNpc(targetCoords);
                   }}
                 >
-                  ⚡ Raid
+                  Attack
                 </button>
                 <button
                   type="button"
-                  className="btn btn-sm btn-danger"
+                  className="btn btn-sm"
+                  disabled={!canSpy}
+                  title={canSpy ? 'Send all available probes' : 'No probes available'}
                   onClick={(event) => {
                     event.stopPropagation();
-                    onGodDelete(targetCoords);
+                    onSpyNpc(targetCoords);
                   }}
                 >
-                  ⚡ Del
+                  Spy
                 </button>
+                {godMode && (
+                  <>
+                    <button
+                      type="button"
+                      className="btn btn-sm"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onGodRaid(targetCoords);
+                      }}
+                    >
+                      ⚡ Raid
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-danger"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onGodDelete(targetCoords);
+                      }}
+                    >
+                      ⚡ Del
+                    </button>
+                  </>
+                )}
               </>
             )}
             {isHovered && <EspionageHoverPanel report={latestReport} now={now} />}

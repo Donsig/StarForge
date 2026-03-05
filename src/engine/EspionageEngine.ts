@@ -1,4 +1,8 @@
-import { getNPCCurrentForce, getNPCResources } from './GalaxyEngine.ts';
+import {
+  calcNPCEspionageLevel as calcGalaxyNPCEspionageLevel,
+  getNPCCurrentForce,
+  getNPCResources,
+} from './GalaxyEngine.ts';
 import type { EspionageReport } from '../models/Fleet.ts';
 import type { NPCColony } from '../models/Galaxy.ts';
 import type { GameState } from '../models/GameState.ts';
@@ -7,9 +11,9 @@ const NPC_RECOVERY_MS = 48 * 3600 * 1000;
 
 export type ResearchState = GameState['research'];
 
-/** NPC espionage level derived from tier */
-export function calcNPCEspionageLevel(tier: number): number {
-  return Math.floor(tier / 2);
+/** NPC espionage level derived from tier and specialty profile. */
+export function calcNPCEspionageLevel(colony: NPCColony): number {
+  return calcGalaxyNPCEspionageLevel(colony);
 }
 
 /**
@@ -56,7 +60,7 @@ export function generateReport(
   gameSpeed: number,
   rng: () => number,
 ): EspionageReport {
-  const npcEspLevel = calcNPCEspionageLevel(colony.tier);
+  const npcEspLevel = calcNPCEspionageLevel(colony);
   const detectionChance = calcDetectionChance(
     npcEspLevel,
     research.espionageTechnology,
@@ -99,6 +103,7 @@ export function generateReport(
   if (espionageTech >= 6) {
     report.buildings = { ...colony.buildings };
     report.tier = colony.tier;
+    report.specialty = colony.specialty;
   }
 
   if (espionageTech >= 8) {

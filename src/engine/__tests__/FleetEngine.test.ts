@@ -2,6 +2,7 @@
 
 import { createNewGameState } from '../../models/GameState.ts';
 import type { FleetMission } from '../../models/Fleet.ts';
+import { getNPCResources } from '../GalaxyEngine.ts';
 import {
   calcDistance,
   calcFleetSpeed,
@@ -181,6 +182,45 @@ describe('FleetEngine', () => {
       expect(mission?.ships.espionageProbe).toBe(3);
       expect(sourcePlanet.ships.espionageProbe).toBe(2);
     });
+
+    it('blocks dispatching to an abandoning npc colony', () => {
+      const state = createNewGameState();
+      const sourcePlanet = state.planets[0];
+      sourcePlanet.ships.smallCargo = 2;
+      sourcePlanet.resources.deuterium = 1000;
+      state.galaxy.npcColonies = [
+        {
+          coordinates: { galaxy: 1, system: 1, slot: 9 },
+          name: 'Abandoning Target',
+          tier: 4,
+          specialty: 'balanced',
+          maxTier: 8,
+          initialUpgradeIntervalMs: 10_800_000,
+          currentUpgradeIntervalMs: 10_800_000,
+          lastUpgradeAt: 0,
+          upgradeTickCount: 0,
+          raidCount: 0,
+          recentRaidTimestamps: [],
+          abandonedAt: 1_000,
+          buildings: {},
+          baseDefences: {},
+          baseShips: {},
+          currentDefences: {},
+          currentShips: {},
+          lastRaidedAt: 0,
+          resourcesAtLastRaid: { metal: 0, crystal: 0, deuterium: 0 },
+        },
+      ];
+
+      const mission = dispatch(
+        state,
+        0,
+        { galaxy: 1, system: 1, slot: 9 },
+        { smallCargo: 1 },
+      );
+
+      expect(mission).toBeNull();
+    });
   });
 
   describe('recallMission', () => {
@@ -266,6 +306,69 @@ describe('FleetEngine', () => {
         deuterium: 0,
       });
       expect(state.fleetMissions[0].returnTime).toBeGreaterThan(now);
+    });
+
+    it('sets npc resourcesAtLastRaid to available minus loot after attack', () => {
+      const state = createNewGameState();
+      const now = 500_000;
+      state.settings.gameSpeed = 1;
+      state.planets[0].ships.smallCargo = 10;
+      state.planets[0].resources.deuterium = 10_000;
+      state.galaxy.npcColonies = [
+        {
+          coordinates: { galaxy: 1, system: 4, slot: 7 },
+          name: 'Loot Target',
+          tier: 3,
+          specialty: 'balanced',
+          maxTier: 5,
+          initialUpgradeIntervalMs: 21_600_000,
+          currentUpgradeIntervalMs: 21_600_000,
+          lastUpgradeAt: 0,
+          upgradeTickCount: 0,
+          raidCount: 0,
+          recentRaidTimestamps: [],
+          abandonedAt: undefined,
+          buildings: {
+            metalMine: 8,
+            crystalMine: 6,
+            deuteriumSynthesizer: 4,
+            solarPlant: 10,
+          },
+          baseDefences: {},
+          baseShips: {},
+          currentDefences: {},
+          currentShips: {},
+          lastRaidedAt: now - 3600 * 1000,
+          resourcesAtLastRaid: { metal: 1000, crystal: 800, deuterium: 600 },
+        },
+      ];
+      const availableBefore = getNPCResources(
+        state.galaxy.npcColonies[0],
+        now,
+        state.settings.gameSpeed,
+      );
+      const mission = dispatch(
+        state,
+        0,
+        { galaxy: 1, system: 4, slot: 7 },
+        { smallCargo: 2 },
+      );
+      expect(mission).not.toBeNull();
+      if (!mission) {
+        return;
+      }
+      mission.arrivalTime = now;
+
+      processTick(state, now);
+
+      const updatedColony = state.galaxy.npcColonies[0];
+      const loot = state.fleetMissions[0].cargo;
+      expect(updatedColony.resourcesAtLastRaid).toEqual({
+        metal: Math.max(0, Math.floor(availableBefore.metal - loot.metal)),
+        crystal: Math.max(0, Math.floor(availableBefore.crystal - loot.crystal)),
+        deuterium: Math.max(0, Math.floor(availableBefore.deuterium - loot.deuterium)),
+      });
+      expect(updatedColony.lastRaidedAt).toBe(now);
     });
   });
 });

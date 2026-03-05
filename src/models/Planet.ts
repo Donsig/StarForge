@@ -18,6 +18,7 @@ export interface PlanetState {
   coordinates: Coordinates;
   maxTemperature: number;
   maxFields: number;
+  fieldCount: number;
   buildings: BuildingLevels;
   ships: ShipCounts;
   defences: DefenceCounts;
@@ -32,6 +33,7 @@ export function createDefaultPlanet(): PlanetState {
     coordinates: { galaxy: 1, system: 1, slot: 4 },
     maxTemperature: 35,
     maxFields: 163,
+    fieldCount: 163,
     buildings: {
       metalMine: 0,
       crystalMine: 0,

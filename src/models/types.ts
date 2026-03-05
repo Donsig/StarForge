@@ -97,6 +97,12 @@ export type NavId =
 
 export type ActivePanel = NavId;
 
+export interface GameSettings {
+  gameSpeed: number;
+  godMode: boolean;
+  maxProbeCount: number;
+}
+
 export const GAME_CONSTANTS = {
   BASE_METAL_PRODUCTION: 30,    // per hour with no mines
   BASE_CRYSTAL_PRODUCTION: 15,  // per hour with no mines
@@ -104,5 +110,5 @@ export const GAME_CONSTANTS = {
   AUTO_SAVE_TICKS: 30,
   MAX_OFFLINE_SECONDS: 7 * 24 * 3600, // 7 days
   STORAGE_KEY: 'starforge_save',
-  STATE_VERSION: 8,
+  STATE_VERSION: 9,
 } as const;

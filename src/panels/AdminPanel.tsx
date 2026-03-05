@@ -7,7 +7,7 @@ import { SHIPS, SHIP_ORDER } from '../data/ships.ts';
 import { useGame } from '../context/GameContext';
 import { getStorageCaps } from '../engine/ResourceEngine.ts';
 import type { CombatResult } from '../models/Combat.ts';
-import type { Coordinates } from '../models/Galaxy.ts';
+import type { Coordinates, NPCSpecialty } from '../models/Galaxy.ts';
 import type { BuildingId, DefenceId, ResearchId, ShipId } from '../models/types.ts';
 import { formatNumber } from '../utils/format.ts';
 
@@ -36,6 +36,14 @@ const TAB_LABELS: Record<AdminTab, string> = {
 const COMBAT_SHIPS: ShipId[] = SHIP_ORDER.filter(
   (shipId) => shipId !== 'smallCargo' && shipId !== 'largeCargo',
 );
+const NPC_SPECIALTY_OPTIONS: NPCSpecialty[] = [
+  'turtle',
+  'fleeter',
+  'miner',
+  'balanced',
+  'raider',
+  'researcher',
+];
 
 function clampInt(min: number, value: number, max: number): number {
   return Math.max(min, Math.min(max, Math.floor(value)));
@@ -125,11 +133,16 @@ export function AdminPanel() {
     adminRemoveNPC,
     adminAddNPC,
     adminSetNPCTier,
+    adminSetNPCSpecialty,
     adminSetNPCBuildings,
     adminSetNPCCurrentFleet,
     adminSetNPCCurrentDefences,
     adminResetNPC,
     adminWipeNPC,
+    adminNPCTriggerUpgrade,
+    adminClearNPCRaidHistory,
+    adminForceAbandonNPC,
+    adminSetPlanetFieldCount,
     adminTriggerCombat,
     adminSimulateTime,
     adminResolveAllMissions,
@@ -170,6 +183,7 @@ export function AdminPanel() {
   const [removeNpcKey, setRemoveNpcKey] = useState('');
   const [editorNpcKey, setEditorNpcKey] = useState('');
   const [editorTier, setEditorTier] = useState(1);
+  const [editorSpecialty, setEditorSpecialty] = useState<NPCSpecialty>('balanced');
   const [editorBuildings, setEditorBuildings] = useState<Record<BuildingId, string>>(
     createInputState(BUILDING_ORDER, '0'),
   );
@@ -229,6 +243,7 @@ export function AdminPanel() {
   useEffect(() => {
     if (!editorNPC) return;
     setEditorTier(editorNPC.tier);
+    setEditorSpecialty(editorNPC.specialty);
     setEditorBuildings(
       BUILDING_ORDER.reduce((acc, buildingId) => {
         acc[buildingId] = String(editorNPC.buildings[buildingId] ?? 0);
@@ -411,6 +426,25 @@ export function AdminPanel() {
 
           {planet && (
             <>
+              <section className="admin-form-section">
+                <h3>Planet Size</h3>
+                <div className="admin-inline-row">
+                  <label className="label" htmlFor="admin-field-count-input">Field Count</label>
+                  <input
+                    id="admin-field-count-input"
+                    type="number"
+                    className="input quantity-input"
+                    min={40}
+                    max={250}
+                    value={planet.fieldCount}
+                    onChange={(event) => {
+                      const nextValue = parseIntOrZero(event.target.value);
+                      adminSetPlanetFieldCount(selectedPlanetIndex, nextValue);
+                    }}
+                  />
+                </div>
+              </section>
+
               <section className="admin-form-section">
                 <h3>Buildings</h3>
                 <div className="admin-grid-inputs">
@@ -836,6 +870,45 @@ export function AdminPanel() {
               </section>
 
               <section className="admin-form-section">
+                <h3>Specialty</h3>
+                <div className="admin-inline-row">
+                  <select
+                    className="input admin-select"
+                    value={editorSpecialty}
+                    onChange={(event) =>
+                      setEditorSpecialty(event.target.value as NPCSpecialty)
+                    }
+                  >
+                    {NPC_SPECIALTY_OPTIONS.map((specialty) => (
+                      <option key={specialty} value={specialty}>
+                        {specialty}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() => {
+                      adminSetNPCSpecialty(editorNPC.coordinates, editorSpecialty);
+                      setStatus(`NPC specialty set to ${editorSpecialty}.`);
+                    }}
+                  >
+                    Apply Specialty
+                  </button>
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() => {
+                      adminNPCTriggerUpgrade(editorNPC.coordinates);
+                      setStatus('Triggered one NPC upgrade tick.');
+                    }}
+                  >
+                    Trigger Upgrade
+                  </button>
+                </div>
+              </section>
+
+              <section className="admin-form-section">
                 <h3>Buildings</h3>
                 <div className="admin-grid-inputs">
                   {BUILDING_ORDER.map((buildingId) => (
@@ -990,6 +1063,42 @@ export function AdminPanel() {
                 >
                   Wipe Fleet & Defences
                 </button>
+              </section>
+
+              <section className="admin-form-section">
+                <h3>Raid History</h3>
+                <p className="hint number">Total raids: {editorNPC.raidCount}</p>
+                <p className="hint number">
+                  Recent raid timestamps: {editorNPC.recentRaidTimestamps.length}
+                </p>
+                <p className="hint">
+                  Abandoned At:{' '}
+                  {editorNPC.abandonedAt !== undefined
+                    ? new Date(editorNPC.abandonedAt).toLocaleString()
+                    : '—'}
+                </p>
+                <div className="admin-inline-row">
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() => {
+                      adminClearNPCRaidHistory(editorNPC.coordinates);
+                      setStatus('NPC raid history cleared.');
+                    }}
+                  >
+                    Clear Raid History
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-danger"
+                    onClick={() => {
+                      adminForceAbandonNPC(editorNPC.coordinates);
+                      setStatus('NPC forced into abandoning state.');
+                    }}
+                  >
+                    Force Abandon
+                  </button>
+                </div>
               </section>
             </>
           )}

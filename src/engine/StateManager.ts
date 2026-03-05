@@ -1,4 +1,5 @@
 import type { GameState } from '../models/GameState.ts';
+import type { NPCSpecialty } from '../models/Galaxy.ts';
 import { createNewGameState } from '../models/GameState.ts';
 import { GAME_CONSTANTS } from '../models/types.ts';
 import { accumulateBulk } from './ResourceEngine.ts';
@@ -18,6 +19,27 @@ import {
 } from './FormulasEngine.ts';
 import { generateNPCColonies } from './GalaxyEngine.ts';
 import { processTick as processFleetTick } from './FleetEngine.ts';
+import { processUpgrades as processNPCUpgrades } from './NPCUpgradeEngine.ts';
+
+const NPC_SPECIALTIES: NPCSpecialty[] = [
+  'turtle',
+  'fleeter',
+  'miner',
+  'balanced',
+  'raider',
+  'researcher',
+];
+
+/** Simple seedable PRNG (mulberry32). */
+function mulberry32(seed: number): () => number {
+  let s = seed | 0;
+  return () => {
+    s = (s + 0x6d2b79f5) | 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
 
 function clampActivePlanetIndex(state: GameState): void {
   if (!Array.isArray(state.planets) || state.planets.length === 0) {
@@ -162,6 +184,70 @@ function migrate(state: GameState): GameState {
     (state as any).settings = (state as any).settings ?? { gameSpeed: 1 };
     (state as any).settings.godMode = false;
     state.version = 8;
+  }
+
+  if (state.version < 9) {
+    (state as any).settings = (state as any).settings ?? { gameSpeed: 1, godMode: false };
+    if (typeof state.settings.godMode !== 'boolean') {
+      state.settings.godMode = false;
+    }
+    if (typeof state.settings.maxProbeCount !== 'number') {
+      state.settings.maxProbeCount = 10;
+    }
+
+    for (const planet of state.planets) {
+      if (typeof planet.fieldCount !== 'number') {
+        planet.fieldCount = planet.maxFields ?? 163;
+      }
+    }
+
+    for (const colony of state.galaxy.npcColonies) {
+      const safeTier = Math.max(1, Math.min(10, Math.floor(colony.tier ?? 1)));
+      const defaultMaxTier = safeTier <= 3 ? 5 : safeTier <= 6 ? 8 : 10;
+      const defaultIntervalMs =
+        safeTier <= 3 ? 21_600_000 : safeTier <= 6 ? 10_800_000 : 5_400_000;
+      const rng = mulberry32(
+        state.galaxy.seed ^
+          (colony.coordinates.system * 100 + colony.coordinates.slot),
+      );
+      const generatedSpecialty =
+        NPC_SPECIALTIES[Math.floor(rng() * NPC_SPECIALTIES.length)] ?? 'balanced';
+
+      if (colony.specialty === undefined) {
+        colony.specialty = generatedSpecialty;
+      }
+      if (colony.maxTier === undefined) {
+        colony.maxTier = defaultMaxTier;
+      }
+      if (colony.initialUpgradeIntervalMs === undefined) {
+        colony.initialUpgradeIntervalMs = defaultIntervalMs;
+      }
+      if (colony.currentUpgradeIntervalMs === undefined) {
+        colony.currentUpgradeIntervalMs = defaultIntervalMs;
+      }
+      if (colony.lastUpgradeAt === undefined) {
+        colony.lastUpgradeAt = 0;
+      }
+      if (colony.upgradeTickCount === undefined) {
+        colony.upgradeTickCount = 0;
+      }
+      if (colony.raidCount === undefined) {
+        colony.raidCount = 0;
+      }
+      if (!Array.isArray(colony.recentRaidTimestamps)) {
+        colony.recentRaidTimestamps = [];
+      }
+      if (colony.resourcesAtLastRaid === undefined) {
+        colony.resourcesAtLastRaid = { metal: 0, crystal: 0, deuterium: 0 };
+      }
+      colony.resourcesAtLastRaid = {
+        metal: Math.max(0, Math.floor(colony.resourcesAtLastRaid.metal ?? 0)),
+        crystal: Math.max(0, Math.floor(colony.resourcesAtLastRaid.crystal ?? 0)),
+        deuterium: Math.max(0, Math.floor(colony.resourcesAtLastRaid.deuterium ?? 0)),
+      };
+    }
+
+    state.version = 9;
   }
 
   return state;
@@ -368,6 +454,8 @@ export function processOfflineTime(state: GameState): { elapsedSeconds: number }
   if (remainingSeconds > 0) {
     accumulateBulk(state, remainingSeconds * state.settings.gameSpeed);
   }
+
+  processNPCUpgrades(state, endTime);
 
   state.lastSaveTimestamp = now;
   return { elapsedSeconds };

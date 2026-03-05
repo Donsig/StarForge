@@ -19,6 +19,15 @@ function createColony(overrides: Partial<NPCColony> = {}): NPCColony {
     coordinates: { galaxy: 1, system: 2, slot: 7 },
     name: 'Test Colony',
     tier: 8,
+    specialty: 'balanced',
+    maxTier: 10,
+    initialUpgradeIntervalMs: 5_400_000,
+    currentUpgradeIntervalMs: 5_400_000,
+    lastUpgradeAt: 0,
+    upgradeTickCount: 0,
+    raidCount: 0,
+    recentRaidTimestamps: [],
+    abandonedAt: undefined,
     buildings: {
       metalMine: 12,
       crystalMine: 10,
@@ -48,6 +57,7 @@ function createColony(overrides: Partial<NPCColony> = {}): NPCColony {
       smallCargo: 2,
     },
     lastRaidedAt: 0,
+    resourcesAtLastRaid: { metal: 0, crystal: 0, deuterium: 0 },
     ...overrides,
   };
 }
@@ -55,9 +65,22 @@ function createColony(overrides: Partial<NPCColony> = {}): NPCColony {
 describe('EspionageEngine', () => {
   describe('calcNPCEspionageLevel', () => {
     it('derives npc espionage level from colony tier', () => {
-      expect(calcNPCEspionageLevel(1)).toBe(0);
-      expect(calcNPCEspionageLevel(4)).toBe(2);
-      expect(calcNPCEspionageLevel(9)).toBe(4);
+      expect(calcNPCEspionageLevel(createColony({ tier: 1 }))).toBe(0);
+      expect(calcNPCEspionageLevel(createColony({ tier: 4 }))).toBe(2);
+      expect(calcNPCEspionageLevel(createColony({ tier: 9 }))).toBe(4);
+    });
+
+    it('uses research lab level for researcher specialty colonies', () => {
+      const researcher = createColony({
+        specialty: 'researcher',
+        tier: 4,
+        buildings: {
+          ...createColony().buildings,
+          researchLab: 9,
+        },
+      });
+
+      expect(calcNPCEspionageLevel(researcher)).toBe(4);
     });
   });
 
@@ -120,6 +143,7 @@ describe('EspionageEngine', () => {
       const tech6 = generateReport(colony, now, 0, 5, createResearch(6), 1, () => 1);
       expect(tech6.buildings).toBeDefined();
       expect(tech6.tier).toBe(colony.tier);
+      expect(tech6.specialty).toBe(colony.specialty);
     });
 
     it('includes rebuild status at tech >= 8 and shows 100% for never-raided colonies', () => {

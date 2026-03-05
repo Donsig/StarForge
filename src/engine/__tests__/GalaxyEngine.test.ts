@@ -18,6 +18,15 @@ function createNPCColony(overrides?: Partial<NPCColony>): NPCColony {
     coordinates: { galaxy: 1, system: 10, slot: 6 },
     name: 'Test Colony',
     tier: 6,
+    specialty: 'balanced',
+    maxTier: 8,
+    initialUpgradeIntervalMs: 10_800_000,
+    currentUpgradeIntervalMs: 10_800_000,
+    lastUpgradeAt: 0,
+    upgradeTickCount: 0,
+    raidCount: 0,
+    recentRaidTimestamps: [],
+    abandonedAt: undefined,
     buildings: {
       metalMine: 12,
       crystalMine: 9,
@@ -57,6 +66,7 @@ function createNPCColony(overrides?: Partial<NPCColony>): NPCColony {
       cruiser: 2,
     },
     lastRaidedAt: 0,
+    resourcesAtLastRaid: { metal: 0, crystal: 0, deuterium: 0 },
     ...overrides,
   };
 }
@@ -219,6 +229,21 @@ describe('GalaxyEngine', () => {
     expect(speed3.metal).toBeGreaterThanOrEqual(speed1.metal * 3 - 1);
     expect(speed3.crystal).toBeGreaterThanOrEqual(speed1.crystal * 3 - 1);
     expect(speed3.deuterium).toBeGreaterThanOrEqual(speed1.deuterium * 3 - 1);
+  });
+
+  it('getNPCResources returns zero when colony is abandoning', () => {
+    const now = 2_500_000_000;
+    const colony = createNPCColony({
+      abandonedAt: now - 1000,
+      lastRaidedAt: now - 3600 * 1000,
+      resourcesAtLastRaid: { metal: 1000, crystal: 500, deuterium: 250 },
+    });
+
+    expect(getNPCResources(colony, now, 5)).toEqual({
+      metal: 0,
+      crystal: 0,
+      deuterium: 0,
+    });
   });
 
   it('getNPCCurrentForce interpolates from current to base over 48 hours', () => {

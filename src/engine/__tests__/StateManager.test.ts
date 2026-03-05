@@ -28,6 +28,7 @@ describe('StateManager', () => {
     expect(state.version).toBe(GAME_CONSTANTS.STATE_VERSION);
     expect(state.tickCount).toBe(0);
     expect(state.settings.gameSpeed).toBe(1);
+    expect(state.settings.maxProbeCount).toBe(10);
     expect(state.planets[0].name).toBe('Homeworld');
     expect(state.planets[0].resources.metal).toBe(500);
     expect(state.planets[0].resources.crystal).toBe(500);
@@ -94,6 +95,7 @@ describe('StateManager', () => {
     expect(imported!.research.energyTechnology).toBe(3);
     expect(imported!.planets[0].resources.deuterium).toBe(1234);
     expect(imported!.lastSaveTimestamp).toBe(4_000_000);
+    expect(imported!.settings.maxProbeCount).toBe(10);
     expect(loadState()).toEqual(imported);
   });
 
@@ -278,6 +280,15 @@ describe('StateManager', () => {
         coordinates: targetCoordinates,
         name: 'Scout Target',
         tier: 1,
+        specialty: 'balanced',
+        maxTier: 5,
+        initialUpgradeIntervalMs: 21_600_000,
+        currentUpgradeIntervalMs: 21_600_000,
+        lastUpgradeAt: 0,
+        upgradeTickCount: 0,
+        raidCount: 0,
+        recentRaidTimestamps: [],
+        abandonedAt: undefined,
         buildings: {
           metalMine: 2,
           crystalMine: 1,
@@ -289,6 +300,7 @@ describe('StateManager', () => {
         currentDefences: {},
         currentShips: {},
         lastRaidedAt: 0,
+        resourcesAtLastRaid: { metal: 0, crystal: 0, deuterium: 0 },
       },
     ];
     state.fleetMissions = [
@@ -412,10 +424,12 @@ describe('StateManager migration', () => {
     expect(loaded!.planets[0].buildings.metalMine).toBe(5);
     expect(loaded!.planets[0].ships.lightFighter).toBe(10);
     expect(loaded!.planets[0].coordinates).toEqual({ galaxy: 1, system: 1, slot: 4 });
+    expect(loaded!.planets[0].fieldCount).toBe(163);
     expect(loaded!.activePlanetIndex).toBe(0);
     expect(loaded!.galaxy).toBeDefined();
     expect(loaded!.galaxy.npcColonies.length).toBeGreaterThan(0);
     expect(loaded!.debrisFields).toEqual([]);
+    expect(loaded!.settings.maxProbeCount).toBe(10);
     expect((loaded as any).planet).toBeUndefined();
   });
 });

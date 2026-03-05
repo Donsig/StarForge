@@ -43,6 +43,7 @@ export interface EspionageReport {
   defences?: Record<string, number>;
   buildings?: Record<string, number>;
   tier?: number;
+  specialty?: string;
   rebuildStatus?: { defencePct: number; fleetPct: number };
   read: boolean;
 }

@@ -37,6 +37,18 @@ function formatCargo(cargo: { metal: number; crystal: number; deuterium: number 
   return `M ${formatNumber(cargo.metal)}  C ${formatNumber(cargo.crystal)}  D ${formatNumber(cargo.deuterium)}`;
 }
 
+function missionShipManifest(ships: Record<string, number>): string {
+  return Object.entries(ships)
+    .map(([shipId, countValue]) => {
+      const count = Math.max(0, Math.floor(countValue ?? 0));
+      if (count <= 0) return null;
+      const shipName = SHIPS[shipId as keyof typeof SHIPS]?.name ?? shipId;
+      return `${count}× ${shipName}`;
+    })
+    .filter((entry): entry is string => entry !== null)
+    .join(', ');
+}
+
 interface MissionRowProps {
   mission: FleetMission;
   onRecall: (missionId: string) => void;
@@ -45,6 +57,7 @@ interface MissionRowProps {
 }
 
 function MissionRow({ mission, onRecall, onResolve, godMode }: MissionRowProps) {
+  const [showTooltip, setShowTooltip] = useState(false);
   const nextTransition =
     mission.status === 'outbound'
       ? mission.arrivalTime
@@ -63,9 +76,13 @@ function MissionRow({ mission, onRecall, onResolve, godMode }: MissionRowProps) 
   const hasCargo =
     mission.cargo.metal > 0 || mission.cargo.crystal > 0 || mission.cargo.deuterium > 0;
   const showCargo = mission.status === 'returning' && hasCargo;
+  const shipDetails = missionShipManifest(mission.ships);
 
   return (
-    <tr>
+    <tr
+      onMouseEnter={() => setShowTooltip(true)}
+      onMouseLeave={() => setShowTooltip(false)}
+    >
       <td>{formatMissionType(mission.type)}</td>
       <td className="number">{formatTargetLabel(mission.targetCoordinates)}</td>
       <td>
@@ -75,7 +92,7 @@ function MissionRow({ mission, onRecall, onResolve, godMode }: MissionRowProps) 
       </td>
       <td className="number">{countdown || '00:00:00'}</td>
       <td>{showCargo ? formatCargo(mission.cargo) : '—'}</td>
-      <td>
+      <td style={{ position: 'relative' }}>
         {mission.status === 'outbound' && (
           <button
             type="button"
@@ -93,6 +110,27 @@ function MissionRow({ mission, onRecall, onResolve, godMode }: MissionRowProps) 
           >
             ⚡ Resolve
           </button>
+        )}
+        {showTooltip && shipDetails && (
+          <div
+            className="fleet-mission-tooltip"
+            style={{
+              position: 'absolute',
+              top: '100%',
+              right: 0,
+              zIndex: 5,
+              marginTop: 4,
+              padding: '6px 8px',
+              borderRadius: 6,
+              background: 'rgba(10, 16, 30, 0.95)',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              color: '#e7f2ff',
+              fontSize: 12,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {shipDetails}
+          </div>
         )}
       </td>
     </tr>
@@ -213,6 +251,10 @@ export function FleetPanel() {
   }, [missionType, sourcePlanet.ships.espionageProbe]);
 
   const availableShips = SHIP_ORDER.filter((shipId) => sourcePlanet.ships[shipId] > 0);
+  const maxProbePerMission = Math.min(
+    sourcePlanet.ships.espionageProbe,
+    gameState.settings.maxProbeCount,
+  );
   const espionageAvailable = sourcePlanet.ships.espionageProbe > 0;
   const shipSelection = missionType === 'espionage'
     ? availableShips.filter((shipId) => shipId === 'espionageProbe')
@@ -224,14 +266,19 @@ export function FleetPanel() {
   const maxSlots = calcMaxFleetSlots(gameState.research);
   const slotsFull = activeMissions.length >= maxSlots;
 
-  const selectedShipCount = useMemo(
-    () =>
-      Object.values(selectedShips).reduce(
-        (total, value) => total + Math.max(0, Math.floor(value)),
+  const selectedShipCount = useMemo(() => {
+    if (missionType === 'espionage') {
+      return Math.max(
         0,
-      ),
-    [selectedShips],
-  );
+        Math.min(maxProbePerMission, Math.floor(selectedShips.espionageProbe ?? 0)),
+      );
+    }
+
+    return Object.values(selectedShips).reduce(
+      (total, value) => total + Math.max(0, Math.floor(value)),
+      0,
+    );
+  }, [maxProbePerMission, missionType, selectedShips]);
 
   const dispatchPreview = useMemo(() => {
     if (!fleetTarget || selectedShipCount <= 0) {
@@ -369,7 +416,10 @@ export function FleetPanel() {
           ) : (
             <div className="fleet-ship-grid">
               {shipSelection.map((shipId) => {
-                const maxCount = sourcePlanet.ships[shipId];
+                const maxCount =
+                  missionType === 'espionage' && shipId === 'espionageProbe'
+                    ? maxProbePerMission
+                    : sourcePlanet.ships[shipId];
                 const value = Math.min(maxCount, Math.max(0, selectedShips[shipId] ?? 0));
 
                 return (
@@ -478,7 +528,7 @@ export function FleetPanel() {
                   ? dispatchEspionage(
                       sourcePlanetIndex,
                       fleetTarget,
-                      selectedShips.espionageProbe ?? 0,
+                      Math.min(maxProbePerMission, selectedShips.espionageProbe ?? 0),
                     )
                   : dispatchFleet(sourcePlanetIndex, fleetTarget, selectedShips);
                 if (mission) {

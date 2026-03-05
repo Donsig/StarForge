@@ -1,5 +1,5 @@
 import type { GameState } from '../models/GameState.ts';
-import type { Coordinates, NPCColony } from '../models/Galaxy.ts';
+import type { Coordinates, NPCColony, NPCSpecialty } from '../models/Galaxy.ts';
 import type { PlanetState } from '../models/Planet.ts';
 import { createDefaultPlanet } from '../models/Planet.ts';
 import { GALAXY_CONSTANTS } from '../data/galaxy.ts';
@@ -7,7 +7,7 @@ import { calculateProduction } from './ResourceEngine.ts';
 import { activePlanet } from './helpers.ts';
 
 const NPC_RECOVERY_MS = 48 * 3600 * 1000;
-const GAME_START_TIME = 0;
+const NPC_RESOURCE_CAP_HOURS = 48;
 
 const NPC_NAME_PREFIXES = [
   'Zorgon',
@@ -20,6 +20,14 @@ const NPC_NAME_PREFIXES = [
   'Cyphran',
   'Moldar',
   'Xenthar',
+];
+const NPC_SPECIALTIES: NPCSpecialty[] = [
+  'turtle',
+  'fleeter',
+  'miner',
+  'balanced',
+  'raider',
+  'researcher',
 ];
 
 const NPC_RESEARCH_LEVELS: GameState['research'] = {
@@ -55,6 +63,23 @@ function clamp(min: number, value: number, max: number): number {
 
 function sanitizeTier(tier: number): number {
   return clamp(1, Math.floor(tier), 10);
+}
+
+function maxTierForNPC(tier: number): number {
+  if (tier <= 3) return 5;
+  if (tier <= 6) return 8;
+  return 10;
+}
+
+function initialUpgradeIntervalMsForTier(tier: number): number {
+  if (tier <= 3) return 21_600_000;
+  if (tier <= 6) return 10_800_000;
+  return 5_400_000;
+}
+
+function specialtyForCoordinates(seed: number, coordinates: Coordinates): NPCSpecialty {
+  const rng = mulberry32(seed ^ (coordinates.system * 100 + coordinates.slot));
+  return NPC_SPECIALTIES[Math.floor(rng() * NPC_SPECIALTIES.length)] ?? 'balanced';
 }
 
 function nameForNPC(seed: number, coordinates: Coordinates): string {
@@ -172,18 +197,37 @@ export function createNPCColonyForTier(
   const safeTier = sanitizeTier(tier);
   const baseDefences = buildNPCDefencesForTier(safeTier);
   const baseShips = buildNPCShipsForTier(safeTier);
+  const intervalMs = initialUpgradeIntervalMsForTier(safeTier);
+  const specialty = specialtyForCoordinates(seed, coordinates);
 
   return {
     coordinates: { ...coordinates },
     name: nameForNPC(seed, coordinates),
     tier: safeTier,
+    specialty,
+    maxTier: maxTierForNPC(safeTier),
+    initialUpgradeIntervalMs: intervalMs,
+    currentUpgradeIntervalMs: intervalMs,
+    lastUpgradeAt: 0,
+    upgradeTickCount: 0,
+    raidCount: 0,
+    recentRaidTimestamps: [],
+    abandonedAt: undefined,
     buildings: buildNPCBuildingsForTier(safeTier),
     baseDefences,
     baseShips,
     currentDefences: { ...baseDefences },
     currentShips: { ...baseShips },
     lastRaidedAt: 0,
+    resourcesAtLastRaid: { metal: 0, crystal: 0, deuterium: 0 },
   };
+}
+
+export function calcNPCEspionageLevel(colony: NPCColony): number {
+  if (colony.specialty === 'researcher') {
+    return Math.floor((colony.buildings.researchLab ?? 0) / 2);
+  }
+  return Math.floor(colony.tier / 2);
 }
 
 function getInterpolatedForce(
@@ -212,6 +256,7 @@ function createNPCProductionPlanet(colony: NPCColony): PlanetState {
     coordinates: { ...colony.coordinates },
     maxTemperature: 20 + colony.tier * 3,
     maxFields: 0,
+    fieldCount: 0,
     buildings: {
       metalMine: colony.buildings.metalMine ?? 0,
       crystalMine: colony.buildings.crystalMine ?? 0,
@@ -290,21 +335,32 @@ export function generateNPCColonies(seed: number): NPCColony[] {
         1 + (systemDistance / GALAXY_CONSTANTS.MAX_SYSTEMS) * 9,
       );
       const tierOffset = Math.floor(rng() * 3) - 1;
-      const tier = clamp(1, baseTier + tierOffset, 10);
-
+      const tier = sanitizeTier(clamp(1, baseTier + tierOffset, 10));
       const baseDefences = buildNPCDefencesForTier(tier);
       const baseShips = buildNPCShipsForTier(tier);
+      const intervalMs = initialUpgradeIntervalMsForTier(tier);
+      const specialty = specialtyForCoordinates(seed, { galaxy: 1, system, slot });
 
       colonies.push({
         coordinates: { galaxy: 1, system, slot },
         name: `${NPC_NAME_PREFIXES[Math.floor(rng() * NPC_NAME_PREFIXES.length)]} Colony`,
         tier,
+        specialty,
+        maxTier: maxTierForNPC(tier),
+        initialUpgradeIntervalMs: intervalMs,
+        currentUpgradeIntervalMs: intervalMs,
+        lastUpgradeAt: 0,
+        upgradeTickCount: 0,
+        raidCount: 0,
+        recentRaidTimestamps: [],
+        abandonedAt: undefined,
         buildings: buildNPCBuildingsForTier(tier),
         baseDefences,
         baseShips,
         currentDefences: { ...baseDefences },
         currentShips: { ...baseShips },
         lastRaidedAt: 0,
+        resourcesAtLastRaid: { metal: 0, crystal: 0, deuterium: 0 },
       });
     }
   }
@@ -318,22 +374,53 @@ export function getNPCResources(
   now: number,
   gameSpeed: number,
 ): { metal: number; crystal: number; deuterium: number } {
+  if (colony.abandonedAt !== undefined) {
+    return { metal: 0, crystal: 0, deuterium: 0 };
+  }
+
   const productionPlanet = createNPCProductionPlanet(colony);
   const production = calculateProduction(productionPlanet, NPC_RESEARCH_LEVELS);
-  const elapsedFrom = colony.lastRaidedAt || GAME_START_TIME;
+  const elapsedMs = Math.max(0, now - (colony.lastRaidedAt || 0));
   const safeGameSpeed = Math.max(0, gameSpeed);
-  const elapsedMs = clamp(0, now - elapsedFrom, NPC_RECOVERY_MS);
-  const elapsedSeconds = Math.min(
-    (elapsedMs / 1000) * safeGameSpeed,
-    (NPC_RECOVERY_MS / 1000) * safeGameSpeed,
-  );
+  const elapsedHours = (elapsedMs * safeGameSpeed) / 3_600_000;
+  const stockpileCap = {
+    metal: production.metalPerHour * NPC_RESOURCE_CAP_HOURS,
+    crystal: production.crystalPerHour * NPC_RESOURCE_CAP_HOURS,
+    deuterium: production.deuteriumPerHour * NPC_RESOURCE_CAP_HOURS,
+  };
+  const baseline = colony.resourcesAtLastRaid ?? {
+    metal: 0,
+    crystal: 0,
+    deuterium: 0,
+  };
 
   return {
-    metal: Math.max(0, Math.floor((production.metalPerHour / 3600) * elapsedSeconds)),
-    crystal: Math.max(0, Math.floor((production.crystalPerHour / 3600) * elapsedSeconds)),
+    metal: Math.max(
+      0,
+      Math.floor(
+        Math.min(
+          stockpileCap.metal,
+          baseline.metal + production.metalPerHour * elapsedHours,
+        ),
+      ),
+    ),
+    crystal: Math.max(
+      0,
+      Math.floor(
+        Math.min(
+          stockpileCap.crystal,
+          baseline.crystal + production.crystalPerHour * elapsedHours,
+        ),
+      ),
+    ),
     deuterium: Math.max(
       0,
-      Math.floor((production.deuteriumPerHour / 3600) * elapsedSeconds),
+      Math.floor(
+        Math.min(
+          stockpileCap.deuterium,
+          baseline.deuterium + production.deuteriumPerHour * elapsedHours,
+        ),
+      ),
     ),
   };
 }
@@ -462,6 +549,24 @@ export function isSlotEmpty(state: GameState, coordinates: Coordinates): boolean
       colony.coordinates.slot === coordinates.slot,
   );
   return !hasNpc;
+}
+
+export function adminAddNPC(
+  state: GameState,
+  coordinates: Coordinates,
+  tier: number,
+): NPCColony | null {
+  if (!isSlotEmpty(state, coordinates)) {
+    return null;
+  }
+
+  const colony = createNPCColonyForTier(
+    coordinates,
+    sanitizeTier(tier),
+    state.galaxy.seed,
+  );
+  state.galaxy.npcColonies.push(colony);
+  return colony;
 }
 
 /** Colonize a planet at the given coordinates. Consumes a colony ship. Returns the new planet or null on failure. */

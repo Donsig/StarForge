@@ -2,7 +2,7 @@ import { createContext, useContext, type ReactNode } from 'react';
 import type { GameState } from '../models/GameState.ts';
 import type { EspionageReport, FleetMission } from '../models/Fleet.ts';
 import type { CombatResult } from '../models/Combat.ts';
-import type { Coordinates, NPCColony } from '../models/Galaxy.ts';
+import type { Coordinates, NPCColony, NPCSpecialty } from '../models/Galaxy.ts';
 import type { PlanetState } from '../models/Planet.ts';
 import type { BuildingId, DefenceId, ResearchId, ShipId } from '../models/types.ts';
 import type { ProductionRates } from '../engine/ResourceEngine.ts';
@@ -38,6 +38,7 @@ export interface GameContextType {
   recallFleet: (missionId: string) => void;
   markReportRead: (reportId: string) => void;
   setGameSpeed: (n: number) => void;
+  setMaxProbeCount: (n: number) => void;
   setGodMode: (enabled: boolean) => void;
   adminSetResources: (
     planetIndex: number,
@@ -69,6 +70,7 @@ export interface GameContextType {
   adminRemoveNPC: (coords: Coordinates) => void;
   adminAddNPC: (coords: Coordinates, tier: number) => NPCColony | null;
   adminSetNPCTier: (coords: Coordinates, tier: number) => void;
+  adminSetNPCSpecialty: (coords: Coordinates, specialty: NPCSpecialty) => void;
   adminSetNPCBuildings: (
     coords: Coordinates,
     buildings: Partial<Record<BuildingId, number>>,
@@ -85,6 +87,10 @@ export interface GameContextType {
   ) => void;
   adminResetNPC: (coords: Coordinates) => void;
   adminWipeNPC: (coords: Coordinates) => void;
+  adminNPCTriggerUpgrade: (coords: Coordinates) => void;
+  adminClearNPCRaidHistory: (coords: Coordinates) => void;
+  adminForceAbandonNPC: (coords: Coordinates) => void;
+  adminSetPlanetFieldCount: (planetIndex: number, fieldCount: number) => void;
   adminCompleteBuilding: (planetIndex: number) => void;
   adminCompleteResearch: () => void;
   adminCompleteShipyard: (planetIndex: number) => void;

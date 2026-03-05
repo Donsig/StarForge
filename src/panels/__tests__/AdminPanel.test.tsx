@@ -59,6 +59,15 @@ function Harness({ children }: { children?: ReactNode }) {
         },
       }));
     },
+    setMaxProbeCount: (n: number) => {
+      setGameState((current) => ({
+        ...current,
+        settings: {
+          ...current.settings,
+          maxProbeCount: Math.max(1, Math.min(999, Math.floor(n))),
+        },
+      }));
+    },
     setGodMode: (enabled: boolean) => {
       setGameState((current) => ({
         ...current,
@@ -124,6 +133,7 @@ function Harness({ children }: { children?: ReactNode }) {
     adminRemoveNPC: () => {},
     adminAddNPC: () => null,
     adminSetNPCTier: () => {},
+    adminSetNPCSpecialty: () => {},
     adminSetNPCBuildings: (_coords: Coordinates, _buildings: Partial<Record<BuildingId, number>>) => {},
     adminSetNPCCurrentFleet: (
       _coords: Coordinates,
@@ -137,6 +147,10 @@ function Harness({ children }: { children?: ReactNode }) {
     ) => {},
     adminResetNPC: () => {},
     adminWipeNPC: () => {},
+    adminNPCTriggerUpgrade: () => {},
+    adminClearNPCRaidHistory: () => {},
+    adminForceAbandonNPC: () => {},
+    adminSetPlanetFieldCount: () => {},
     adminCompleteBuilding: () => {},
     adminCompleteResearch: () => {},
     adminCompleteShipyard: () => {},

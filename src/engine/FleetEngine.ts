@@ -3,6 +3,7 @@ import { addDebris, getNPCCurrentForce, getNPCResources } from './GalaxyEngine.t
 import { simulate } from './CombatEngine.ts';
 import { generateReport } from './EspionageEngine.ts';
 import { getStorageCaps } from './ResourceEngine.ts';
+import { recordRaid } from './NPCUpgradeEngine.ts';
 import type { GameState } from '../models/GameState.ts';
 import type { CombatResult } from '../models/Combat.ts';
 import type { FleetMission, MissionType } from '../models/Fleet.ts';
@@ -167,7 +168,7 @@ function resolveAttackAtTarget(state: GameState, mission: FleetMission, now: num
     return;
   }
 
-  const npcResources = getNPCResources(colony, now, state.settings.gameSpeed);
+  const availableResources = getNPCResources(colony, now, state.settings.gameSpeed);
   const npcForce = getNPCCurrentForce(colony, now);
   const seed = (now ^ Number.parseInt(mission.id.slice(-8), 16)) >>> 0;
 
@@ -193,7 +194,7 @@ function resolveAttackAtTarget(state: GameState, mission: FleetMission, now: num
   );
 
   const survivingShips = compactShips(combatResult.attackerEnd.ships);
-  const loot = calcLoot(npcResources, survivingShips);
+  const loot = calcLoot(availableResources, survivingShips);
   const resultWithLoot: CombatResult = {
     ...combatResult,
     loot,
@@ -204,7 +205,13 @@ function resolveAttackAtTarget(state: GameState, mission: FleetMission, now: num
     resultWithLoot.defenderEnd.defences,
   );
   colony.currentShips = applyNpcLosses(colony.baseShips, resultWithLoot.defenderEnd.ships);
+  colony.resourcesAtLastRaid = {
+    metal: Math.max(0, Math.floor(availableResources.metal - loot.metal)),
+    crystal: Math.max(0, Math.floor(availableResources.crystal - loot.crystal)),
+    deuterium: Math.max(0, Math.floor(availableResources.deuterium - loot.deuterium)),
+  };
   colony.lastRaidedAt = now;
+  recordRaid(colony, now, state.settings.gameSpeed);
 
   mission.ships = survivingShips;
   mission.cargo = loot;
@@ -238,7 +245,13 @@ function resolveEspionageAtTarget(
     isMatchingCoordinates(npc.coordinates, mission.targetCoordinates));
   const probeCount = Math.max(0, Math.floor(mission.ships.espionageProbe ?? 0));
 
-  if (!colony || probeCount <= 0) {
+  if (!colony || colony.abandonedAt !== undefined) {
+    mission.status = 'returning';
+    mission.returnTime = now + 10_000;
+    return;
+  }
+
+  if (probeCount <= 0) {
     mission.status = 'completed';
     return;
   }
@@ -449,6 +462,11 @@ export function dispatch(
 ): FleetMission | null {
   const sourcePlanet = state.planets[sourcePlanetIndex];
   if (!sourcePlanet) return null;
+  const targetNpc = state.galaxy.npcColonies.find((npc) =>
+    isMatchingCoordinates(npc.coordinates, targetCoords));
+  if (targetNpc?.abandonedAt !== undefined) {
+    return null;
+  }
 
   const activeMissions = state.fleetMissions.filter(
     (mission) => mission.status !== 'completed',
@@ -476,6 +494,9 @@ export function dispatch(
       return null;
     }
     if ((selectedShips.espionageProbe ?? 0) <= 0) {
+      return null;
+    }
+    if ((selectedShips.espionageProbe ?? 0) > state.settings.maxProbeCount) {
       return null;
     }
   } else if (Object.keys(selectedShips).length === 0) {
