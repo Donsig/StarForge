@@ -280,6 +280,7 @@ describe('StateManager', () => {
       {
         coordinates: targetCoordinates,
         name: 'Scout Target',
+        temperature: 20,
         tier: 1,
         specialty: 'balanced',
         maxTier: 5,

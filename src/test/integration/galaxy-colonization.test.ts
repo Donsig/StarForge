@@ -79,6 +79,7 @@ describe('Galaxy colonization flow', () => {
     state.galaxy.npcColonies = [
       {
         name: 'TestNPC',
+        temperature: 18,
         coordinates: { galaxy: 1, system: 5, slot: 3 },
         tier: 5,
         specialty: 'balanced',

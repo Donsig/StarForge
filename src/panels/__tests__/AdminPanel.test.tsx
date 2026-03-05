@@ -46,6 +46,8 @@ function Harness({ children }: { children?: ReactNode }) {
     setActivePlanet: () => {},
     fleetTarget: null,
     setFleetTarget: () => {},
+    pendingMissionTarget: null,
+    setPendingMissionTarget: () => {},
     dispatchFleet: () => null,
     dispatchEspionage: () => null,
     dispatchHarvest: () => null,

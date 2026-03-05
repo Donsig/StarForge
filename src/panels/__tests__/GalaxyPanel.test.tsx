@@ -42,6 +42,7 @@ describe('GalaxyPanel', () => {
             {
               coordinates: { galaxy: 1, system: 1, slot: 1 },
               name: 'Raid Target',
+              temperature: 30,
               tier: 8,
               specialty: 'balanced',
               maxTier: 10,
@@ -84,6 +85,7 @@ describe('GalaxyPanel', () => {
             {
               coordinates: { galaxy: 1, system: 1, slot: 5 },
               name: 'Raid Target',
+              temperature: 22,
               tier: 5,
               specialty: 'balanced',
               maxTier: 8,

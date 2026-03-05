@@ -206,6 +206,7 @@ describe('FleetEngine', () => {
         {
           coordinates: { galaxy: 1, system: 1, slot: 9 },
           name: 'Abandoning Target',
+          temperature: 15,
           tier: 4,
           specialty: 'balanced',
           maxTier: 8,
@@ -677,6 +678,7 @@ describe('FleetEngine', () => {
         {
           coordinates: { galaxy: 1, system: 4, slot: 7 },
           name: 'Loot Target',
+          temperature: 25,
           tier: 3,
           specialty: 'balanced',
           maxTier: 5,

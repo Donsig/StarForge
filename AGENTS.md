@@ -48,6 +48,13 @@ Run from `OGameClone/`:
 - Components use `PascalCase` (`ResourceBar.tsx`), hooks use `useX` (`useGameEngine.ts`), utilities use descriptive lowercase/camelCase (`format.ts`).
 - Keep engine logic data-driven by editing `src/data/*` rather than hardcoding values in UI code.
 
+## State & Gameplay Invariants (Phase 3.2+)
+- Save state schema is `version: 10`; update migrations in `StateManager.migrate()` for any future schema changes.
+- `astrophysicsTechnology` is a required `ResearchId` and must exist in all research records/default state.
+- `solarSatellite` is a valid `ShipId` but is immobile (`speed: 0`) and must stay excluded from fleet dispatch selection UI.
+- Transport missions use `targetType: 'player_planet'` and include dispatch-time `cargo` in the mission payload.
+- `PlanetState.maxTemperature` is slot-derived (via galaxy slot rules), not a fixed hardcoded value.
+
 ## Testing Guidelines
 - Framework: Vitest + Testing Library (`jsdom`).
 - Naming: `*.test.ts` or `*.test.tsx`.
