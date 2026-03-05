@@ -628,11 +628,11 @@ export function colonize(
   const newPlanet = createDefaultPlanet();
   newPlanet.name = `Colony ${state.planets.length + 1}`;
   newPlanet.coordinates = { ...coordinates };
-  // Deterministic temperature variation by galaxy seed and target coordinates
-  const coordSeed =
-    state.galaxy.seed ^ (coordinates.system * 100 + coordinates.slot);
-  const tempRng = mulberry32(coordSeed);
-  newPlanet.maxTemperature = 20 + Math.floor(tempRng() * 30);
+  const rerollSeed = Date.now() ^ (coordinates.system * 1000 + coordinates.slot * 17);
+  const stats = planetStatsForSlot(rerollSeed, coordinates);
+  newPlanet.maxTemperature = stats.maxTemperature;
+  newPlanet.maxFields = stats.maxFields;
+  newPlanet.fieldCount = stats.maxFields;
 
   state.planets.push(newPlanet);
   return newPlanet;

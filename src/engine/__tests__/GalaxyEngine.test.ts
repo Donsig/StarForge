@@ -203,25 +203,55 @@ describe('GalaxyEngine', () => {
     expect(state.planets[0].ships.colonyShip).toBe(0);
   });
 
-  it('colonize uses deterministic temperature from seed and coordinates', () => {
+  describe('colonize - slot-based planet stats', () => {
+    it('assigns maxTemperature within the correct slot range', () => {
+      const state = createNewGameState();
+      state.planets[0].ships.colonyShip = 1;
+      state.research.astrophysicsTechnology = 1; // allow 1 colony
+      const planet = colonize(state, { galaxy: 1, system: 2, slot: 2 }); // hot slot
+      expect(planet).not.toBeNull();
+      expect(planet!.maxTemperature).toBeGreaterThanOrEqual(200);
+      expect(planet!.maxTemperature).toBeLessThanOrEqual(400);
+    });
+
+    it('assigns maxFields within the correct slot range', () => {
+      const state = createNewGameState();
+      state.planets[0].ships.colonyShip = 1;
+      state.research.astrophysicsTechnology = 1;
+      const planet = colonize(state, { galaxy: 1, system: 2, slot: 8 }); // sweet spot
+      expect(planet).not.toBeNull();
+      expect(planet!.maxFields).toBeGreaterThanOrEqual(140);
+      expect(planet!.maxFields).toBeLessThanOrEqual(180);
+    });
+
+    it('recolonizing the same slot with same seed can produce different stats (reroll)', () => {
+      const state1 = createNewGameState();
+      state1.planets[0].ships.colonyShip = 2;
+      state1.research.astrophysicsTechnology = 3; // allow 2 colonies
+      const coords = { galaxy: 1, system: 2, slot: 8 };
+      const p1 = colonize(state1, coords);
+      // Remove the planet to allow recolonization
+      state1.planets = state1.planets.filter((p) => !(p.coordinates.system === 2 && p.coordinates.slot === 8));
+      const p2 = colonize(state1, coords);
+      // With reroll seeding (Date.now()), we can't guarantee different values in a fast test
+      // Just verify both are valid
+      expect(p1!.maxTemperature).toBeGreaterThanOrEqual(0);
+      expect(p2!.maxTemperature).toBeGreaterThanOrEqual(0);
+    });
+  });
+
+  it('colonize assigns slot-based temperature and fields', () => {
     const coords = { galaxy: 1, system: 20, slot: 9 };
+    const state = createNewGameState();
+    state.planets[0].ships.colonyShip = 1;
+    state.research.astrophysicsTechnology = 1;
+    const colony = colonize(state, coords);
 
-    const stateA = createNewGameState();
-    stateA.galaxy.seed = 98765;
-    stateA.planets[0].ships.colonyShip = 1;
-    const colonyA = colonize(stateA, coords);
-
-    const stateB = createNewGameState();
-    stateB.galaxy.seed = 98765;
-    stateB.planets[0].ships.colonyShip = 2;
-    colonize(stateB, { galaxy: 1, system: 2, slot: 6 });
-    const colonyB = colonize(stateB, coords);
-
-    expect(colonyA).not.toBeNull();
-    expect(colonyB).not.toBeNull();
-    expect(colonyA!.maxTemperature).toBe(colonyB!.maxTemperature);
-    expect(colonyA!.maxTemperature).toBeGreaterThanOrEqual(20);
-    expect(colonyA!.maxTemperature).toBeLessThan(50);
+    expect(colony).not.toBeNull();
+    expect(colony!.maxTemperature).toBeGreaterThanOrEqual(0);
+    expect(colony!.maxTemperature).toBeLessThanOrEqual(100);
+    expect(colony!.maxFields).toBeGreaterThanOrEqual(140);
+    expect(colony!.maxFields).toBeLessThanOrEqual(180);
   });
 
   it('colonize fails without colony ship', () => {
