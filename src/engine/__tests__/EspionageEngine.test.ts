@@ -1,0 +1,138 @@
+/// <reference types="vitest/globals" />
+
+import { createNewGameState } from '../../models/GameState.ts';
+import type { NPCColony } from '../../models/Galaxy.ts';
+import {
+  calcDetectionChance,
+  calcNPCEspionageLevel,
+  generateReport,
+} from '../EspionageEngine.ts';
+
+function createResearch(espionageTechnology: number) {
+  const state = createNewGameState();
+  state.research.espionageTechnology = espionageTechnology;
+  return state.research;
+}
+
+function createColony(overrides: Partial<NPCColony> = {}): NPCColony {
+  return {
+    coordinates: { galaxy: 1, system: 2, slot: 7 },
+    name: 'Test Colony',
+    tier: 8,
+    buildings: {
+      metalMine: 12,
+      crystalMine: 10,
+      deuteriumSynthesizer: 8,
+      solarPlant: 14,
+    },
+    baseDefences: {
+      rocketLauncher: 64,
+      lightLaser: 24,
+      heavyLaser: 8,
+    },
+    baseShips: {
+      lightFighter: 28,
+      heavyFighter: 12,
+      cruiser: 4,
+      smallCargo: 12,
+    },
+    currentDefences: {
+      rocketLauncher: 10,
+      lightLaser: 3,
+      heavyLaser: 1,
+    },
+    currentShips: {
+      lightFighter: 4,
+      heavyFighter: 1,
+      cruiser: 0,
+      smallCargo: 2,
+    },
+    lastRaidedAt: 0,
+    ...overrides,
+  };
+}
+
+describe('EspionageEngine', () => {
+  describe('calcNPCEspionageLevel', () => {
+    it('derives npc espionage level from colony tier', () => {
+      expect(calcNPCEspionageLevel(1)).toBe(0);
+      expect(calcNPCEspionageLevel(4)).toBe(2);
+      expect(calcNPCEspionageLevel(9)).toBe(4);
+    });
+  });
+
+  describe('calcDetectionChance', () => {
+    it('returns 0 when npc espionage level is 0', () => {
+      expect(calcDetectionChance(0, 0, 0)).toBe(0);
+      expect(calcDetectionChance(0, 3, 7)).toBe(0);
+    });
+
+    it('matches the expected ratio-squared formula with clamping', () => {
+      expect(calcDetectionChance(2, 1, 1)).toBe(1);
+      expect(calcDetectionChance(2, 2, 2)).toBeCloseTo(0.25, 8);
+      expect(calcDetectionChance(4, 8, 2)).toBeCloseTo(0.0625, 8);
+    });
+  });
+
+  describe('generateReport', () => {
+    it('returns no intel fields when probes are detected', () => {
+      const now = 50_000;
+      const colony = createColony({ tier: 10 });
+      const report = generateReport(colony, now, 0, 1, createResearch(1), () => 0.5);
+
+      expect(report.detected).toBe(true);
+      expect(report.probesLost).toBe(1);
+      expect(report.resources).toBeUndefined();
+      expect(report.fleet).toBeUndefined();
+      expect(report.defences).toBeUndefined();
+      expect(report.buildings).toBeUndefined();
+      expect(report.tier).toBeUndefined();
+      expect(report.rebuildStatus).toBeUndefined();
+    });
+
+    it('gates intel tiers by player espionage technology on undetected scans', () => {
+      const now = 5 * 3600 * 1000;
+      const colony = createColony();
+
+      const tech1 = generateReport(colony, now, 0, 5, createResearch(1), () => 1);
+      expect(tech1.detected).toBe(false);
+      expect(tech1.probesLost).toBe(0);
+      expect(tech1.resources).toBeDefined();
+      expect(tech1.fleet).toBeUndefined();
+      expect(tech1.defences).toBeUndefined();
+      expect(tech1.buildings).toBeUndefined();
+      expect(tech1.tier).toBeUndefined();
+
+      const tech2 = generateReport(colony, now, 0, 5, createResearch(2), () => 1);
+      expect(tech2.fleet).toBeDefined();
+      expect(tech2.defences).toBeUndefined();
+
+      const tech4 = generateReport(colony, now, 0, 5, createResearch(4), () => 1);
+      expect(tech4.defences).toBeDefined();
+      expect(tech4.buildings).toBeUndefined();
+      expect(tech4.tier).toBeUndefined();
+
+      const tech6 = generateReport(colony, now, 0, 5, createResearch(6), () => 1);
+      expect(tech6.buildings).toBeDefined();
+      expect(tech6.tier).toBe(colony.tier);
+    });
+
+    it('only includes rebuild status when lastRaidedAt > 0 and tech >= 8', () => {
+      const now = 3 * 24 * 3600 * 1000;
+      const twelveHoursMs = 12 * 3600 * 1000;
+      const raidedColony = createColony({ lastRaidedAt: now - twelveHoursMs });
+
+      const tech8WithRaid = generateReport(raidedColony, now, 0, 5, createResearch(8), () => 1);
+      expect(tech8WithRaid.rebuildStatus).toEqual({
+        defencePct: 25,
+        fleetPct: 25,
+      });
+
+      const tech7WithRaid = generateReport(raidedColony, now, 0, 5, createResearch(7), () => 1);
+      expect(tech7WithRaid.rebuildStatus).toBeUndefined();
+
+      const tech8NoRaid = generateReport(createColony({ lastRaidedAt: 0 }), now, 0, 5, createResearch(8), () => 1);
+      expect(tech8NoRaid.rebuildStatus).toBeUndefined();
+    });
+  });
+});

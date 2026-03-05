@@ -7,33 +7,10 @@ describe('SettingsPanel', () => {
     vi.restoreAllMocks();
   });
 
-  it('shows the current game speed value', () => {
-    renderWithGame(<SettingsPanel />, {
-      gameState: {
-        settings: {
-          gameSpeed: 2.5,
-        },
-      },
-    });
-
-    const slider = screen.getByRole('slider');
-    expect(slider).toHaveAttribute('value', '2.5');
-    expect(screen.getByText('2.5x')).toBeInTheDocument();
-  });
-
-  it('calls setGameSpeed when the slider is changed', () => {
-    const setGameSpeed = vi.fn();
-
-    renderWithGame(<SettingsPanel />, {
-      actions: {
-        setGameSpeed,
-      },
-    });
-
-    const slider = screen.getByRole('slider');
-    fireEvent.input(slider, { target: { value: '1.5' } });
-
-    expect(setGameSpeed).toHaveBeenCalledWith(1.5);
+  it('does not render game speed controls', () => {
+    renderWithGame(<SettingsPanel />);
+    expect(screen.queryByRole('slider')).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Game Speed' })).not.toBeInTheDocument();
   });
 
   it('calls exportSaveAction when export is clicked', async () => {

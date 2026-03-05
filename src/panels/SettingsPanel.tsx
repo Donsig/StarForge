@@ -3,16 +3,12 @@ import { useGame } from '../context/GameContext';
 
 export function SettingsPanel() {
   const {
-    gameState,
-    setGameSpeed,
     resetGameAction,
     exportSaveAction,
     importSaveAction,
   } = useGame();
   const [importText, setImportText] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
-
-  const gameSpeed = gameState.settings.gameSpeed;
 
   const handleReset = (): void => {
     const confirmed = window.confirm(
@@ -54,28 +50,9 @@ export function SettingsPanel() {
   return (
     <section className="panel">
       <h1 className="panel-title">Settings</h1>
-      <p className="panel-subtitle">Tune simulation speed and manage save data.</p>
+      <p className="panel-subtitle">Manage save data.</p>
 
       <div className="settings-grid">
-        <article className="panel-card">
-          <h2 className="section-title">Game Speed</h2>
-          <div className="slider-row">
-            <input
-              className="slider"
-              type="range"
-              min={1}
-              max={100}
-              step={1}
-              value={gameSpeed}
-              onChange={(event) => {
-                const value = Number.parseFloat(event.target.value);
-                setGameSpeed(value);
-              }}
-            />
-            <span className="number">{gameSpeed}x</span>
-          </div>
-        </article>
-
         <article className="panel-card">
           <h2 className="section-title">Save Management</h2>
           <div className="settings-actions">

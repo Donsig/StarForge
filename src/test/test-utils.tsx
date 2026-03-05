@@ -13,7 +13,10 @@ import {
 
 export * from '@testing-library/react';
 
-type GameActions = Omit<GameContextType, 'gameState' | 'productionRates' | 'storageCaps'>;
+type GameActions = Omit<
+  GameContextType,
+  'gameState' | 'espionageReports' | 'productionRates' | 'storageCaps'
+>;
 type StorageCaps = GameContextType['storageCaps'];
 
 interface GameStateOverrides
@@ -45,7 +48,43 @@ const defaultActions: GameActions = {
   cancelShipyard: (_index: number) => {},
   resetGameAction: () => {},
   setActivePlanet: (_index: number) => {},
+  fleetTarget: null,
+  setFleetTarget: (_coords) => {},
+  dispatchFleet: (_sourcePlanetIndex, _targetCoords, _ships) => null,
+  dispatchEspionage: (_sourcePlanetIndex, _targetCoords, _probeCount) => null,
+  recallFleet: (_missionId) => {},
+  markReportRead: (_reportId) => {},
   setGameSpeed: () => {},
+  setGodMode: () => {},
+  adminSetResources: (_planetIndex, _metal, _crystal, _deuterium) => {},
+  adminAddResources: (_planetIndex, _metal, _crystal, _deuterium) => {},
+  adminSetBuildings: (_planetIndex, _buildings) => {},
+  adminSetShips: (_planetIndex, _ships) => {},
+  adminSetDefences: (_planetIndex, _defences) => {},
+  adminSetResearch: (_research) => {},
+  adminForceColonize: (_coords) => null,
+  adminConvertNPC: (_coords) => null,
+  adminRemoveNPC: (_coords) => {},
+  adminAddNPC: (_coords, _tier) => null,
+  adminSetNPCTier: (_coords, _tier) => {},
+  adminSetNPCBuildings: (_coords, _buildings) => {},
+  adminSetNPCCurrentFleet: (_coords, _ships, _applyToBase) => {},
+  adminSetNPCCurrentDefences: (_coords, _defences, _applyToBase) => {},
+  adminResetNPC: (_coords) => {},
+  adminWipeNPC: (_coords) => {},
+  adminCompleteBuilding: (_planetIndex) => {},
+  adminCompleteResearch: () => {},
+  adminCompleteShipyard: (_planetIndex) => {},
+  adminCompleteAllQueues: () => {},
+  adminResolveMission: (_missionId) => {},
+  adminResolveAllMissions: () => {},
+  adminTriggerCombat: (_npcCoords, _ships) => null,
+  adminSimulateTime: (_seconds) => {},
+  adminRegenerateGalaxy: (_newSeed) => {},
+  adminClearCombatLog: () => {},
+  adminClearEspionageReports: () => {},
+  adminClearDebrisFields: () => {},
+  adminMarkAllRead: () => {},
   exportSaveAction: () => '',
   importSaveAction: () => false,
 };
@@ -119,6 +158,7 @@ export function createMockGameContext(
 
   return {
     gameState,
+    espionageReports: gameState.espionageReports,
     productionRates,
     storageCaps,
     ...defaultActions,

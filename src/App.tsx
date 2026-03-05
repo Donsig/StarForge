@@ -13,8 +13,15 @@ import { DefencePanel } from './panels/DefencePanel';
 import { FleetPanel } from './panels/FleetPanel';
 import { GalaxyPanel } from './panels/GalaxyPanel';
 import { SettingsPanel } from './panels/SettingsPanel';
+import { AdminPanel } from './panels/AdminPanel';
 
-function ActivePanelContent({ activePanel }: { activePanel: ActivePanel }) {
+function ActivePanelContent({
+  activePanel,
+  onNavigate,
+}: {
+  activePanel: ActivePanel;
+  onNavigate: (panel: ActivePanel) => void;
+}) {
   switch (activePanel) {
     case 'overview':
       return <OverviewPanel />;
@@ -27,11 +34,13 @@ function ActivePanelContent({ activePanel }: { activePanel: ActivePanel }) {
     case 'defence':
       return <DefencePanel />;
     case 'galaxy':
-      return <GalaxyPanel />;
+      return <GalaxyPanel onNavigate={onNavigate} />;
     case 'fleet':
       return <FleetPanel />;
     case 'settings':
       return <SettingsPanel />;
+    case 'admin':
+      return <AdminPanel />;
     default:
       return <OverviewPanel />;
   }
@@ -46,7 +55,7 @@ function GameLayout() {
       <ResourceBar />
       <NavSidebar activePanel={activePanel} onNavigate={setActivePanel} />
       <main className="main-content">
-        <ActivePanelContent activePanel={activePanel} />
+        <ActivePanelContent activePanel={activePanel} onNavigate={setActivePanel} />
       </main>
       <QueueDisplay />
     </div>

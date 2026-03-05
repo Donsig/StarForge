@@ -17,6 +17,8 @@ import {
   shipBuildTime,
 } from './FormulasEngine.ts';
 import { activePlanet } from './helpers.ts';
+import { generateNPCColonies } from './GalaxyEngine.ts';
+import { processTick as processFleetTick } from './FleetEngine.ts';
 
 export function saveState(state: GameState): void {
   state.lastSaveTimestamp = Date.now();
@@ -40,6 +42,8 @@ export function loadState(): GameState | null {
 
 export function newGame(): GameState {
   const state = createNewGameState();
+  state.galaxy.npcColonies = generateNPCColonies(state.galaxy.seed);
+  state.debrisFields = [];
   saveState(state);
   return state;
 }
@@ -116,8 +120,31 @@ function migrate(state: GameState): GameState {
     (state as any).activePlanetIndex = (state as any).activePlanetIndex ?? 0;
     (state as any).galaxy =
       (state as any).galaxy ??
-      { seed: Math.floor(Math.random() * 1_000_000), npcColonies: [] };
+      { seed: Math.floor(Date.now() % 1_000_000), npcColonies: [] };
     state.version = 4;
+  }
+
+  if (state.version < 5) {
+    state.galaxy.npcColonies = generateNPCColonies(state.galaxy.seed);
+    state.debrisFields = [];
+    state.version = 5;
+  }
+
+  if (state.version < 6) {
+    (state as any).fleetMissions = [];
+    (state as any).combatLog = [];
+    state.version = 6;
+  }
+
+  if (state.version < 7) {
+    (state as any).espionageReports = [];
+    state.version = 7;
+  }
+
+  if (state.version < 8) {
+    (state as any).settings = (state as any).settings ?? { gameSpeed: 1 };
+    (state as any).settings.godMode = false;
+    state.version = 8;
   }
 
   return state;
@@ -128,7 +155,6 @@ function migrate(state: GameState): GameState {
  * chronologically, accumulate resources between events.
  */
 export function processOfflineTime(state: GameState): { elapsedSeconds: number } {
-  const planet = activePlanet(state);
   const now = Date.now();
   const elapsedMs = now - state.lastSaveTimestamp;
   const elapsedSeconds = Math.min(
@@ -138,27 +164,96 @@ export function processOfflineTime(state: GameState): { elapsedSeconds: number }
 
   if (elapsedSeconds <= 0) return { elapsedSeconds: 0 };
 
-  // Get all queue completion events sorted by time
-  const events = getCompletionEvents(state);
+  type QueueCompletionEvent = ReturnType<typeof getCompletionEvents>[number];
+  type OfflineEvent =
+    | { time: number; type: 'queue'; queueEvent: QueueCompletionEvent }
+    | { time: number; type: 'mission_arrive' | 'mission_return'; missionId: string };
+
+  const queueEvents: OfflineEvent[] = getCompletionEvents(state).map((event) => ({
+    time: event.completesAt,
+    type: 'queue',
+    queueEvent: event,
+  }));
+  const missionArrivalEvents: OfflineEvent[] = state.fleetMissions
+    .filter((mission) => mission.status === 'outbound')
+    .map((mission) => ({
+      time: mission.arrivalTime,
+      type: 'mission_arrive',
+      missionId: mission.id,
+    }));
+  const missionReturnEvents: OfflineEvent[] = state.fleetMissions
+    .filter((mission) => mission.status === 'returning' && mission.returnTime > 0)
+    .map((mission) => ({
+      time: mission.returnTime,
+      type: 'mission_return',
+      missionId: mission.id,
+    }));
+  const events = [...queueEvents, ...missionArrivalEvents, ...missionReturnEvents];
+  events.sort((a, b) => a.time - b.time);
 
   let currentTime = state.lastSaveTimestamp;
   const endTime = state.lastSaveTimestamp + elapsedSeconds * 1000;
 
-  for (const event of events) {
-    if (event.completesAt > endTime) break;
-    if (event.completesAt <= currentTime) continue;
+  const queueMissionReturnEvent = (
+    missionId: string,
+    returnTime: number,
+    fromIndex: number,
+  ) => {
+    if (returnTime <= 0 || returnTime > endTime) {
+      return;
+    }
+
+    const alreadyQueued = events.some(
+      (queued, index) =>
+        index >= fromIndex &&
+        queued.type === 'mission_return' &&
+        queued.missionId === missionId &&
+        queued.time === returnTime,
+    );
+    if (alreadyQueued) {
+      return;
+    }
+
+    events.push({
+      time: returnTime,
+      type: 'mission_return',
+      missionId,
+    });
+    events.sort((a, b) => a.time - b.time);
+  };
+
+  for (let eventIndex = 0; eventIndex < events.length; eventIndex += 1) {
+    const event = events[eventIndex];
+    if (event.time > endTime) break;
+    if (event.time < currentTime) continue;
 
     // Accumulate resources from currentTime to this event
     // Multiply by gameSpeed since calculateProduction returns base rates
-    const segmentSeconds = Math.floor((event.completesAt - currentTime) / 1000);
+    const segmentSeconds = Math.floor((event.time - currentTime) / 1000);
     if (segmentSeconds > 0) {
       accumulateBulk(state, segmentSeconds * state.settings.gameSpeed);
     }
-    currentTime = event.completesAt;
+    currentTime = event.time;
 
+    if (event.type !== 'queue') {
+      processFleetTick(state, event.time);
+      if (event.type === 'mission_arrive') {
+        const mission = state.fleetMissions.find((item) => item.id === event.missionId);
+        if (mission?.status === 'returning' && mission.returnTime > 0) {
+          queueMissionReturnEvent(mission.id, mission.returnTime, eventIndex + 1);
+        }
+      }
+      continue;
+    }
+
+    const queueEvent = event.queueEvent;
     // Apply the completion
-    if (event.type === 'building') {
-      planet.buildings[event.id as BuildingId] = event.targetLevel!;
+    if (queueEvent.type === 'building') {
+      if (queueEvent.planetIndex === undefined) continue;
+      const planet = state.planets[queueEvent.planetIndex];
+      if (!planet) continue;
+
+      planet.buildings[queueEvent.id as BuildingId] = queueEvent.targetLevel!;
       if (planet.buildingQueue.length > 0) {
         planet.buildingQueue.shift();
       }
@@ -178,11 +273,12 @@ export function processOfflineTime(state: GameState): { elapsedSeconds: number }
           planet.buildings.naniteFactory,
           state.settings.gameSpeed,
         );
-        nextBuilding.startedAt = event.completesAt;
-        nextBuilding.completesAt = event.completesAt + nextBuildingDuration * 1000;
+        nextBuilding.startedAt = queueEvent.completesAt;
+        nextBuilding.completesAt = queueEvent.completesAt + nextBuildingDuration * 1000;
       }
-    } else if (event.type === 'research') {
-      state.research[event.id as ResearchId] = event.targetLevel!;
+    } else if (queueEvent.type === 'research') {
+      const researchPlanet = activePlanet(state);
+      state.research[queueEvent.id as ResearchId] = queueEvent.targetLevel!;
       if (state.researchQueue.length > 0) {
         state.researchQueue.shift();
       }
@@ -198,45 +294,49 @@ export function processOfflineTime(state: GameState): { elapsedSeconds: number }
         const nextResearchDuration = researchTime(
           nextResearchCost.metal,
           nextResearchCost.crystal,
-          planet.buildings.researchLab,
+          researchPlanet.buildings.researchLab,
           state.settings.gameSpeed,
         );
-        nextResearch.startedAt = event.completesAt;
-        nextResearch.completesAt = event.completesAt + nextResearchDuration * 1000;
+        nextResearch.startedAt = queueEvent.completesAt;
+        nextResearch.completesAt = queueEvent.completesAt + nextResearchDuration * 1000;
       }
-    } else if (event.type === 'ship' || event.type === 'defence') {
-      if (event.type === 'defence') {
-        planet.defences[event.id as DefenceId] += 1;
+    } else if (queueEvent.type === 'ship' || queueEvent.type === 'defence') {
+      if (queueEvent.planetIndex === undefined) continue;
+      const planet = state.planets[queueEvent.planetIndex];
+      if (!planet) continue;
+
+      if (queueEvent.type === 'defence') {
+        planet.defences[queueEvent.id as DefenceId] += 1;
       } else {
-        planet.ships[event.id as ShipId] += 1;
+        planet.ships[queueEvent.id as ShipId] += 1;
       }
 
       // Update the queue item
       const queueItem = planet.shipyardQueue[0];
       if (
         queueItem &&
-        queueItem.id === event.id &&
-        queueItem.type === event.type
+        queueItem.id === queueEvent.id &&
+        queueItem.type === queueEvent.type
       ) {
         queueItem.completed = (queueItem.completed ?? 0) + 1;
         if (queueItem.completed >= queueItem.quantity!) {
           planet.shipyardQueue.shift();
         } else {
           const perUnitSec =
-            event.type === 'defence'
+            queueEvent.type === 'defence'
               ? defenceBuildTime(
-                  DEFENCES[event.id as DefenceId].structuralIntegrity,
+                  DEFENCES[queueEvent.id as DefenceId].structuralIntegrity,
                   planet.buildings.shipyard,
                   planet.buildings.naniteFactory,
                   state.settings.gameSpeed,
                 )
               : shipBuildTime(
-                  SHIPS[event.id as ShipId].structuralIntegrity,
+                  SHIPS[queueEvent.id as ShipId].structuralIntegrity,
                   planet.buildings.shipyard,
                   planet.buildings.naniteFactory,
                   state.settings.gameSpeed,
                 );
-          queueItem.completesAt = event.completesAt + perUnitSec * 1000;
+          queueItem.completesAt = queueEvent.completesAt + perUnitSec * 1000;
         }
       }
     }

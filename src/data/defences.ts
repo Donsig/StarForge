@@ -5,6 +5,9 @@ export interface DefenceDefinition {
   name: string;
   description: string;
   cost: ResourceCost;
+  hull: number;
+  shield: number;
+  attack: number;
   structuralIntegrity: number;
   shieldPower: number;
   weaponPower: number;
@@ -18,6 +21,9 @@ export const DEFENCES: Record<DefenceId, DefenceDefinition> = {
     name: 'Rocket Launcher',
     description: 'Basic planetary defense with low cost and rapid build speed.',
     cost: { metal: 2000, crystal: 0, deuterium: 0 },
+    hull: 200,
+    shield: 20,
+    attack: 80,
     structuralIntegrity: 2000,
     shieldPower: 20,
     weaponPower: 80,
@@ -28,6 +34,9 @@ export const DEFENCES: Record<DefenceId, DefenceDefinition> = {
     name: 'Light Laser',
     description: 'Improved turret with stronger firepower than rocket launchers.',
     cost: { metal: 1500, crystal: 500, deuterium: 0 },
+    hull: 200,
+    shield: 25,
+    attack: 100,
     structuralIntegrity: 2000,
     shieldPower: 25,
     weaponPower: 100,
@@ -42,6 +51,9 @@ export const DEFENCES: Record<DefenceId, DefenceDefinition> = {
     name: 'Heavy Laser',
     description: 'Armored laser emplacement with high durability and output.',
     cost: { metal: 6000, crystal: 2000, deuterium: 0 },
+    hull: 800,
+    shield: 100,
+    attack: 250,
     structuralIntegrity: 8000,
     shieldPower: 100,
     weaponPower: 250,
@@ -56,6 +68,9 @@ export const DEFENCES: Record<DefenceId, DefenceDefinition> = {
     name: 'Gauss Cannon',
     description: 'High-caliber electromagnetic cannon effective versus heavy ships.',
     cost: { metal: 20000, crystal: 15000, deuterium: 2000 },
+    hull: 3500,
+    shield: 200,
+    attack: 1100,
     structuralIntegrity: 35000,
     shieldPower: 200,
     weaponPower: 1100,
@@ -71,6 +86,9 @@ export const DEFENCES: Record<DefenceId, DefenceDefinition> = {
     name: 'Ion Cannon',
     description: 'Defensive turret with exceptional shielding and steady damage.',
     cost: { metal: 5000, crystal: 3000, deuterium: 0 },
+    hull: 800,
+    shield: 500,
+    attack: 150,
     structuralIntegrity: 8000,
     shieldPower: 500,
     weaponPower: 150,
@@ -84,6 +102,9 @@ export const DEFENCES: Record<DefenceId, DefenceDefinition> = {
     name: 'Plasma Turret',
     description: 'Top-tier fixed defense with devastating firepower.',
     cost: { metal: 50000, crystal: 50000, deuterium: 30000 },
+    hull: 10000,
+    shield: 300,
+    attack: 3000,
     structuralIntegrity: 100000,
     shieldPower: 300,
     weaponPower: 3000,
@@ -97,6 +118,9 @@ export const DEFENCES: Record<DefenceId, DefenceDefinition> = {
     name: 'Small Shield Dome',
     description: 'Planetary shield generator that can only be constructed once.',
     cost: { metal: 10000, crystal: 10000, deuterium: 0 },
+    hull: 20000,
+    shield: 2000,
+    attack: 1,
     structuralIntegrity: 20000,
     shieldPower: 2000,
     weaponPower: 1,
@@ -111,6 +135,9 @@ export const DEFENCES: Record<DefenceId, DefenceDefinition> = {
     name: 'Large Shield Dome',
     description: 'Massive defensive shield generator limited to one per planet.',
     cost: { metal: 50000, crystal: 50000, deuterium: 0 },
+    hull: 55000,
+    shield: 10000,
+    attack: 1,
     structuralIntegrity: 100000,
     shieldPower: 10000,
     weaponPower: 1,

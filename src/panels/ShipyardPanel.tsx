@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { BUILDINGS } from '../data/buildings.ts';
+import { DEFENCES } from '../data/defences.ts';
 import { RESEARCH } from '../data/research.ts';
 import { SHIP_ORDER, SHIPS } from '../data/ships.ts';
 import { canAfford, prerequisitesMet } from '../engine/BuildQueue.ts';
@@ -10,6 +11,7 @@ import { formatDuration } from '../utils/time.ts';
 import type { GameState } from '../models/GameState.ts';
 import type {
   BuildingId,
+  DefenceId,
   Prerequisite,
   ResearchId,
   ResourceCost,
@@ -44,7 +46,7 @@ function requirementLabel(prerequisite: Prerequisite): string {
 }
 
 export function ShipyardPanel() {
-  const { gameState, buildShips } = useGame();
+  const { gameState, buildShips, adminCompleteShipyard } = useGame();
   const [quantities, setQuantities] = useState<Record<ShipId, string>>(DEFAULT_QUANTITIES);
   const planet = gameState.planets[gameState.activePlanetIndex];
 
@@ -54,6 +56,31 @@ export function ShipyardPanel() {
       <p className="panel-subtitle">
         Queue ship construction batches. Each batch builds one unit at a time in the shipyard.
       </p>
+
+      {planet.shipyardQueue.length > 0 && (
+        <div className="panel-card">
+          <h2 className="section-title">Shipyard Queue</h2>
+          {planet.shipyardQueue.map((item, index) => (
+            <div key={`${item.id}-${item.type}-${index}`} className="item-footer">
+              <span>
+                {item.type === 'defence'
+                  ? DEFENCES[item.id as DefenceId].name
+                  : SHIPS[item.id as ShipId].name}{' '}
+                ({item.completed ?? 0}/{item.quantity ?? 0})
+              </span>
+              {gameState.settings.godMode && index === 0 && (
+                <button
+                  type="button"
+                  className="btn btn-sm"
+                  onClick={() => adminCompleteShipyard(gameState.activePlanetIndex)}
+                >
+                  ⚡ Complete
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="items-grid">
         {SHIP_ORDER.map((shipId) => {

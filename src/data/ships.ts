@@ -1,30 +1,42 @@
 import type { ShipId, ResourceCost, Prerequisite } from '../models/types.ts';
 
+export type CombatShipId = ShipId | 'deathstar';
+export type ShipDrive = 'combustion' | 'impulse' | 'hyperdrive';
+
 export interface ShipDefinition {
-  id: ShipId;
+  id: CombatShipId;
   name: string;
   description: string;
   cost: ResourceCost;
+  hull: number;
+  shield: number;
+  attack: number;
   structuralIntegrity: number;
   shieldPower: number;
   weaponPower: number;
   cargoCapacity: number;
   speed: number;
+  drive: ShipDrive;
+  driveUpgrade?: { drive: ShipDrive; atLevel: number };
   fuelConsumption: number;
   requires: Prerequisite[];
 }
 
-export const SHIPS: Record<ShipId, ShipDefinition> = {
+export const SHIPS: Record<CombatShipId, ShipDefinition> = {
   lightFighter: {
     id: 'lightFighter',
     name: 'Light Fighter',
     description: 'Fast, cheap interceptor. The workhorse of early fleets.',
     cost: { metal: 3000, crystal: 1000, deuterium: 0 },
+    hull: 400,
+    shield: 10,
+    attack: 50,
     structuralIntegrity: 4000,
     shieldPower: 10,
     weaponPower: 50,
     cargoCapacity: 50,
     speed: 12500,
+    drive: 'combustion',
     fuelConsumption: 20,
     requires: [
       { type: 'building', id: 'shipyard', level: 1 },
@@ -36,11 +48,15 @@ export const SHIPS: Record<ShipId, ShipDefinition> = {
     name: 'Heavy Fighter',
     description: 'Armoured assault fighter with improved shielding.',
     cost: { metal: 6000, crystal: 4000, deuterium: 0 },
+    hull: 1000,
+    shield: 25,
+    attack: 150,
     structuralIntegrity: 10000,
     shieldPower: 25,
     weaponPower: 150,
     cargoCapacity: 100,
     speed: 10000,
+    drive: 'impulse',
     fuelConsumption: 75,
     requires: [
       { type: 'building', id: 'shipyard', level: 3 },
@@ -53,11 +69,15 @@ export const SHIPS: Record<ShipId, ShipDefinition> = {
     name: 'Cruiser',
     description: 'Versatile warship with rapid-fire capability against light fighters.',
     cost: { metal: 20000, crystal: 7000, deuterium: 2000 },
+    hull: 2700,
+    shield: 50,
+    attack: 400,
     structuralIntegrity: 27000,
     shieldPower: 50,
     weaponPower: 400,
     cargoCapacity: 800,
     speed: 15000,
+    drive: 'impulse',
     fuelConsumption: 300,
     requires: [
       { type: 'building', id: 'shipyard', level: 5 },
@@ -70,11 +90,15 @@ export const SHIPS: Record<ShipId, ShipDefinition> = {
     name: 'Battleship',
     description: 'Heavy capital ship. The backbone of any serious fleet.',
     cost: { metal: 45000, crystal: 15000, deuterium: 5000 },
+    hull: 6000,
+    shield: 200,
+    attack: 1000,
     structuralIntegrity: 60000,
     shieldPower: 200,
     weaponPower: 1000,
     cargoCapacity: 1500,
     speed: 10000,
+    drive: 'hyperdrive',
     fuelConsumption: 500,
     requires: [
       { type: 'building', id: 'shipyard', level: 7 },
@@ -86,11 +110,16 @@ export const SHIPS: Record<ShipId, ShipDefinition> = {
     name: 'Small Cargo',
     description: 'Light transport vessel for moving resources between planets.',
     cost: { metal: 2000, crystal: 2000, deuterium: 0 },
+    hull: 400,
+    shield: 10,
+    attack: 5,
     structuralIntegrity: 4000,
     shieldPower: 10,
     weaponPower: 5,
     cargoCapacity: 5000,
-    speed: 10000,
+    speed: 5000,
+    drive: 'combustion',
+    driveUpgrade: { drive: 'impulse', atLevel: 5 },
     fuelConsumption: 20,
     requires: [
       { type: 'building', id: 'shipyard', level: 2 },
@@ -102,11 +131,15 @@ export const SHIPS: Record<ShipId, ShipDefinition> = {
     name: 'Large Cargo',
     description: 'Heavy transport with massive cargo hold.',
     cost: { metal: 6000, crystal: 6000, deuterium: 0 },
+    hull: 1200,
+    shield: 25,
+    attack: 5,
     structuralIntegrity: 12000,
     shieldPower: 25,
     weaponPower: 5,
     cargoCapacity: 25000,
     speed: 7500,
+    drive: 'combustion',
     fuelConsumption: 50,
     requires: [
       { type: 'building', id: 'shipyard', level: 4 },
@@ -118,11 +151,15 @@ export const SHIPS: Record<ShipId, ShipDefinition> = {
     name: 'Colony Ship',
     description: 'Colonization vessel for settling new worlds. Consumed on use.',
     cost: { metal: 10000, crystal: 20000, deuterium: 10000 },
+    hull: 3000,
+    shield: 100,
+    attack: 50,
     structuralIntegrity: 30000,
     shieldPower: 100,
     weaponPower: 50,
     cargoCapacity: 7500,
     speed: 2500,
+    drive: 'impulse',
     fuelConsumption: 1000,
     requires: [
       { type: 'building', id: 'shipyard', level: 4 },
@@ -134,11 +171,15 @@ export const SHIPS: Record<ShipId, ShipDefinition> = {
     name: 'Recycler',
     description: 'Salvage vessel that collects debris from battle sites.',
     cost: { metal: 10000, crystal: 6000, deuterium: 2000 },
+    hull: 1600,
+    shield: 10,
+    attack: 1,
     structuralIntegrity: 16000,
     shieldPower: 10,
     weaponPower: 1,
     cargoCapacity: 20000,
     speed: 2000,
+    drive: 'combustion',
     fuelConsumption: 300,
     requires: [
       { type: 'building', id: 'shipyard', level: 4 },
@@ -151,11 +192,15 @@ export const SHIPS: Record<ShipId, ShipDefinition> = {
     name: 'Espionage Probe',
     description: 'Unmanned drone for scouting enemy positions.',
     cost: { metal: 0, crystal: 1000, deuterium: 0 },
+    hull: 100,
+    shield: 0,
+    attack: 0,
     structuralIntegrity: 1000,
     shieldPower: 0,
     weaponPower: 0,
     cargoCapacity: 0,
     speed: 100000000,
+    drive: 'combustion',
     fuelConsumption: 1,
     requires: [
       { type: 'building', id: 'shipyard', level: 3 },
@@ -168,11 +213,16 @@ export const SHIPS: Record<ShipId, ShipDefinition> = {
     name: 'Bomber',
     description: 'Specialized anti-defense ship. Devastating against planetary defenses.',
     cost: { metal: 50000, crystal: 25000, deuterium: 15000 },
+    hull: 7500,
+    shield: 500,
+    attack: 1000,
     structuralIntegrity: 75000,
     shieldPower: 500,
     weaponPower: 1000,
     cargoCapacity: 500,
-    speed: 5000,
+    speed: 4000,
+    drive: 'impulse',
+    driveUpgrade: { drive: 'hyperdrive', atLevel: 8 },
     fuelConsumption: 700,
     requires: [
       { type: 'building', id: 'shipyard', level: 8 },
@@ -185,11 +235,15 @@ export const SHIPS: Record<ShipId, ShipDefinition> = {
     name: 'Destroyer',
     description: 'Elite warship with unmatched firepower. Counters battlecruisers.',
     cost: { metal: 60000, crystal: 50000, deuterium: 15000 },
+    hull: 11000,
+    shield: 500,
+    attack: 2000,
     structuralIntegrity: 110000,
     shieldPower: 500,
     weaponPower: 2000,
     cargoCapacity: 2000,
     speed: 5000,
+    drive: 'hyperdrive',
     fuelConsumption: 1000,
     requires: [
       { type: 'building', id: 'shipyard', level: 9 },
@@ -202,17 +256,42 @@ export const SHIPS: Record<ShipId, ShipDefinition> = {
     name: 'Battlecruiser',
     description: 'Fast capital ship designed to intercept and destroy cruiser groups.',
     cost: { metal: 30000, crystal: 40000, deuterium: 15000 },
+    hull: 7000,
+    shield: 400,
+    attack: 700,
     structuralIntegrity: 70000,
     shieldPower: 400,
     weaponPower: 700,
     cargoCapacity: 750,
     speed: 10000,
+    drive: 'hyperdrive',
     fuelConsumption: 250,
     requires: [
       { type: 'building', id: 'shipyard', level: 8 },
       { type: 'research', id: 'hyperspaceDrive', level: 5 },
       { type: 'research', id: 'hyperspaceTechnology', level: 5 },
       { type: 'research', id: 'laserTechnology', level: 12 },
+    ],
+  },
+  deathstar: {
+    id: 'deathstar',
+    name: 'Deathstar',
+    description: 'Moon-sized battle station with overwhelming firepower and shielding.',
+    cost: { metal: 5000000, crystal: 4000000, deuterium: 1000000 },
+    hull: 900000,
+    shield: 50000,
+    attack: 200000,
+    structuralIntegrity: 9000000,
+    shieldPower: 50000,
+    weaponPower: 200000,
+    cargoCapacity: 1000000,
+    speed: 100,
+    drive: 'hyperdrive',
+    fuelConsumption: 1,
+    requires: [
+      { type: 'building', id: 'shipyard', level: 12 },
+      { type: 'research', id: 'hyperspaceDrive', level: 6 },
+      { type: 'research', id: 'hyperspaceTechnology', level: 7 },
     ],
   },
 };

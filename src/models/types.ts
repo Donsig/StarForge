@@ -83,7 +83,7 @@ export interface QueueItem {
   completesAt: number;   // timestamp ms (for current unit if ship/defence)
 }
 
-export type ActivePanel =
+export type NavId =
   | 'overview'
   | 'buildings'
   | 'research'
@@ -91,7 +91,10 @@ export type ActivePanel =
   | 'defence'
   | 'fleet'
   | 'galaxy'
-  | 'settings';
+  | 'settings'
+  | 'admin';
+
+export type ActivePanel = NavId;
 
 export const GAME_CONSTANTS = {
   BASE_METAL_PRODUCTION: 30,    // per hour with no mines
@@ -100,5 +103,5 @@ export const GAME_CONSTANTS = {
   AUTO_SAVE_TICKS: 30,
   MAX_OFFLINE_SECONDS: 7 * 24 * 3600, // 7 days
   STORAGE_KEY: 'starforge_save',
-  STATE_VERSION: 4,
+  STATE_VERSION: 8,
 } as const;

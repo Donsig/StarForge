@@ -75,7 +75,7 @@ On load, elapsed seconds since `lastSaveTimestamp` are calculated. Build queue c
 
 ### State Persistence
 
-localStorage key: `starforge_save`. State has a `version` field (currently v3) for schema migration via `StateManager.migrate()`. Migrations: v1→v2 added defences, v2→v3 converted building/research queues from single-item to arrays.
+localStorage key: `starforge_save`. State has a `version` field (currently v6) for schema migration via `StateManager.migrate()`. Migrations: v1→v2 added defences, v2→v3 converted building/research queues from single-item to arrays, v3→v4 multi-planet/galaxy refactor, v4→v5 NPC colony model + debris fields, v5→v6 fleet missions + combat log.
 
 ## Formulas Reference
 

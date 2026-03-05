@@ -5,7 +5,7 @@ interface NavSidebarProps {
   onNavigate: (panel: ActivePanel) => void;
 }
 
-const NAV_ITEMS: Array<{ id: ActivePanel; label: string }> = [
+const MAIN_NAV_ITEMS: Array<{ id: Exclude<ActivePanel, 'admin'>; label: string }> = [
   { id: 'overview', label: 'Overview' },
   { id: 'buildings', label: 'Buildings' },
   { id: 'research', label: 'Research' },
@@ -16,12 +16,17 @@ const NAV_ITEMS: Array<{ id: ActivePanel; label: string }> = [
   { id: 'settings', label: 'Settings' },
 ];
 
+const ADMIN_NAV_ITEM: { id: ActivePanel; label: string } = {
+  id: 'admin',
+  label: '⚙ Admin',
+};
+
 export function NavSidebar({ activePanel, onNavigate }: NavSidebarProps) {
   return (
     <aside className="nav-sidebar">
       <div className="sidebar-title">Star Forge</div>
       <nav className="nav-list">
-        {NAV_ITEMS.map((item) => (
+        {MAIN_NAV_ITEMS.map((item) => (
           <button
             key={item.id}
             type="button"
@@ -31,6 +36,14 @@ export function NavSidebar({ activePanel, onNavigate }: NavSidebarProps) {
             {item.label}
           </button>
         ))}
+        <hr className="nav-divider" />
+        <button
+          type="button"
+          className={`nav-button nav-button-admin ${activePanel === ADMIN_NAV_ITEM.id ? 'active' : ''}`}
+          onClick={() => onNavigate(ADMIN_NAV_ITEM.id)}
+        >
+          {ADMIN_NAV_ITEM.label}
+        </button>
       </nav>
     </aside>
   );

@@ -2,6 +2,7 @@
 
 import { BASE_PRODUCTION, BASE_STORAGE } from '../../data/resources.ts';
 import { createNewGameState } from '../../models/GameState.ts';
+import { createDefaultPlanet } from '../../models/Planet.ts';
 import {
   crystalMineEnergy,
   crystalProductionPerHour,
@@ -254,5 +255,63 @@ describe('ResourceEngine', () => {
     expect(caps.metal).toBe(BASE_STORAGE.metal + storageCapacity(2));
     expect(caps.crystal).toBe(BASE_STORAGE.crystal + storageCapacity(1));
     expect(caps.deuterium).toBe(BASE_STORAGE.deuterium + storageCapacity(3));
+  });
+
+  it('processTick updates resources on all planets, not just the active one', () => {
+    const state = createNewGameState();
+    const colony = createDefaultPlanet();
+    colony.name = 'Colony 2';
+    colony.maxTemperature = 5;
+    state.planets.push(colony);
+
+    state.planets[0].resources.metal = 0;
+    state.planets[0].resources.crystal = 0;
+    state.planets[0].resources.deuterium = 0;
+    state.planets[0].buildings.metalMine = 3;
+    state.planets[0].buildings.crystalMine = 2;
+    state.planets[0].buildings.solarPlant = 10;
+
+    state.planets[1].resources.metal = 0;
+    state.planets[1].resources.crystal = 0;
+    state.planets[1].resources.deuterium = 0;
+    state.planets[1].buildings.metalMine = 7;
+    state.planets[1].buildings.crystalMine = 4;
+    state.planets[1].buildings.deuteriumSynthesizer = 2;
+    state.planets[1].buildings.solarPlant = 20;
+
+    const rates0 = calculateProduction(state.planets[0], state.research);
+    const rates1 = calculateProduction(state.planets[1], state.research);
+
+    processTick(state);
+
+    expect(state.planets[0].resources.metal).toBeCloseTo(rates0.metalPerHour / 3600, 10);
+    expect(state.planets[1].resources.metal).toBeCloseTo(rates1.metalPerHour / 3600, 10);
+    expect(state.planets[1].resources.crystal).toBeCloseTo(
+      rates1.crystalPerHour / 3600,
+      10,
+    );
+  });
+
+  it('accumulateBulk applies production independently for every planet', () => {
+    const state = createNewGameState();
+    const colony = createDefaultPlanet();
+    colony.name = 'Colony 2';
+    state.planets.push(colony);
+
+    state.planets[0].resources.metal = 0;
+    state.planets[0].buildings.metalMine = 4;
+    state.planets[0].buildings.solarPlant = 10;
+
+    state.planets[1].resources.metal = 0;
+    state.planets[1].buildings.metalMine = 8;
+    state.planets[1].buildings.solarPlant = 20;
+
+    const rates0 = calculateProduction(state.planets[0], state.research);
+    const rates1 = calculateProduction(state.planets[1], state.research);
+
+    accumulateBulk(state, 3600);
+
+    expect(state.planets[0].resources.metal).toBeCloseTo(rates0.metalPerHour, 8);
+    expect(state.planets[1].resources.metal).toBeCloseTo(rates1.metalPerHour, 8);
   });
 });

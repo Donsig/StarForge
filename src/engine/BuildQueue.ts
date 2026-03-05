@@ -534,40 +534,54 @@ export function rescaleQueueTimes(
 }
 
 /** Get all queue completion events sorted chronologically (for offline catch-up) */
-export function getCompletionEvents(state: GameState): QueueItem[] {
-  const planet = activePlanet(state);
-  const events: QueueItem[] = [];
+export interface CompletionEvent extends QueueItem {
+  planetIndex?: number;
+}
 
-  events.push(...planet.buildingQueue);
-  events.push(...state.researchQueue);
-  // For shipyard, each remaining unit is an event
-  for (const item of planet.shipyardQueue) {
-    const remaining = (item.quantity ?? 1) - (item.completed ?? 0);
-    const perUnitSeconds =
-      item.type === 'defence'
-        ? defenceBuildTime(
-            DEFENCES[item.id as DefenceId].structuralIntegrity,
-            planet.buildings.shipyard,
-            planet.buildings.naniteFactory,
-            state.settings.gameSpeed,
-          )
-        : shipBuildTime(
-            SHIPS[item.id as ShipId].structuralIntegrity,
-            planet.buildings.shipyard,
-            planet.buildings.naniteFactory,
-            state.settings.gameSpeed,
-          );
-    let nextCompletion = item.completesAt;
-    for (let i = 0; i < remaining; i++) {
-      events.push({
+export function getCompletionEvents(state: GameState): CompletionEvent[] {
+  const events: CompletionEvent[] = [];
+
+  for (let planetIndex = 0; planetIndex < state.planets.length; planetIndex += 1) {
+    const planet = state.planets[planetIndex];
+
+    events.push(
+      ...planet.buildingQueue.map((item) => ({
         ...item,
-        completesAt: nextCompletion,
-        completed: (item.completed ?? 0) + i,
-      });
-      nextCompletion += perUnitSeconds * 1000;
+        planetIndex,
+      })),
+    );
+
+    // For shipyard, each remaining unit is an event
+    for (const item of planet.shipyardQueue) {
+      const remaining = (item.quantity ?? 1) - (item.completed ?? 0);
+      const perUnitSeconds =
+        item.type === 'defence'
+          ? defenceBuildTime(
+              DEFENCES[item.id as DefenceId].structuralIntegrity,
+              planet.buildings.shipyard,
+              planet.buildings.naniteFactory,
+              state.settings.gameSpeed,
+            )
+          : shipBuildTime(
+              SHIPS[item.id as ShipId].structuralIntegrity,
+              planet.buildings.shipyard,
+              planet.buildings.naniteFactory,
+              state.settings.gameSpeed,
+            );
+      let nextCompletion = item.completesAt;
+      for (let i = 0; i < remaining; i++) {
+        events.push({
+          ...item,
+          planetIndex,
+          completesAt: nextCompletion,
+          completed: (item.completed ?? 0) + i,
+        });
+        nextCompletion += perUnitSeconds * 1000;
+      }
     }
   }
 
+  events.push(...state.researchQueue.map((item) => ({ ...item })));
   events.sort((a, b) => a.completesAt - b.completesAt);
   return events;
 }

@@ -1,12 +1,16 @@
 import { createContext, useContext, type ReactNode } from 'react';
 import type { GameState } from '../models/GameState.ts';
-import type { Coordinates } from '../models/Galaxy.ts';
+import type { EspionageReport, FleetMission } from '../models/Fleet.ts';
+import type { CombatResult } from '../models/Combat.ts';
+import type { Coordinates, NPCColony } from '../models/Galaxy.ts';
+import type { PlanetState } from '../models/Planet.ts';
 import type { BuildingId, DefenceId, ResearchId, ShipId } from '../models/types.ts';
 import type { ProductionRates } from '../engine/ResourceEngine.ts';
 import { useGameEngine } from '../hooks/useGameEngine';
 
 export interface GameContextType {
   gameState: GameState;
+  espionageReports: EspionageReport[];
   productionRates: ProductionRates;
   storageCaps: { metal: number; crystal: number; deuterium: number };
   upgradeBuilding: (id: BuildingId) => boolean;
@@ -19,7 +23,84 @@ export interface GameContextType {
   cancelShipyard: (index: number) => void;
   resetGameAction: () => void;
   setActivePlanet: (index: number) => void;
+  fleetTarget: Coordinates | null;
+  setFleetTarget: (coords: Coordinates | null) => void;
+  dispatchFleet: (
+    sourcePlanetIndex: number,
+    targetCoords: Coordinates,
+    ships: Record<string, number>,
+  ) => FleetMission | null;
+  dispatchEspionage: (
+    sourcePlanetIndex: number,
+    targetCoords: Coordinates,
+    probeCount: number,
+  ) => FleetMission | null;
+  recallFleet: (missionId: string) => void;
+  markReportRead: (reportId: string) => void;
   setGameSpeed: (n: number) => void;
+  setGodMode: (enabled: boolean) => void;
+  adminSetResources: (
+    planetIndex: number,
+    metal: number,
+    crystal: number,
+    deuterium: number,
+  ) => void;
+  adminAddResources: (
+    planetIndex: number,
+    metal: number,
+    crystal: number,
+    deuterium: number,
+  ) => void;
+  adminSetBuildings: (
+    planetIndex: number,
+    buildings: Partial<Record<BuildingId, number>>,
+  ) => void;
+  adminSetShips: (
+    planetIndex: number,
+    ships: Partial<Record<ShipId, number>>,
+  ) => void;
+  adminSetDefences: (
+    planetIndex: number,
+    defences: Partial<Record<DefenceId, number>>,
+  ) => void;
+  adminSetResearch: (research: Partial<Record<ResearchId, number>>) => void;
+  adminForceColonize: (coords: Coordinates) => PlanetState | null;
+  adminConvertNPC: (coords: Coordinates) => PlanetState | null;
+  adminRemoveNPC: (coords: Coordinates) => void;
+  adminAddNPC: (coords: Coordinates, tier: number) => NPCColony | null;
+  adminSetNPCTier: (coords: Coordinates, tier: number) => void;
+  adminSetNPCBuildings: (
+    coords: Coordinates,
+    buildings: Partial<Record<BuildingId, number>>,
+  ) => void;
+  adminSetNPCCurrentFleet: (
+    coords: Coordinates,
+    ships: Partial<Record<ShipId, number>>,
+    applyToBase?: boolean,
+  ) => void;
+  adminSetNPCCurrentDefences: (
+    coords: Coordinates,
+    defences: Partial<Record<DefenceId, number>>,
+    applyToBase?: boolean,
+  ) => void;
+  adminResetNPC: (coords: Coordinates) => void;
+  adminWipeNPC: (coords: Coordinates) => void;
+  adminCompleteBuilding: (planetIndex: number) => void;
+  adminCompleteResearch: () => void;
+  adminCompleteShipyard: (planetIndex: number) => void;
+  adminCompleteAllQueues: () => void;
+  adminResolveMission: (missionId: string) => void;
+  adminResolveAllMissions: () => void;
+  adminTriggerCombat: (
+    npcCoords: Coordinates,
+    ships: Record<string, number>,
+  ) => CombatResult | null;
+  adminSimulateTime: (seconds: number) => void;
+  adminRegenerateGalaxy: (newSeed?: number) => void;
+  adminClearCombatLog: () => void;
+  adminClearEspionageReports: () => void;
+  adminClearDebrisFields: () => void;
+  adminMarkAllRead: () => void;
   exportSaveAction: () => string;
   importSaveAction: (json: string) => boolean;
 }

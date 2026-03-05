@@ -43,7 +43,7 @@ function requirementLabel(prerequisite: Prerequisite): string {
 }
 
 export function BuildingsPanel() {
-  const { gameState, upgradeBuilding } = useGame();
+  const { gameState, upgradeBuilding, adminCompleteBuilding } = useGame();
   const planet = gameState.planets[gameState.activePlanetIndex];
 
   const fieldsUsed = usedFields(gameState);
@@ -56,6 +56,28 @@ export function BuildingsPanel() {
       <p className="panel-subtitle">
         Construct and upgrade structures that power your economy and unlock advanced capabilities.
       </p>
+
+      {planet.buildingQueue.length > 0 && (
+        <div className="panel-card">
+          <h2 className="section-title">Building Queue</h2>
+          {planet.buildingQueue.map((item, index) => (
+            <div key={`${item.id}-${item.targetLevel}-${index}`} className="item-footer">
+              <span>
+                {BUILDINGS[item.id as BuildingId].name} Lv {item.targetLevel ?? 0}
+              </span>
+              {gameState.settings.godMode && index === 0 && (
+                <button
+                  type="button"
+                  className="btn btn-sm"
+                  onClick={() => adminCompleteBuilding(gameState.activePlanetIndex)}
+                >
+                  ⚡ Complete
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       {CATEGORY_ORDER.map((category) => (
         <section key={category} className="panel-group">

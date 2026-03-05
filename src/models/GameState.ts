@@ -1,5 +1,6 @@
 import type { PlanetState } from './Planet.ts';
-import type { GalaxyState } from './Galaxy.ts';
+import type { DebrisField, GalaxyState } from './Galaxy.ts';
+import type { CombatLogEntry, EspionageReport, FleetMission } from './Fleet.ts';
 import type { ResearchId, QueueItem } from './types.ts';
 import { GAME_CONSTANTS } from './types.ts';
 import { createDefaultPlanet } from './Planet.ts';
@@ -8,6 +9,7 @@ export type ResearchLevels = Record<ResearchId, number>;
 
 export interface GameSettings {
   gameSpeed: number;
+  godMode: boolean;
 }
 
 export interface GameState {
@@ -17,6 +19,10 @@ export interface GameState {
   planets: PlanetState[];
   activePlanetIndex: number;
   galaxy: GalaxyState;
+  debrisFields: DebrisField[];
+  fleetMissions: FleetMission[];
+  combatLog: CombatLogEntry[];
+  espionageReports: EspionageReport[];
   research: ResearchLevels;
   researchQueue: QueueItem[];
   settings: GameSettings;
@@ -33,6 +39,10 @@ export function createNewGameState(): GameState {
       seed: Math.floor(Math.random() * 1_000_000),
       npcColonies: [],
     },
+    debrisFields: [],
+    fleetMissions: [],
+    combatLog: [],
+    espionageReports: [],
     research: {
       energyTechnology: 0,
       laserTechnology: 0,
@@ -51,6 +61,7 @@ export function createNewGameState(): GameState {
     researchQueue: [],
     settings: {
       gameSpeed: 1,
+      godMode: false,
     },
   };
 }

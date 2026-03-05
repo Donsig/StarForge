@@ -1,6 +1,7 @@
 /// <reference types="vitest/globals" />
 
 import { createNewGameState } from '../../models/GameState.ts';
+import { createDefaultPlanet } from '../../models/Planet.ts';
 import { GAME_CONSTANTS } from '../../models/types.ts';
 import { calculateProduction } from '../ResourceEngine.ts';
 import {
@@ -33,6 +34,8 @@ describe('StateManager', () => {
     expect(state.planets[0].resources.deuterium).toBe(0);
     expect(state.planets[0].buildingQueue).toEqual([]);
     expect(state.researchQueue).toEqual([]);
+    expect(state.galaxy.npcColonies.length).toBeGreaterThan(0);
+    expect(state.debrisFields).toEqual([]);
 
     const storedRaw = localStorage.getItem(GAME_CONSTANTS.STORAGE_KEY);
     expect(storedRaw).not.toBeNull();
@@ -209,6 +212,111 @@ describe('StateManager', () => {
     expect(state.planets[0].buildings.metalMine).toBe(1);
     expect(state.planets[0].resources.metal).toBeCloseTo(expectedMetal, 8);
   });
+
+  it('processOfflineTime completes building events for non-active planets', () => {
+    const state = createNewGameState();
+    const colony = createDefaultPlanet();
+    colony.name = 'Colony 2';
+    state.planets.push(colony);
+    state.activePlanetIndex = 0;
+
+    const startTime = 9_000_000;
+    state.lastSaveTimestamp = startTime;
+    state.planets[1].buildingQueue = [
+      {
+        type: 'building',
+        id: 'crystalMine',
+        targetLevel: 1,
+        startedAt: startTime,
+        completesAt: startTime + 10_000,
+      },
+    ];
+
+    vi.spyOn(Date, 'now').mockReturnValue(startTime + 20_000);
+    processOfflineTime(state);
+
+    expect(state.planets[1].buildings.crystalMine).toBe(1);
+    expect(state.planets[1].buildingQueue).toEqual([]);
+  });
+
+  it('processOfflineTime completes shipyard events for non-active planets', () => {
+    const state = createNewGameState();
+    const colony = createDefaultPlanet();
+    colony.name = 'Colony 2';
+    state.planets.push(colony);
+    state.activePlanetIndex = 0;
+
+    const startTime = 10_000_000;
+    state.lastSaveTimestamp = startTime;
+    state.planets[1].shipyardQueue = [
+      {
+        type: 'ship',
+        id: 'lightFighter',
+        quantity: 1,
+        completed: 0,
+        startedAt: startTime,
+        completesAt: startTime + 10_000,
+      },
+    ];
+
+    vi.spyOn(Date, 'now').mockReturnValue(startTime + 20_000);
+    processOfflineTime(state);
+
+    expect(state.planets[1].ships.lightFighter).toBe(1);
+    expect(state.planets[1].shipyardQueue).toEqual([]);
+  });
+
+  it('processOfflineTime resolves outbound espionage missions through return legs created during catch-up', () => {
+    const state = createNewGameState();
+    const startTime = 12_000_000;
+    const targetCoordinates = { galaxy: 1, system: 1, slot: 9 };
+
+    state.lastSaveTimestamp = startTime;
+    state.planets[0].ships.espionageProbe = 0;
+    state.galaxy.npcColonies = [
+      {
+        coordinates: targetCoordinates,
+        name: 'Scout Target',
+        tier: 1,
+        buildings: {
+          metalMine: 2,
+          crystalMine: 1,
+          deuteriumSynthesizer: 1,
+          solarPlant: 4,
+        },
+        baseDefences: {},
+        baseShips: {},
+        currentDefences: {},
+        currentShips: {},
+        lastRaidedAt: 0,
+      },
+    ];
+    state.fleetMissions = [
+      {
+        id: 'mission_deadbeef',
+        type: 'espionage',
+        status: 'outbound',
+        sourcePlanetIndex: 0,
+        targetCoordinates,
+        targetType: 'npc_colony',
+        ships: { espionageProbe: 1 },
+        cargo: { metal: 0, crystal: 0, deuterium: 0 },
+        fuelCost: 1,
+        departureTime: startTime,
+        arrivalTime: startTime + 2_000,
+        returnTime: 0,
+      },
+    ];
+
+    vi.spyOn(Date, 'now').mockReturnValue(startTime + 30_000);
+    processOfflineTime(state);
+
+    expect(state.espionageReports).toHaveLength(1);
+    expect(state.espionageReports[0].detected).toBe(false);
+    expect(state.fleetMissions[0].status).toBe('completed');
+    expect(state.fleetMissions[0].espionageReportId).toBe(state.espionageReports[0].id);
+    expect(state.planets[0].ships.espionageProbe).toBe(1);
+  });
 });
 
 describe('StateManager migration', () => {
@@ -216,7 +324,7 @@ describe('StateManager migration', () => {
     localStorage.clear();
   });
 
-  it('migrates v3 save to v4 with planets array', async () => {
+  it('migrates v3 save to v5 with planets array + npc/debris fields', async () => {
     const { loadState } = await import('../StateManager.ts');
 
     const v3Save = {
@@ -306,7 +414,8 @@ describe('StateManager migration', () => {
     expect(loaded!.planets[0].coordinates).toEqual({ galaxy: 1, system: 1, slot: 4 });
     expect(loaded!.activePlanetIndex).toBe(0);
     expect(loaded!.galaxy).toBeDefined();
-    expect(loaded!.galaxy.npcColonies).toEqual([]);
+    expect(loaded!.galaxy.npcColonies.length).toBeGreaterThan(0);
+    expect(loaded!.debrisFields).toEqual([]);
     expect((loaded as any).planet).toBeUndefined();
   });
 });

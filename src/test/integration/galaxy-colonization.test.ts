@@ -62,7 +62,7 @@ describe('Galaxy colonization flow', () => {
           foundNpc = true;
           expect(slot.npc).toBeDefined();
           expect(slot.npc!.name).toBeTruthy();
-          expect(slot.npc!.strength).toBeGreaterThan(0);
+          expect(slot.npc!.tier).toBeGreaterThan(0);
           break;
         }
       }
@@ -75,7 +75,17 @@ describe('Galaxy colonization flow', () => {
     const state = createNewGameState();
     state.planets[0].ships.colonyShip = 1;
     state.galaxy.npcColonies = [
-      { name: 'TestNPC', coordinates: { galaxy: 1, system: 5, slot: 3 }, strength: 50 },
+      {
+        name: 'TestNPC',
+        coordinates: { galaxy: 1, system: 5, slot: 3 },
+        tier: 5,
+        buildings: {},
+        baseDefences: {},
+        baseShips: {},
+        currentDefences: {},
+        currentShips: {},
+        lastRaidedAt: 0,
+      },
     ];
     
     const result = colonize(state, { galaxy: 1, system: 5, slot: 3 });

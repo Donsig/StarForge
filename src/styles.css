@@ -147,6 +147,13 @@ body {
   gap: 0.45rem;
 }
 
+.nav-divider {
+  width: 100%;
+  border: none;
+  border-top: 1px solid rgba(107, 123, 141, 0.35);
+  margin: 0.2rem 0 0.15rem;
+}
+
 .nav-button {
   border: 1px solid var(--border);
   background: var(--bg-panel);
@@ -168,6 +175,13 @@ body {
   background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(30, 64, 175, 0.55));
   border-color: #3c6cc6;
   color: #f1f6ff;
+}
+
+.nav-button-admin {
+  font-size: 0.8rem;
+  color: #9fb1c8;
+  background: rgba(9, 14, 24, 0.85);
+  border-color: rgba(52, 70, 101, 0.8);
 }
 
 .main-content {
@@ -465,6 +479,145 @@ body {
   color: var(--text-dim);
 }
 
+.fleet-dispatch-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.fleet-target-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.fleet-mission-type {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+}
+
+.fleet-mission-select {
+  max-width: 180px;
+}
+
+.fleet-ship-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.fleet-ship-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 0.45rem;
+  background: rgba(10, 14, 23, 0.45);
+}
+
+.fleet-ship-row .hint {
+  margin: 0.2rem 0 0;
+}
+
+.fleet-ship-inputs {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.fleet-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.5rem 1.1rem;
+}
+
+.fleet-combat-estimate {
+  border: 1px solid var(--border);
+  border-radius: 0.45rem;
+  padding: 0.65rem 0.75rem;
+  background: rgba(10, 14, 23, 0.45);
+}
+
+.fleet-combat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.fleet-combat-title {
+  margin: 0.35rem 0 0.2rem;
+  font-size: 0.9rem;
+}
+
+.fleet-combat-estimate .hint {
+  margin: 0.2rem 0 0;
+}
+
+.fleet-combat-estimate.combat-outmatched {
+  border-color: rgba(239, 68, 68, 0.5);
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.fleet-combat-estimate.combat-risky {
+  border-color: rgba(245, 158, 11, 0.55);
+  background: rgba(245, 158, 11, 0.12);
+}
+
+.fleet-combat-estimate.combat-advantage {
+  border-color: rgba(34, 197, 94, 0.55);
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.fleet-dispatch-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+}
+
+.fleet-active-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  margin-bottom: 0.55rem;
+}
+
+.mission-status {
+  display: inline-block;
+  padding: 0.14rem 0.52rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.mission-status-outbound {
+  color: var(--accent);
+  border-color: rgba(59, 130, 246, 0.5);
+  background: rgba(59, 130, 246, 0.12);
+}
+
+.mission-status-at_target {
+  color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.6);
+  background: rgba(245, 158, 11, 0.14);
+}
+
+.mission-status-returning {
+  color: var(--success);
+  border-color: rgba(34, 197, 94, 0.55);
+  background: rgba(34, 197, 94, 0.12);
+}
+
 .queue-bar {
   grid-area: queue;
   border-top: 1px solid var(--border);
@@ -586,6 +739,10 @@ body {
   background: rgba(239, 68, 68, 0.12);
 }
 
+.galaxy-row-clickable {
+  cursor: pointer;
+}
+
 .galaxy-badge {
   display: inline-block;
   padding: 0.12rem 0.5rem;
@@ -625,6 +782,99 @@ body {
   color: var(--danger);
 }
 
+.galaxy-strength-dim {
+  opacity: 0.5;
+}
+
+.galaxy-rebuilding {
+  display: inline-block;
+  margin-left: 0.55rem;
+  font-size: 0.74rem;
+  color: var(--text-dim);
+}
+
+.galaxy-debris {
+  display: inline-block;
+  margin-left: 0.55rem;
+  font-size: 0.74rem;
+  color: var(--crystal);
+}
+
+.galaxy-actions-cell {
+  position: relative;
+}
+
+.galaxy-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  position: relative;
+}
+
+.galaxy-spy-hover-panel {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  right: 0;
+  width: 320px;
+  max-width: min(85vw, 320px);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: linear-gradient(180deg, rgba(18, 26, 43, 0.98), rgba(10, 14, 23, 0.98));
+  padding: 0.65rem;
+  z-index: 20;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+}
+
+.galaxy-intel-empty,
+.galaxy-intel-title,
+.galaxy-intel-meta,
+.galaxy-intel-line,
+.galaxy-intel-label {
+  margin: 0;
+}
+
+.galaxy-intel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.2rem;
+}
+
+.galaxy-intel-tier {
+  font-size: 0.72rem;
+  border: 1px solid rgba(59, 130, 246, 0.5);
+  border-radius: 999px;
+  padding: 0.08rem 0.45rem;
+  color: var(--accent);
+  background: rgba(59, 130, 246, 0.12);
+}
+
+.galaxy-intel-meta {
+  color: var(--text-dim);
+  font-size: 0.72rem;
+  margin-bottom: 0.45rem;
+}
+
+.galaxy-intel-block {
+  margin-top: 0.4rem;
+  border-top: 1px solid rgba(30, 45, 74, 0.55);
+  padding-top: 0.4rem;
+}
+
+.galaxy-intel-label {
+  color: var(--text-dim);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.2rem;
+}
+
+.galaxy-intel-line {
+  font-size: 0.78rem;
+  line-height: 1.25;
+}
+
 .galaxy-hint {
   margin-top: 0.5rem;
   font-size: 0.85rem;
@@ -647,6 +897,152 @@ body {
   padding: 0.3rem 0.5rem;
   font-family: inherit;
   font-size: 0.82rem;
+}
+
+/* Admin panel */
+
+.admin-panel {
+  font-family: 'Roboto Mono', 'Consolas', 'Courier New', monospace;
+}
+
+.admin-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.admin-tab {
+  background: rgba(10, 12, 18, 0.85);
+  border-color: rgba(74, 85, 104, 0.7);
+  font-size: 0.76rem;
+}
+
+.admin-tab-active {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.35), rgba(30, 64, 175, 0.65));
+  border-color: rgba(96, 165, 250, 0.8);
+}
+
+.admin-status {
+  color: #8ee5ff;
+}
+
+.admin-card {
+  background: linear-gradient(180deg, rgba(8, 10, 15, 0.98), rgba(18, 20, 28, 0.95));
+  border-color: rgba(55, 65, 81, 0.8);
+}
+
+.admin-select {
+  max-width: 430px;
+}
+
+.admin-resource-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.admin-resource-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) 110px auto auto auto;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem;
+  border: 1px solid rgba(55, 65, 81, 0.75);
+  border-radius: 0.4rem;
+  background: rgba(10, 12, 18, 0.65);
+}
+
+.admin-form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin-top: 0.6rem;
+}
+
+.admin-form-section h3 {
+  margin: 0;
+  font-size: 0.86rem;
+  color: #b5c4d8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.admin-inline-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.admin-coords-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.admin-grid-inputs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.45rem;
+}
+
+.admin-input-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.35rem 0.45rem;
+  border: 1px solid rgba(55, 65, 81, 0.6);
+  border-radius: 0.4rem;
+  background: rgba(9, 12, 19, 0.7);
+  font-size: 0.78rem;
+}
+
+.admin-combat-row {
+  align-items: center;
+}
+
+.admin-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 0.82rem;
+}
+
+.admin-combat-result {
+  margin-top: 0.65rem;
+  border: 1px solid rgba(55, 65, 81, 0.8);
+  border-radius: 0.4rem;
+  background: rgba(6, 10, 16, 0.8);
+  padding: 0.55rem;
+}
+
+.admin-combat-result p {
+  margin: 0.2rem 0;
+}
+
+.admin-outcome {
+  display: inline-block;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  border: 1px solid;
+}
+
+.admin-outcome-attacker_wins {
+  color: var(--success);
+  border-color: rgba(34, 197, 94, 0.7);
+}
+
+.admin-outcome-defender_wins {
+  color: var(--danger);
+  border-color: rgba(239, 68, 68, 0.7);
+}
+
+.admin-outcome-draw {
+  color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.7);
 }
 
 @media (max-width: 900px) {

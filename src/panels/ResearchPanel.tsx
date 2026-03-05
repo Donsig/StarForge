@@ -32,7 +32,7 @@ function requirementLabel(prerequisite: Prerequisite): string {
 }
 
 export function ResearchPanel() {
-  const { gameState, startResearchAction } = useGame();
+  const { gameState, startResearchAction, adminCompleteResearch } = useGame();
   const planet = gameState.planets[gameState.activePlanetIndex];
   return (
     <section className="panel">
@@ -40,6 +40,28 @@ export function ResearchPanel() {
       <p className="panel-subtitle">
         Unlock technologies that expand production, ship access, and combat capability.
       </p>
+
+      {gameState.researchQueue.length > 0 && (
+        <div className="panel-card">
+          <h2 className="section-title">Research Queue</h2>
+          {gameState.researchQueue.map((item, index) => (
+            <div key={`${item.id}-${item.targetLevel}-${index}`} className="item-footer">
+              <span>
+                {RESEARCH[item.id as ResearchId].name} Lv {item.targetLevel ?? 0}
+              </span>
+              {gameState.settings.godMode && index === 0 && (
+                <button
+                  type="button"
+                  className="btn btn-sm"
+                  onClick={() => adminCompleteResearch()}
+                >
+                  ⚡ Complete
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="items-grid">
         {RESEARCH_ORDER.map((researchId) => {
