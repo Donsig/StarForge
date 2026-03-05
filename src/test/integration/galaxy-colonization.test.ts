@@ -15,6 +15,7 @@ describe('Galaxy colonization flow', () => {
     state.planets[0].buildings.shipyard = 4;
     state.research.combustionDrive = 1;
     state.research.impulseDrive = 3;
+    state.research.astrophysicsTechnology = 1;
     
     // Build a colony ship
     expect(startShipBuild(state, 'colonyShip', 1)).toBe(true);
@@ -74,6 +75,7 @@ describe('Galaxy colonization flow', () => {
   it('cannot colonize an NPC-occupied slot', () => {
     const state = createNewGameState();
     state.planets[0].ships.colonyShip = 1;
+    state.research.astrophysicsTechnology = 1;
     state.galaxy.npcColonies = [
       {
         name: 'TestNPC',

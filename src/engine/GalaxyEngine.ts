@@ -572,7 +572,14 @@ export function getSystemSlots(
 /** Check if player can colonize: needs a colony ship on the active planet. */
 export function canColonize(state: GameState): boolean {
   const planet = activePlanet(state);
-  return planet.ships[GALAXY_CONSTANTS.COLONY_SHIP_ID] > 0;
+  if (planet.ships[GALAXY_CONSTANTS.COLONY_SHIP_ID] <= 0) return false;
+
+  const astroLevel = state.research.astrophysicsTechnology ?? 0;
+  const maxColonies = Math.floor(astroLevel / 2) + (astroLevel > 0 ? 1 : 0);
+  // Level 0 → 0 colonies, Level 1 → 1, Level 3 → 2, Level 5 → 3, etc.
+  // Simplified: level 0 = 0, level >= 1: floor(level/2) + 1
+  const currentColonies = state.planets.length - 1; // exclude homeworld
+  return currentColonies < maxColonies;
 }
 
 /** Check if a slot is available for colonization. */

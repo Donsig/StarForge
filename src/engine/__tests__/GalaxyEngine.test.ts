@@ -177,8 +177,44 @@ describe('GalaxyEngine', () => {
 
   it('canColonize returns true with colony ship', () => {
     const state = createNewGameState();
+    state.research.astrophysicsTechnology = 1;
     state.planets[0].ships.colonyShip = 1;
     expect(canColonize(state)).toBe(true);
+  });
+
+  describe('canColonize - astrophysics cap', () => {
+    it('blocks colonization when astrophysicsTechnology is 0', () => {
+      const state = createNewGameState();
+      state.research.astrophysicsTechnology = 0;
+      state.planets[0].ships.colonyShip = 5;
+      // 0 colonies, cap = floor(0/2)+1 = 1... wait, level 0 = cap 1?
+      // OGame: level 1 allows 1 colony. Level 0 = 0 colonies allowed.
+      expect(canColonize(state)).toBe(false);
+    });
+
+    it('allows colonization at level 1 with no colonies yet', () => {
+      const state = createNewGameState();
+      state.research.astrophysicsTechnology = 1; // max 1 colony
+      state.planets[0].ships.colonyShip = 1;
+      // 0 colonies (homeworld excluded), cap = 1
+      expect(canColonize(state)).toBe(true);
+    });
+
+    it('blocks colonization when at cap (level 1, 1 colony already)', () => {
+      const state = createNewGameState();
+      state.research.astrophysicsTechnology = 1;
+      state.planets[0].ships.colonyShip = 1;
+      state.planets.push({ ...state.planets[0], name: 'Colony 1' }); // add 1 colony
+      expect(canColonize(state)).toBe(false);
+    });
+
+    it('allows 2 colonies at level 3', () => {
+      const state = createNewGameState();
+      state.research.astrophysicsTechnology = 3;
+      state.planets[0].ships.colonyShip = 1;
+      state.planets.push({ ...state.planets[0], name: 'Colony 1' }); // 1 colony
+      expect(canColonize(state)).toBe(true);
+    });
   });
 
   it('isSlotEmpty returns true for unoccupied slot', () => {
@@ -194,6 +230,7 @@ describe('GalaxyEngine', () => {
   it('colonize creates a new planet and consumes colony ship', () => {
     const state = createNewGameState();
     state.planets[0].ships.colonyShip = 1;
+    state.research.astrophysicsTechnology = 1;
 
     const newPlanet = colonize(state, { galaxy: 1, system: 2, slot: 5 });
 
