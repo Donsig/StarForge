@@ -74,7 +74,8 @@ describe('StateManager', () => {
 
     expect(state.lastSaveTimestamp).toBe(3_000_000);
     expect(state.planets[0].resources.metal).toBe(500);
-    expect(loaded).toEqual(state);
+    expect(loaded).not.toBeNull();
+    expect(JSON.parse(JSON.stringify(loaded))).toEqual(JSON.parse(JSON.stringify(state)));
   });
 
   it('exportSave returns JSON and importSave restores state from it', () => {

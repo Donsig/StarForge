@@ -336,7 +336,7 @@ function createNPCProductionPlanet(colony: NPCColony): PlanetState {
       bomber: 0,
       destroyer: 0,
       battlecruiser: 0,
-      solarSatellite: 0,
+      solarSatellite: colony.currentShips.solarSatellite ?? 0,
     },
     defences: {
       rocketLauncher: 0,

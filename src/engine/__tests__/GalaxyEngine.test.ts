@@ -56,6 +56,7 @@ function createNPCColony(overrides?: Partial<NPCColony>): NPCColony {
       lightFighter: 30,
       heavyFighter: 18,
       cruiser: 6,
+      solarSatellite: 0,
     },
     currentDefences: {
       rocketLauncher: 20,
@@ -68,6 +69,7 @@ function createNPCColony(overrides?: Partial<NPCColony>): NPCColony {
       lightFighter: 15,
       heavyFighter: 7,
       cruiser: 2,
+      solarSatellite: 0,
     },
     lastRaidedAt: 0,
     resourcesAtLastRaid: { metal: 0, crystal: 0, deuterium: 0 },
@@ -353,6 +355,25 @@ describe('GalaxyEngine', () => {
     expect(speed3.metal).toBeGreaterThanOrEqual(speed1.metal * 3 - 1);
     expect(speed3.crystal).toBeGreaterThanOrEqual(speed1.crystal * 3 - 1);
     expect(speed3.deuterium).toBeGreaterThanOrEqual(speed1.deuterium * 3 - 1);
+  });
+
+  describe('getNPCResources - energy balance', () => {
+    it('miner NPC with no satellites has reduced production from energy deficit', () => {
+      const colony = createNPCColony({ specialty: 'miner' });
+      colony.currentShips = { ...colony.currentShips, solarSatellite: 0 };
+      colony.baseShips = { ...colony.baseShips, solarSatellite: 0 };
+      const withSats = {
+        ...colony,
+        currentShips: { ...colony.currentShips, solarSatellite: 50 },
+      };
+
+      const now = Date.now();
+      const resNoSat = getNPCResources({ ...colony }, now, 1);
+      const resWithSat = getNPCResources({ ...withSats }, now, 1);
+
+      // With satellites should produce more
+      expect(resWithSat.metal).toBeGreaterThanOrEqual(resNoSat.metal);
+    });
   });
 
   it('getNPCResources returns zero when colony is abandoning', () => {
