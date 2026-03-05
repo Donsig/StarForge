@@ -58,6 +58,48 @@ function mulberry32(seed: number): () => number {
   };
 }
 
+const SLOT_TEMPERATURE_RANGES: { slots: [number, number]; min: number; max: number }[] = [
+  { slots: [1, 3], min: 200, max: 400 },
+  { slots: [4, 6], min: 100, max: 200 },
+  { slots: [7, 9], min: 0, max: 100 },
+  { slots: [10, 12], min: -50, max: 0 },
+  { slots: [13, 15], min: -100, max: -50 },
+];
+
+const SLOT_FIELD_RANGES: { slots: [number, number]; min: number; max: number }[] = [
+  { slots: [1, 3], min: 40, max: 70 },
+  { slots: [4, 6], min: 90, max: 130 },
+  { slots: [7, 9], min: 140, max: 180 },
+  { slots: [10, 12], min: 120, max: 160 },
+  { slots: [13, 15], min: 80, max: 120 },
+];
+
+export function slotTemperatureRange(slot: number): { min: number; max: number } {
+  const range =
+    SLOT_TEMPERATURE_RANGES.find((r) => slot >= r.slots[0] && slot <= r.slots[1]) ??
+    { slots: [0, 0], min: 0, max: 100 };
+  return { min: range.min, max: range.max };
+}
+
+export function slotFieldRange(slot: number): { min: number; max: number } {
+  const range =
+    SLOT_FIELD_RANGES.find((r) => slot >= r.slots[0] && slot <= r.slots[1]) ??
+    { slots: [0, 0], min: 140, max: 180 };
+  return { min: range.min, max: range.max };
+}
+
+export function planetStatsForSlot(
+  seed: number,
+  coordinates: Coordinates,
+): { maxTemperature: number; maxFields: number } {
+  const rng = mulberry32(seed ^ (coordinates.system * 1000 + coordinates.slot * 17));
+  const tempRange = slotTemperatureRange(coordinates.slot);
+  const fieldRange = slotFieldRange(coordinates.slot);
+  const maxTemperature = Math.round(tempRange.min + rng() * (tempRange.max - tempRange.min));
+  const maxFields = Math.round(fieldRange.min + rng() * (fieldRange.max - fieldRange.min));
+  return { maxTemperature, maxFields };
+}
+
 function clamp(min: number, value: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }

@@ -10,6 +10,9 @@ import {
   getNPCResources,
   getSystemSlots,
   isSlotEmpty,
+  planetStatsForSlot,
+  slotFieldRange,
+  slotTemperatureRange,
 } from '../GalaxyEngine.ts';
 import { GALAXY_CONSTANTS } from '../../data/galaxy.ts';
 
@@ -70,6 +73,48 @@ function createNPCColony(overrides?: Partial<NPCColony>): NPCColony {
     ...overrides,
   };
 }
+
+describe('slotTemperatureRange', () => {
+  it('slots 1-3 are hot (200-400°C)', () => {
+    expect(slotTemperatureRange(1)).toEqual({ min: 200, max: 400 });
+    expect(slotTemperatureRange(3)).toEqual({ min: 200, max: 400 });
+  });
+  it('slots 7-9 are sweet spot (0-100°C)', () => {
+    expect(slotTemperatureRange(8)).toEqual({ min: 0, max: 100 });
+  });
+  it('slots 13-15 are cold (-100 to -50°C)', () => {
+    expect(slotTemperatureRange(15)).toEqual({ min: -100, max: -50 });
+  });
+});
+
+describe('slotFieldRange', () => {
+  it('slots 1-3 have fewer fields (40-70)', () => {
+    expect(slotFieldRange(1)).toEqual({ min: 40, max: 70 });
+  });
+  it('slots 7-9 have the most fields (140-180)', () => {
+    expect(slotFieldRange(7)).toEqual({ min: 140, max: 180 });
+  });
+});
+
+describe('planetStatsForSlot', () => {
+  it('returns deterministic values for a given seed+slot', () => {
+    const a = planetStatsForSlot(12345, { galaxy: 1, system: 1, slot: 8 });
+    const b = planetStatsForSlot(12345, { galaxy: 1, system: 1, slot: 8 });
+    expect(a.maxTemperature).toBe(b.maxTemperature);
+    expect(a.maxFields).toBe(b.maxFields);
+  });
+  it('returned temperature is within the slot range', () => {
+    const stats = planetStatsForSlot(99999, { galaxy: 1, system: 3, slot: 2 });
+    expect(stats.maxTemperature).toBeGreaterThanOrEqual(200);
+    expect(stats.maxTemperature).toBeLessThanOrEqual(400);
+  });
+  it('different seeds produce different values', () => {
+    const a = planetStatsForSlot(11111, { galaxy: 1, system: 1, slot: 8 });
+    const b = planetStatsForSlot(22222, { galaxy: 1, system: 1, slot: 8 });
+    // May occasionally collide but should usually differ
+    expect(a.maxTemperature !== b.maxTemperature || a.maxFields !== b.maxFields).toBe(true);
+  });
+});
 
 describe('GalaxyEngine', () => {
   it('generateNPCColonies produces deterministic colonies from seed', () => {
