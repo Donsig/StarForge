@@ -142,6 +142,17 @@ export const RESEARCH: Record<ResearchId, ResearchDefinition> = {
       { type: 'research', id: 'shieldingTechnology', level: 5 },
     ],
   },
+  astrophysicsTechnology: {
+    id: 'astrophysicsTechnology',
+    name: 'Astrophysics',
+    description: 'Advanced stellar cartography. Each two levels allow an additional colony.',
+    baseCost: { metal: 4000, crystal: 8000, deuterium: 4000 },
+    costMultiplier: 1.75,
+    requires: [
+      { type: 'research', id: 'espionageTechnology', level: 4 },
+      { type: 'research', id: 'impulseDrive', level: 3 },
+    ],
+  },
 };
 
 export const RESEARCH_ORDER: ResearchId[] = [
@@ -158,4 +169,5 @@ export const RESEARCH_ORDER: ResearchId[] = [
   'impulseDrive',
   'hyperspaceTechnology',
   'hyperspaceDrive',
+  'astrophysicsTechnology',
 ];
