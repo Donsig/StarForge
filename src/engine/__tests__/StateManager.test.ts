@@ -40,7 +40,7 @@ describe('StateManager', () => {
 
     const storedRaw = localStorage.getItem(GAME_CONSTANTS.STORAGE_KEY);
     expect(storedRaw).not.toBeNull();
-    expect(JSON.parse(storedRaw!)).toEqual(state);
+    expect(JSON.parse(storedRaw!)).toEqual(JSON.parse(JSON.stringify(state)));
   });
 
   it('saveState writes to localStorage and loadState reads it back identically', () => {

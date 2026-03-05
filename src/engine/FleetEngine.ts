@@ -325,7 +325,53 @@ export function resolveHarvestAtTarget(
   mission.status = 'returning';
 }
 
+function resolveTransportAtTarget(state: GameState, mission: FleetMission, now: number): void {
+  const targetPlanet = state.planets.find((planet) =>
+    isMatchingCoordinates(planet.coordinates, mission.targetCoordinates));
+
+  if (!targetPlanet) {
+    // Target no longer exists — return everything
+    mission.returnTime = now + calcMissionReturnTravelMs(state, mission);
+    mission.status = 'returning';
+    return;
+  }
+
+  const caps = getStorageCaps(targetPlanet);
+
+  // Deposit as much as fits
+  const deliveredMetal = Math.min(
+    mission.cargo.metal,
+    Math.max(0, caps.metal - targetPlanet.resources.metal),
+  );
+  const deliveredCrystal = Math.min(
+    mission.cargo.crystal,
+    Math.max(0, caps.crystal - targetPlanet.resources.crystal),
+  );
+  const deliveredDeuterium = Math.min(
+    mission.cargo.deuterium,
+    Math.max(0, caps.deuterium - targetPlanet.resources.deuterium),
+  );
+
+  targetPlanet.resources.metal += deliveredMetal;
+  targetPlanet.resources.crystal += deliveredCrystal;
+  targetPlanet.resources.deuterium += deliveredDeuterium;
+
+  // Keep undelivered surplus in cargo for the return trip
+  mission.cargo = {
+    metal: mission.cargo.metal - deliveredMetal,
+    crystal: mission.cargo.crystal - deliveredCrystal,
+    deuterium: mission.cargo.deuterium - deliveredDeuterium,
+  };
+
+  mission.returnTime = now + calcMissionReturnTravelMs(state, mission);
+  mission.status = 'returning';
+}
+
 function resolveAtTarget(state: GameState, mission: FleetMission, now: number): void {
+  if (mission.type === 'transport') {
+    resolveTransportAtTarget(state, mission, now);
+    return;
+  }
   if (mission.type === 'espionage') {
     resolveEspionageAtTarget(state, mission, now);
     return;
@@ -507,13 +553,16 @@ export function dispatch(
   targetCoords: Coordinates,
   ships: MissionShips,
   missionType: MissionType = 'attack',
+  cargo?: { metal: number; crystal: number; deuterium: number },
 ): FleetMission | null {
   const sourcePlanet = state.planets[sourcePlanetIndex];
   if (!sourcePlanet) return null;
-  const targetNpc = state.galaxy.npcColonies.find((npc) =>
-    isMatchingCoordinates(npc.coordinates, targetCoords));
-  if (targetNpc?.abandonedAt !== undefined) {
-    return null;
+  if (missionType !== 'transport') {
+    const targetNpc = state.galaxy.npcColonies.find((npc) =>
+      isMatchingCoordinates(npc.coordinates, targetCoords));
+    if (targetNpc?.abandonedAt !== undefined) {
+      return null;
+    }
   }
 
   const activeMissions = state.fleetMissions.filter(
@@ -563,6 +612,32 @@ export function dispatch(
     return null;
   }
 
+  let missionCargo = { metal: 0, crystal: 0, deuterium: 0 };
+  if (missionType === 'transport') {
+    const targetPlanet = state.planets.find((planet) =>
+      isMatchingCoordinates(planet.coordinates, targetCoords));
+    if (!targetPlanet) return null; // must be player-owned
+    if (isMatchingCoordinates(sourcePlanet.coordinates, targetCoords)) return null; // can't send to self
+
+    const requestedCargo = cargo ?? { metal: 0, crystal: 0, deuterium: 0 };
+    missionCargo = {
+      metal: Math.max(0, Math.floor(requestedCargo.metal)),
+      crystal: Math.max(0, Math.floor(requestedCargo.crystal)),
+      deuterium: Math.max(0, Math.floor(requestedCargo.deuterium)),
+    };
+    const totalCargo = missionCargo.metal + missionCargo.crystal + missionCargo.deuterium;
+    const cargoCapacity = calcCargoCapacity(selectedShips);
+    if (totalCargo > cargoCapacity) return null;
+    if (sourcePlanet.resources.metal < missionCargo.metal) return null;
+    if (sourcePlanet.resources.crystal < missionCargo.crystal) return null;
+    if (sourcePlanet.resources.deuterium < missionCargo.deuterium + fuelCost) return null;
+
+    // Deduct cargo from source
+    sourcePlanet.resources.metal -= missionCargo.metal;
+    sourcePlanet.resources.crystal -= missionCargo.crystal;
+    sourcePlanet.resources.deuterium -= missionCargo.deuterium;
+  }
+
   for (const [shipId, countValue] of Object.entries(selectedShips)) {
     const count = Math.max(0, Math.floor(countValue));
     sourcePlanet.ships[shipId as ShipId] -= count;
@@ -583,9 +658,9 @@ export function dispatch(
     status: 'outbound',
     sourcePlanetIndex,
     targetCoordinates: { ...targetCoords },
-    targetType: 'npc_colony',
+    targetType: missionType === 'transport' ? 'player_planet' : 'npc_colony',
     ships: { ...selectedShips },
-    cargo: { metal: 0, crystal: 0, deuterium: 0 },
+    cargo: missionCargo,
     fuelCost,
     departureTime: now,
     arrivalTime: now + travelSeconds * 1000,

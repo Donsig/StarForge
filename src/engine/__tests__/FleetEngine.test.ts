@@ -1,6 +1,7 @@
 /// <reference types="vitest/globals" />
 
 import { createNewGameState } from '../../models/GameState.ts';
+import { createDefaultPlanet } from '../../models/Planet.ts';
 import type { FleetMission } from '../../models/Fleet.ts';
 import { getNPCResources } from '../GalaxyEngine.ts';
 import {
@@ -10,9 +11,20 @@ import {
   dispatch,
   dispatchHarvest,
   processTick,
+  resolveMissionArrival,
+  resolveMissionReturn,
   resolveHarvestAtTarget,
   recallMission,
 } from '../FleetEngine.ts';
+
+function createTestStateWithTwoPlanets() {
+  const state = createNewGameState();
+  const colony = createDefaultPlanet();
+  colony.name = 'Colony 2';
+  colony.coordinates = { galaxy: 1, system: 1, slot: 5 };
+  state.planets.push(colony);
+  return state;
+}
 
 describe('FleetEngine', () => {
   describe('calcDistance', () => {
@@ -222,6 +234,148 @@ describe('FleetEngine', () => {
       );
 
       expect(mission).toBeNull();
+    });
+  });
+
+  describe('transport dispatch', () => {
+    it('deducts cargo and fuel from source planet on dispatch', () => {
+      const state = createTestStateWithTwoPlanets();
+      const source = state.planets[0];
+      source.resources.metal = 10000;
+      source.ships.smallCargo = 5; // cargo cap 5 * 5000 = 25000
+      source.resources.deuterium = 1000;
+
+      const mission = dispatch(
+        state,
+        0,
+        state.planets[1].coordinates,
+        { smallCargo: 5 },
+        'transport',
+        { metal: 5000, crystal: 0, deuterium: 0 },
+      );
+      expect(mission).not.toBeNull();
+      expect(source.resources.metal).toBe(5000); // deducted
+    });
+
+    it('returns null if cargo exceeds fleet capacity', () => {
+      const state = createTestStateWithTwoPlanets();
+      state.planets[0].ships.smallCargo = 1; // cap 5000
+      state.planets[0].resources.metal = 20000;
+      state.planets[0].resources.deuterium = 1000;
+      const result = dispatch(
+        state,
+        0,
+        state.planets[1].coordinates,
+        { smallCargo: 1 },
+        'transport',
+        { metal: 10000, crystal: 0, deuterium: 0 },
+      );
+      expect(result).toBeNull();
+    });
+
+    it('returns null if target is not a player planet', () => {
+      const state = createNewGameState();
+      state.planets[0].ships.smallCargo = 1;
+      state.planets[0].resources.metal = 1000;
+      state.planets[0].resources.deuterium = 1000;
+      const npcCoords = { galaxy: 1, system: 4, slot: 9 };
+      state.galaxy.npcColonies = [
+        {
+          coordinates: npcCoords,
+          name: 'NPC',
+          temperature: 40,
+          tier: 2,
+          specialty: 'balanced',
+          maxTier: 5,
+          initialUpgradeIntervalMs: 21_600_000,
+          currentUpgradeIntervalMs: 21_600_000,
+          lastUpgradeAt: 0,
+          upgradeTickCount: 0,
+          raidCount: 0,
+          recentRaidTimestamps: [],
+          abandonedAt: undefined,
+          buildings: {},
+          baseDefences: {},
+          baseShips: {},
+          currentDefences: {},
+          currentShips: {},
+          lastRaidedAt: 0,
+          resourcesAtLastRaid: { metal: 0, crystal: 0, deuterium: 0 },
+        },
+      ];
+      const result = dispatch(
+        state,
+        0,
+        npcCoords,
+        { smallCargo: 1 },
+        'transport',
+        { metal: 100, crystal: 0, deuterium: 0 },
+      );
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('transport at_target resolution', () => {
+    it('deposits cargo to target planet', () => {
+      const state = createTestStateWithTwoPlanets();
+      state.planets[0].ships.smallCargo = 1;
+      state.planets[0].resources.metal = 10000;
+      state.planets[0].resources.deuterium = 1000;
+      const mission = dispatch(
+        state,
+        0,
+        state.planets[1].coordinates,
+        { smallCargo: 1 },
+        'transport',
+        { metal: 5000, crystal: 0, deuterium: 0 },
+      );
+      expect(mission).not.toBeNull();
+      if (!mission) return;
+      resolveMissionArrival(state, mission, Date.now());
+      expect(state.planets[1].resources.metal).toBeGreaterThan(500); // base 500 + 5000
+    });
+
+    it('keeps overflow in cargo for return when target storage is full', () => {
+      const state = createTestStateWithTwoPlanets();
+      state.planets[0].ships.smallCargo = 1;
+      state.planets[0].resources.metal = 10000;
+      state.planets[0].resources.deuterium = 1000;
+      state.planets[1].resources.metal = 999999; // fill to overflow
+      const mission = dispatch(
+        state,
+        0,
+        state.planets[1].coordinates,
+        { smallCargo: 1 },
+        'transport',
+        { metal: 5000, crystal: 0, deuterium: 0 },
+      );
+      expect(mission).not.toBeNull();
+      if (!mission) return;
+      resolveMissionArrival(state, mission, Date.now());
+      expect(mission.cargo.metal).toBeGreaterThan(0); // undelivered stays in cargo
+      expect(mission.status).toBe('returning');
+    });
+
+    it('returns undelivered cargo to source on return', () => {
+      const state = createTestStateWithTwoPlanets();
+      state.planets[0].ships.smallCargo = 1;
+      state.planets[0].resources.metal = 10000;
+      state.planets[0].resources.deuterium = 1000;
+      state.planets[1].resources.metal = 999999;
+      const mission = dispatch(
+        state,
+        0,
+        state.planets[1].coordinates,
+        { smallCargo: 1 },
+        'transport',
+        { metal: 5000, crystal: 0, deuterium: 0 },
+      );
+      expect(mission).not.toBeNull();
+      if (!mission) return;
+      resolveMissionArrival(state, mission, Date.now());
+      const metalBeforeReturn = state.planets[0].resources.metal;
+      resolveMissionReturn(state, mission);
+      expect(state.planets[0].resources.metal).toBeGreaterThan(metalBeforeReturn);
     });
   });
 
