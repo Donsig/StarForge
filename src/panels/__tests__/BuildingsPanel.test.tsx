@@ -10,6 +10,10 @@ function getBuildingCard(name: string): HTMLElement {
   return card as HTMLElement;
 }
 
+function getSolarSatelliteCard(): HTMLElement {
+  return getBuildingCard('Solar Satellites');
+}
+
 describe('BuildingsPanel', () => {
   it('renders all buildings from BUILDING_ORDER with names', () => {
     renderWithGame(<BuildingsPanel />);
@@ -140,5 +144,72 @@ describe('BuildingsPanel', () => {
     expect(
       within(fusionReactorCard).getByText('Energy Technology 3'),
     ).toHaveClass('unmet');
+  });
+
+  it('shows solar satellite stats in the energy subsection', () => {
+    renderWithGame(<BuildingsPanel />, {
+      gameState: {
+        planet: {
+          maxTemperature: 50,
+          ships: {
+            solarSatellite: 7,
+          },
+        },
+      },
+    });
+
+    const satelliteCard = getSolarSatelliteCard();
+    expect(within(satelliteCard).getByText('Owned: 7')).toBeInTheDocument();
+    expect(within(satelliteCard).getAllByText('C 2,000')).toHaveLength(2);
+    expect(within(satelliteCard).getAllByText('D 500')).toHaveLength(2);
+    expect(within(satelliteCard).getByText(/^31$/)).toBeInTheDocument();
+  });
+
+  it('locks solar satellite build when shipyard is below level 1', () => {
+    renderWithGame(<BuildingsPanel />, {
+      gameState: {
+        planet: {
+          buildings: {
+            shipyard: 0,
+          },
+        },
+      },
+    });
+
+    const satelliteCard = getSolarSatelliteCard();
+    expect(within(satelliteCard).getByRole('button', { name: 'Locked' })).toBeDisabled();
+    expect(within(satelliteCard).getByText('Shipyard 1')).toHaveClass('unmet');
+  });
+
+  it('calls buildShips for solar satellites with selected quantity', async () => {
+    const user = userEvent.setup();
+    const buildShips = vi.fn(() => true);
+
+    renderWithGame(<BuildingsPanel />, {
+      gameState: {
+        planet: {
+          buildings: {
+            shipyard: 1,
+          },
+          resources: {
+            metal: 100_000,
+            crystal: 100_000,
+            deuterium: 100_000,
+          },
+        },
+      },
+      actions: {
+        buildShips,
+      },
+    });
+
+    const satelliteCard = getSolarSatelliteCard();
+    const quantityInput = within(satelliteCard).getByRole('spinbutton');
+
+    await user.clear(quantityInput);
+    await user.type(quantityInput, '4');
+    await user.click(within(satelliteCard).getByRole('button', { name: 'Build' }));
+
+    expect(buildShips).toHaveBeenCalledWith('solarSatellite', 4);
   });
 });
