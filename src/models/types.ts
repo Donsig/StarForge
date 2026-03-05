@@ -45,7 +45,8 @@ export type ResearchId =
   | 'combustionDrive'
   | 'impulseDrive'
   | 'hyperspaceDrive'
-  | 'hyperspaceTechnology';
+  | 'hyperspaceTechnology'
+  | 'astrophysicsTechnology';
 
 export type ShipId =
   | 'lightFighter'
@@ -110,5 +111,5 @@ export const GAME_CONSTANTS = {
   AUTO_SAVE_TICKS: 30,
   MAX_OFFLINE_SECONDS: 7 * 24 * 3600, // 7 days
   STORAGE_KEY: 'starforge_save',
-  STATE_VERSION: 9,
+  STATE_VERSION: 10,
 } as const;

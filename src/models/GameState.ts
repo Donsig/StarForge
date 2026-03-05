@@ -52,6 +52,7 @@ export function createNewGameState(): GameState {
       impulseDrive: 0,
       hyperspaceDrive: 0,
       hyperspaceTechnology: 0,
+      astrophysicsTechnology: 0,
     },
     researchQueue: [],
     settings: {
