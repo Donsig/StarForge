@@ -142,10 +142,15 @@ export function applyUpgradeIncrement(colony: NPCColony, rng: () => number): voi
     } else if (step === 1) {
       upgradeBuilding(colony, 'crystalMine', maxBuildingLevel);
     } else {
-      upgradeBuilding(colony, 'deuteriumSynthesizer', maxBuildingLevel);
-      const cycle = Math.floor(phase / 3) + 1;
-      if (cycle % 3 === 0) {
-        upgradeBuilding(colony, 'metalStorage', maxBuildingLevel);
+      // tick 2: deuterium synthesizer OR solar satellites (alternate every 3rd cycle)
+      if (colony.upgradeTickCount % 9 === 2) {
+        colony.buildings.deuteriumSynthesizer = (colony.buildings.deuteriumSynthesizer ?? 0) + 1;
+      } else {
+        const satelliteIncrement = Math.max(1, Math.floor(colony.tier / 2));
+        colony.baseShips.solarSatellite = (colony.baseShips.solarSatellite ?? 0) + satelliteIncrement;
+        if (colony.lastRaidedAt === 0) {
+          colony.currentShips.solarSatellite = colony.baseShips.solarSatellite;
+        }
       }
     }
   } else if (colony.specialty === 'balanced') {
@@ -157,7 +162,12 @@ export function applyUpgradeIncrement(colony: NPCColony, rng: () => number): voi
     } else if (step === 2) {
       applyBalancedDefenceIncrement(colony);
     } else {
-      upgradeBuilding(colony, 'crystalMine', maxBuildingLevel);
+      if (colony.upgradeTickCount % 12 === 3) {
+        colony.baseShips.solarSatellite = (colony.baseShips.solarSatellite ?? 0) + 2;
+        if (colony.lastRaidedAt === 0) {
+          colony.currentShips.solarSatellite = colony.baseShips.solarSatellite;
+        }
+      }
     }
   } else if (colony.specialty === 'raider') {
     const step = phase % 3;

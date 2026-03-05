@@ -44,6 +44,7 @@ function createColony(
       cruiser: 0,
       battleship: 0,
       battlecruiser: 0,
+      solarSatellite: 0,
     },
     currentDefences: {
       rocketLauncher: 0,
@@ -57,6 +58,7 @@ function createColony(
       cruiser: 0,
       battleship: 0,
       battlecruiser: 0,
+      solarSatellite: 0,
     },
     lastRaidedAt: 0,
     resourcesAtLastRaid: { metal: 0, crystal: 0, deuterium: 0 },
@@ -78,11 +80,12 @@ describe('NPCUpgradeEngine', () => {
       expect(colony.baseShips.cruiser).toBe(2);
     });
 
-    it('applies miner storage bonus every third cycle', () => {
-      const colony = createColony('miner', { upgradeTickCount: 8 });
+    it('miner specialty builds satellites on tick%3===2', () => {
+      const colony = createColony('miner', { upgradeTickCount: 5 });
+      colony.currentShips.solarSatellite = 0;
+      colony.baseShips.solarSatellite = 0;
       applyUpgradeIncrement(colony, () => 0.5);
-      expect(colony.buildings.deuteriumSynthesizer).toBe(2);
-      expect(colony.buildings.metalStorage).toBe(2);
+      expect(colony.baseShips.solarSatellite).toBeGreaterThan(0);
     });
 
     it('applies balanced speciality defence branch at phase 2', () => {

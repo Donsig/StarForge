@@ -256,7 +256,9 @@ export function FleetPanel() {
     }
   }, [missionType, sourcePlanet.ships.espionageProbe]);
 
-  const availableShips = SHIP_ORDER.filter((shipId) => sourcePlanet.ships[shipId] > 0);
+  const availableShips = SHIP_ORDER.filter(
+    (shipId) => shipId !== 'solarSatellite' && sourcePlanet.ships[shipId] > 0,
+  );
   const maxProbePerMission = Math.min(
     sourcePlanet.ships.espionageProbe,
     gameState.settings.maxProbeCount,
