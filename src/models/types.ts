@@ -77,6 +77,7 @@ export interface QueueItem {
   type: QueueItemType;
   id: string;
   targetLevel?: number; // for buildings/research
+  sourcePlanetIndex?: number; // for research timing
   quantity?: number;     // for ships/defences (total ordered)
   completed?: number;    // for ships/defences (how many done)
   startedAt: number;     // timestamp ms

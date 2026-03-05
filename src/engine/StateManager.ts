@@ -16,9 +16,26 @@ import {
   researchTime,
   shipBuildTime,
 } from './FormulasEngine.ts';
-import { activePlanet } from './helpers.ts';
 import { generateNPCColonies } from './GalaxyEngine.ts';
 import { processTick as processFleetTick } from './FleetEngine.ts';
+
+function clampActivePlanetIndex(state: GameState): void {
+  if (!Array.isArray(state.planets) || state.planets.length === 0) {
+    state.planets = createNewGameState().planets;
+  }
+
+  const maxIndex = Math.max(0, state.planets.length - 1);
+  state.activePlanetIndex = Math.min(
+    Math.max(0, Math.floor(state.activePlanetIndex ?? 0)),
+    maxIndex,
+  );
+
+  for (const item of state.researchQueue) {
+    if (item.type === 'research' && item.sourcePlanetIndex === undefined) {
+      item.sourcePlanetIndex = state.activePlanetIndex;
+    }
+  }
+}
 
 export function saveState(state: GameState): void {
   state.lastSaveTimestamp = Date.now();
@@ -31,10 +48,10 @@ export function loadState(): GameState | null {
 
   try {
     const parsed = JSON.parse(raw) as GameState;
-    if (parsed.version < GAME_CONSTANTS.STATE_VERSION) {
-      return migrate(parsed);
-    }
-    return parsed;
+    const migrated =
+      parsed.version < GAME_CONSTANTS.STATE_VERSION ? migrate(parsed) : parsed;
+    clampActivePlanetIndex(migrated);
+    return migrated;
   } catch {
     return null;
   }
@@ -61,11 +78,11 @@ export function importSave(json: string): GameState | null {
   try {
     const parsed = JSON.parse(json) as GameState;
     if (!parsed.version || !parsed.planets) return null;
-    if (parsed.version < GAME_CONSTANTS.STATE_VERSION) {
-      return migrate(parsed);
-    }
-    saveState(parsed);
-    return parsed;
+    const migrated =
+      parsed.version < GAME_CONSTANTS.STATE_VERSION ? migrate(parsed) : parsed;
+    clampActivePlanetIndex(migrated);
+    saveState(migrated);
+    return migrated;
   } catch {
     return null;
   }
@@ -277,13 +294,16 @@ export function processOfflineTime(state: GameState): { elapsedSeconds: number }
         nextBuilding.completesAt = queueEvent.completesAt + nextBuildingDuration * 1000;
       }
     } else if (queueEvent.type === 'research') {
-      const researchPlanet = activePlanet(state);
       state.research[queueEvent.id as ResearchId] = queueEvent.targetLevel!;
       if (state.researchQueue.length > 0) {
         state.researchQueue.shift();
       }
       const nextResearch = state.researchQueue[0];
       if (nextResearch) {
+        const sourcePlanet =
+          state.planets[nextResearch.sourcePlanetIndex ?? state.activePlanetIndex] ??
+          state.planets[state.activePlanetIndex] ??
+          state.planets[0];
         const nextResearchId = nextResearch.id as ResearchId;
         const researchDef = RESEARCH[nextResearchId];
         const nextResearchCost = researchCostAtLevel(
@@ -294,7 +314,7 @@ export function processOfflineTime(state: GameState): { elapsedSeconds: number }
         const nextResearchDuration = researchTime(
           nextResearchCost.metal,
           nextResearchCost.crystal,
-          researchPlanet.buildings.researchLab,
+          sourcePlanet?.buildings.researchLab ?? 0,
           state.settings.gameSpeed,
         );
         nextResearch.startedAt = queueEvent.completesAt;

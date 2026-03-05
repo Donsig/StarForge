@@ -8,10 +8,11 @@
 - [x] **Phase 1.3:** Unlimited Build Queue (array queues, cascading cancel, migration v2→v3)
 - [x] **Phase 2.1:** Galaxy / Colonization (state refactor, GalaxyEngine, GalaxyPanel, PlanetSwitcher, v3→v4)
 - [x] **Phase 2.1b:** Multi-planet bugfixes (production, offline, determinism)
-- [ ] **Phase 2.2:** Combat Engine + NPC Planet Simulation (v4→v5)
-- [ ] **Phase 2.3:** Fleet Dispatch + Player Raids on NPCs (v5→v6)
-- [ ] **Phase 2.4:** Espionage System (v6→v7)
-- [ ] **Phase 2.5:** Admin Dashboard (dev tools: add resources, force colonize, trigger combat, instant travel)
+- [x] **Phase 2.2:** Combat Engine + NPC Planet Simulation (v4→v5)
+- [x] **Phase 2.3:** Fleet Dispatch + Player Raids on NPCs (v5→v6)
+- [x] **Phase 2.4:** Espionage System (v6→v7)
+- [x] **Phase 2.5:** Admin Dashboard + bug fixes (v7→v8)
+- [ ] **Phase 2.6:** NPC Dynamic Upgrade System (v8→v9)
 - [ ] **Phase 3.1:** Debris Fields + Recycler Missions
 - [ ] **Phase 3.2:** Economy Polish (colony caps, slot-based planets, transport, solar satellites)
 - [ ] **Phase 3.3:** Messages Panel + Combat Reports
@@ -699,6 +700,232 @@ Add to `GameSettings`:
 - `godMode: false`
 
 `STATE_VERSION` → 8
+
+---
+
+## Phase 2.6: NPC Dynamic Upgrade System
+
+### Overview
+
+NPCs upgrade their buildings, fleet, and defences over game time. Each colony has a **specialty** that determines investment priorities, a **tier** that gates max level and upgrade speed, and **raid memory** that drives two adaptive behaviours: long-term adaptation (repeated raids over time → faster rebuild + respecialisation toward defence) and short-term collapse (rapid repeated raids → abandonment → slot reopens for player colonisation).
+
+Also includes: max probe count setting, planet size editor in admin, fleet mission ship tooltip, and NPC resource drain bug fix.
+
+---
+
+### Specialty types
+
+| Specialty | Priority |
+|-----------|----------|
+| `turtle` | Defences ↑↑, fleet minimal, moderate mines |
+| `fleeter` | Fleet ↑↑ (fast attack ships), defences minimal, moderate mines |
+| `miner` | Mines ↑↑, storage ↑↑, fleet/defences minimal |
+| `balanced` | All categories equally |
+| `raider` | Fast fleet ↑↑, very light defences, lean mines |
+| `researcher` | Research lab ↑↑ (raises espionage detection level), moderate military |
+
+Specialty is **hidden** in galaxy view. Spy report reveals it when `espionageTechnology >= 6`. Add `specialty?: string` to `EspionageReport` in `src/models/Fleet.ts`.
+
+---
+
+### Bug fix: NPC resources fully drained after raid
+
+**File:** `src/engine/FleetEngine.ts` — attack `at_target` handler
+**Bug:** After combat, `lastRaidedAt = now` resets the accumulation clock correctly, but the NPC's current available resources are not updated — the next `getNPCResources` call returns production since `now`, ignoring the leftover resources that weren't looted.
+**Fix:** Store `resourcesAtLastRaid` on `NPCColony` — the remaining resources after loot is deducted. `getNPCResources` returns `resourcesAtLastRaid + production_since_lastRaidedAt` (capped at 48hr stockpile). After combat: `resourcesAtLastRaid = available - loot`.
+
+Add to `NPCColony`:
+```ts
+resourcesAtLastRaid: { metal: number; crystal: number; deuterium: number };
+```
+Default: `{ metal: 0, crystal: 0, deuterium: 0 }` (never raided → starts from 0 + production).
+
+---
+
+### Model additions (`src/models/Galaxy.ts`)
+
+Add to `NPCColony`:
+
+```ts
+specialty: 'turtle' | 'fleeter' | 'miner' | 'balanced' | 'raider' | 'researcher';
+maxTier: number;                      // upgrade ceiling (derived from initial tier)
+initialUpgradeIntervalMs: number;     // immutable baseline interval (for adaptation cap)
+currentUpgradeIntervalMs: number;     // mutable — reduced by long-term adaptation
+lastUpgradeAt: number;                // real-ms timestamp of last upgrade tick
+upgradeTickCount: number;             // total upgrade ticks applied (used for rotation logic)
+raidCount: number;                    // total raids ever
+recentRaidTimestamps: number[];       // real-ms timestamps of last 10 raids
+abandonedAt?: number;                 // if set, colony is collapsing
+resourcesAtLastRaid: { metal: number; crystal: number; deuterium: number };
+```
+
+---
+
+### Upgrade intervals and tier ceilings
+
+| Initial tier | Interval (real time) | Max tier ceiling |
+|--------------|----------------------|-----------------|
+| 1–3 | 6 hours | 5 |
+| 4–6 | 3 hours | 8 |
+| 7–10 | 1.5 hours | 10 |
+
+Effective interval (game-time scaled): `currentUpgradeIntervalMs / gameSpeed`
+
+---
+
+### Upgrade increments per specialty (unambiguous per-tick rules)
+
+One upgrade tick = one call to the specialty handler. Uses `upgradeTickCount` modulo for rotation.
+
+**turtle** (tick % 3):
+- tick 0, 1: +5 rocket launchers (tier 1–4), or +2 heavy lasers (tier 5–6), or +1 plasma turret (tier 7+)
+- tick 2: +1 metalMine (if metalMine < maxTier * 2)
+
+**fleeter** (tick % 4):
+- tick 0, 1: +3 lightFighters (tier 1–4), or +2 cruisers (tier 5–6), or +1 battleship (tier 7+)
+- tick 2: +1 metalMine
+- tick 3: +1 crystalMine
+
+**miner** (tick % 3):
+- tick 0: +1 metalMine
+- tick 1: +1 crystalMine
+- tick 2: +1 deuteriumSynthesizer; every 3rd cycle also +1 metalStorage
+
+**balanced** (tick % 4):
+- tick 0: +1 metalMine
+- tick 1: +3 lightFighters (or +1 cruiser at tier 5+)
+- tick 2: +5 rocketLaunchers (or +1 ionCannon at tier 6+)
+- tick 3: +1 crystalMine
+
+**raider** (tick % 3):
+- tick 0, 1: +4 lightFighters (tier 1–4), or +3 cruisers (tier 5–6), or +2 battlecruisers (tier 7+)
+- tick 2: +2 rocketLaunchers
+
+**researcher** (tick % 5):
+- tick 0–3: +1 balanced military (same as balanced tick 1/2 alternating)
+- tick 4: +1 researchLab (capped at `colony.tier * 2`; `calcNPCEspionageLevel` reads researchLab level instead of just tier)
+
+All increments are skipped (tick timer still resets) when the stat is already at `maxTier * 2` cap.
+
+After each upgrade: update `baseDefences`/`baseShips` to match new totals. If colony is not mid-rebuild (`lastRaidedAt === 0` or fully rebuilt), set `currentDefences = baseDefences`, `currentShips = baseShips`. Increment `upgradeTickCount`.
+
+**`getNPCResources` update:** For researcher specialty, `calcNPCEspionageLevel(colony)` reads `colony.buildings.researchLab ?? 0` divided by 2 (instead of tier-only), so researcher NPCs become progressively harder to spy on.
+
+---
+
+### `src/engine/NPCUpgradeEngine.ts` — new file
+
+**`processUpgrades(state: GameState, now: number): void`** — called every tick
+
+For each colony:
+
+1. **Abandonment expiry:** if `abandonedAt` set and `(now - abandonedAt) * gameSpeed >= 48 * 3600 * 1000`:
+   - Remove from `state.galaxy.npcColonies`
+   - Safe-return any outbound/returning missions targeting those coords (set status = `returning`, preserve ships)
+   - `continue`
+
+2. **Catch-up loop** (handles offline gaps — multiple intervals may have elapsed):
+   ```
+   while (!colony.abandonedAt &&
+          (now - colony.lastUpgradeAt) * gameSpeed >= colony.currentUpgradeIntervalMs) {
+     applyUpgradeIncrement(colony, rng)
+     colony.lastUpgradeAt += colony.currentUpgradeIntervalMs / gameSpeed
+     colony.upgradeTickCount++
+   }
+   ```
+   Uses deterministic RNG seeded from `galaxy.seed ^ colony coordinates ^ upgradeTickCount`.
+
+**`recordRaid(colony: NPCColony, now: number, gameSpeed: number): void`** — called from FleetEngine after combat
+
+- Push `now` to `recentRaidTimestamps`, trim to last 10
+- Increment `raidCount`
+- **Long-term adaptation:** if `raidCount >= 10`: `currentUpgradeIntervalMs = Math.max(initialUpgradeIntervalMs * 0.5, currentUpgradeIntervalMs * 0.8)`
+- **Respecialisation:** if `raidCount >= 15` and `specialty !== 'turtle'`: set `specialty = 'turtle'`
+- **Short-term collapse:** count raids in last 24 game-hours: `recentRaidTimestamps.filter(t => (now - t) * gameSpeed < 24 * 3600 * 1000).length`; if `>= 3` and `!abandonedAt`: set `abandonedAt = now`
+
+**Raid hook placement:** Call `recordRaid` from:
+1. `FleetEngine.processTick` attack resolution (online + offline catch-up)
+2. `adminTriggerCombat` in `useGameEngine.ts` (admin instant combat)
+
+---
+
+### Dispatch validation
+
+In `FleetEngine.dispatch`: if target NPC has `abandonedAt` set, block dispatch with error `'Target colony is abandoning'`.
+
+In `FleetEngine.processTick` espionage `at_target`: if NPC not found or abandoned, safe-return probes (same as missing-NPC path — `status = 'returning'`, probes preserved).
+
+---
+
+### Offline catch-up (`src/engine/StateManager.ts`)
+
+Add NPC upgrade pass to `processOfflineTime`: after processing all mission/queue events, call `NPCUpgradeEngine.processUpgrades(state, endTime)` once to catch up all NPC upgrades for the elapsed period. The catch-up loop inside `processUpgrades` handles multiple intervals.
+
+---
+
+### Galaxy view changes (`src/panels/GalaxyPanel.tsx`)
+
+- NPC slots with `abandonedAt` set: show "Abandoning" label, grey out strength badge, hide Spy/Raid/God Mode buttons
+- After full removal: slot renders as empty (existing empty-slot logic)
+
+---
+
+### Espionage report additions
+
+`src/engine/EspionageEngine.ts`: when `espionageTechnology >= 6`, add `specialty: colony.specialty` to the report.
+`src/models/Fleet.ts` `EspionageReport`: add `specialty?: string`.
+Display specialty in galaxy hover panel alongside buildings/tier.
+
+---
+
+### New feature: Max probe count setting
+
+**`src/models/GameState.ts` `GameSettings`:** add `maxProbeCount: number` (default `10`).
+
+**`src/panels/SettingsPanel.tsx`:** add "Max Probes per Mission" number input (min 1, max 999). Saves to `state.settings.maxProbeCount`.
+
+**`src/panels/FleetPanel.tsx`:** when mission type is `'espionage'`, cap the probe input max at `Math.min(availableProbes, state.settings.maxProbeCount)`. The "Max" button fills to this capped value.
+
+---
+
+### New feature: Planet size editor in Admin
+
+**`src/panels/AdminPanel.tsx` — Player Editor tab:** add "Field Count" number input per planet (min 40, max 250). Saves to `planet.fieldCount` (add `fieldCount: number` to `PlanetState` if not already present). Field count is cosmetic for now (no gameplay effect until Phase 3.2 slot-based properties).
+
+---
+
+### New feature: Fleet mission ship tooltip
+
+**`src/panels/FleetPanel.tsx` — active missions list:** on hover over a mission row, show a small tooltip/popover listing the ships committed: `{ shipName: count }` from `mission.ships`. Only show ship types with count > 0.
+
+---
+
+### Admin panel additions (`src/panels/AdminPanel.tsx` — NPC Editor tab)
+
+- Specialty dropdown — set `colony.specialty` directly
+- "Trigger Upgrade" button — calls `NPCUpgradeEngine.applyUpgradeIncrement(colony, rng)` once
+- Raid history display: `raidCount`, recent raids in last 24hr count, `abandonedAt` status
+- "Clear Raid History" button — resets `raidCount: 0`, `recentRaidTimestamps: []`, `abandonedAt: undefined`
+- "Force Abandon" button — sets `abandonedAt = now`
+
+---
+
+### Migration: v8 → v9
+
+Additive patch to each existing `NPCColony` (do NOT regenerate — preserves raid state):
+- `specialty`: `mulberry32(seed ^ (system * 100 + slot))` → pick from specialties array by index
+- `maxTier`: `tier <= 3 ? 5 : tier <= 6 ? 8 : 10`
+- `initialUpgradeIntervalMs` + `currentUpgradeIntervalMs`: `tier <= 3 ? 21600000 : tier <= 6 ? 10800000 : 5400000`
+- `lastUpgradeAt`: `0`
+- `upgradeTickCount`: `0`
+- `raidCount`: `0`
+- `recentRaidTimestamps`: `[]`
+- `abandonedAt`: `undefined`
+- `resourcesAtLastRaid`: `{ metal: 0, crystal: 0, deuterium: 0 }`
+
+Add to `GameSettings`: `maxProbeCount: 10`
+
+`STATE_VERSION` → 9
 
 ---
 

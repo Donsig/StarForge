@@ -316,12 +316,17 @@ export function generateNPCColonies(seed: number): NPCColony[] {
 export function getNPCResources(
   colony: NPCColony,
   now: number,
+  gameSpeed: number,
 ): { metal: number; crystal: number; deuterium: number } {
   const productionPlanet = createNPCProductionPlanet(colony);
   const production = calculateProduction(productionPlanet, NPC_RESEARCH_LEVELS);
   const elapsedFrom = colony.lastRaidedAt || GAME_START_TIME;
+  const safeGameSpeed = Math.max(0, gameSpeed);
   const elapsedMs = clamp(0, now - elapsedFrom, NPC_RECOVERY_MS);
-  const elapsedSeconds = elapsedMs / 1000;
+  const elapsedSeconds = Math.min(
+    (elapsedMs / 1000) * safeGameSpeed,
+    (NPC_RECOVERY_MS / 1000) * safeGameSpeed,
+  );
 
   return {
     metal: Math.max(0, Math.floor((production.metalPerHour / 3600) * elapsedSeconds)),

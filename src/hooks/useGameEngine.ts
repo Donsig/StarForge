@@ -248,6 +248,18 @@ function createAdminPlanet(state: GameState, coords: Coordinates): PlanetState {
   return planet;
 }
 
+function refreshArrayReferences(state: GameState): void {
+  state.planets = [...state.planets];
+  state.fleetMissions = [...state.fleetMissions];
+  state.galaxy = {
+    ...state.galaxy,
+    npcColonies: [...state.galaxy.npcColonies],
+  };
+  state.espionageReports = [...state.espionageReports];
+  state.combatLog = [...state.combatLog];
+  state.debrisFields = [...state.debrisFields];
+}
+
 function initializeState(): GameState {
   const state = loadState() ?? newGame();
   processOfflineTime(state);
@@ -266,6 +278,7 @@ export function useGameEngine(): GameEngineState {
 
   const syncReactState = useCallback((): void => {
     const currentState = stateRef.current;
+    refreshArrayReferences(currentState);
     setGameState({ ...currentState });
     setProductionRates(calculateProduction(currentState));
     setStorageCaps(getStorageCaps(currentState));
@@ -313,9 +326,7 @@ export function useGameEngine(): GameEngineState {
       }
 
       if (didProcessTick) {
-        setGameState({ ...currentState });
-        setProductionRates(calculateProduction(currentState));
-        setStorageCaps(getStorageCaps(currentState));
+        syncReactState();
       }
 
       rafId = requestAnimationFrame(frame);
@@ -332,7 +343,7 @@ export function useGameEngine(): GameEngineState {
       cancelAnimationFrame(rafId);
       saveState(stateRef.current);
     };
-  }, []);
+  }, [syncReactState]);
 
   const upgradeBuilding = useCallback(
     (id: BuildingId): boolean => {
@@ -415,6 +426,7 @@ export function useGameEngine(): GameEngineState {
   const resetGameAction = useCallback((): void => {
     const resetState = resetGame();
     stateRef.current = resetState;
+    refreshArrayReferences(resetState);
     setFleetTarget(null);
     setGameState({ ...resetState });
     setProductionRates(calculateProduction(resetState));
@@ -425,6 +437,7 @@ export function useGameEngine(): GameEngineState {
     if (index >= 0 && index < stateRef.current.planets.length) {
       stateRef.current.activePlanetIndex = index;
       syncReactState();
+      saveState(stateRef.current);
     }
   }, [syncReactState]);
 
@@ -521,6 +534,15 @@ export function useGameEngine(): GameEngineState {
         if (value === undefined) continue;
         planet.buildings[buildingId] = value;
       }
+
+      const caps = getStorageCaps(planet);
+      planet.resources.metal = clampInt(0, planet.resources.metal, caps.metal);
+      planet.resources.crystal = clampInt(0, planet.resources.crystal, caps.crystal);
+      planet.resources.deuterium = clampInt(
+        0,
+        planet.resources.deuterium,
+        caps.deuterium,
+      );
 
       syncReactState();
       saveState(stateRef.current);
@@ -839,9 +861,6 @@ export function useGameEngine(): GameEngineState {
     if (stateRef.current.researchQueue.length === 0) return;
 
     const now = Date.now();
-    const planet = stateRef.current.planets[stateRef.current.activePlanetIndex];
-    if (!planet) return;
-
     const currentItem = stateRef.current.researchQueue[0];
     if (currentItem.targetLevel !== undefined) {
       stateRef.current.research[currentItem.id as ResearchId] = currentItem.targetLevel;
@@ -850,6 +869,12 @@ export function useGameEngine(): GameEngineState {
 
     const nextItem = stateRef.current.researchQueue[0];
     if (nextItem && nextItem.targetLevel !== undefined) {
+      const sourcePlanet =
+        stateRef.current.planets[
+          nextItem.sourcePlanetIndex ?? stateRef.current.activePlanetIndex
+        ] ??
+        stateRef.current.planets[stateRef.current.activePlanetIndex] ??
+        stateRef.current.planets[0];
       const definition = RESEARCH[nextItem.id as ResearchId];
       const nextCost = researchCostAtLevel(
         definition.baseCost,
@@ -859,7 +884,7 @@ export function useGameEngine(): GameEngineState {
       const nextDuration = researchTime(
         nextCost.metal,
         nextCost.crystal,
-        planet.buildings.researchLab,
+        sourcePlanet?.buildings.researchLab ?? 0,
         stateRef.current.settings.gameSpeed,
       );
       nextItem.startedAt = now;
@@ -1030,7 +1055,7 @@ export function useGameEngine(): GameEngineState {
       }
 
       const now = Date.now();
-      const npcResources = getNPCResources(colony, now);
+      const npcResources = getNPCResources(colony, now, stateRef.current.settings.gameSpeed);
       const npcForce = getNPCCurrentForce(colony, now);
       const seed = (now ^ (stateRef.current.combatLog.length + 1) ^ (npcCoords.system << 8)) >>> 0;
 
@@ -1260,6 +1285,7 @@ export function useGameEngine(): GameEngineState {
     processOfflineTime(importedState);
     saveState(importedState);
     stateRef.current = importedState;
+    refreshArrayReferences(importedState);
     setFleetTarget(null);
     setGameState({ ...importedState });
     setProductionRates(calculateProduction(importedState));

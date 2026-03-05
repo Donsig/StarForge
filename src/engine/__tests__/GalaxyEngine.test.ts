@@ -190,8 +190,8 @@ describe('GalaxyEngine', () => {
     const colony = createNPCColony({ lastRaidedAt: now - 100 * 3600 * 1000 });
     const cappedColony = createNPCColony({ lastRaidedAt: now - 48 * 3600 * 1000 });
 
-    const resourcesA = getNPCResources(colony, now);
-    const resourcesB = getNPCResources(cappedColony, now);
+    const resourcesA = getNPCResources(colony, now, 1);
+    const resourcesB = getNPCResources(cappedColony, now, 1);
 
     expect(resourcesA).toEqual(resourcesB);
   });
@@ -201,12 +201,24 @@ describe('GalaxyEngine', () => {
     const oneHour = createNPCColony({ lastRaidedAt: now - 3600 * 1000 });
     const twoHours = createNPCColony({ lastRaidedAt: now - 2 * 3600 * 1000 });
 
-    const resources1 = getNPCResources(oneHour, now);
-    const resources2 = getNPCResources(twoHours, now);
+    const resources1 = getNPCResources(oneHour, now, 1);
+    const resources2 = getNPCResources(twoHours, now, 1);
 
     expect(resources2.metal).toBeGreaterThan(resources1.metal);
     expect(resources2.crystal).toBeGreaterThan(resources1.crystal);
     expect(resources2.deuterium).toBeGreaterThan(resources1.deuterium);
+  });
+
+  it('getNPCResources scales production with game speed', () => {
+    const now = 2_500_000_000;
+    const oneHour = createNPCColony({ lastRaidedAt: now - 3600 * 1000 });
+
+    const speed1 = getNPCResources(oneHour, now, 1);
+    const speed3 = getNPCResources(oneHour, now, 3);
+
+    expect(speed3.metal).toBeGreaterThanOrEqual(speed1.metal * 3 - 1);
+    expect(speed3.crystal).toBeGreaterThanOrEqual(speed1.crystal * 3 - 1);
+    expect(speed3.deuterium).toBeGreaterThanOrEqual(speed1.deuterium * 3 - 1);
   });
 
   it('getNPCCurrentForce interpolates from current to base over 48 hours', () => {

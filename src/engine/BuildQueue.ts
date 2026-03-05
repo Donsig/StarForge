@@ -21,6 +21,14 @@ import {
 } from './FormulasEngine.ts';
 import { activePlanet } from './helpers.ts';
 
+function researchLabLevelForItem(state: GameState, item: QueueItem): number {
+  const sourcePlanet =
+    state.planets[item.sourcePlanetIndex ?? state.activePlanetIndex] ??
+    state.planets[state.activePlanetIndex] ??
+    state.planets[0];
+  return sourcePlanet?.buildings.researchLab ?? 0;
+}
+
 // ── Prerequisite checking ───────────────────────────────────────
 
 export function prerequisitesMet(
@@ -207,6 +215,7 @@ export function startResearch(
     type: 'research',
     id: researchId,
     targetLevel: nextLevel,
+    sourcePlanetIndex: state.activePlanetIndex,
     startedAt: previousCompletion,
     completesAt: previousCompletion + duration * 1000,
   });
@@ -264,7 +273,7 @@ export function cancelResearchAtIndex(state: GameState, index: number): void {
     const nextDuration = researchTime(
       nextCost.metal,
       nextCost.crystal,
-      planet.buildings.researchLab,
+      researchLabLevelForItem(state, nextItem),
       state.settings.gameSpeed,
     );
     const now = Date.now();
@@ -329,7 +338,15 @@ export function startDefenceBuild(
 
   if (def.maxCount !== undefined) {
     const currentCount = planet.defences[defenceId];
-    if (currentCount + quantity > def.maxCount) return false;
+    const queuedCount = planet.shipyardQueue.reduce((total, item) => {
+      if (item.type !== 'defence' || item.id !== defenceId) {
+        return total;
+      }
+      const quantityValue = Math.max(0, Math.floor(item.quantity ?? 0));
+      const completedValue = Math.max(0, Math.floor(item.completed ?? 0));
+      return total + Math.max(0, quantityValue - completedValue);
+    }, 0);
+    if (currentCount + queuedCount + quantity > def.maxCount) return false;
   }
 
   const totalCost: ResourceCost = {
@@ -405,30 +422,66 @@ export function cancelShipyardAtIndex(state: GameState, index: number): void {
 }
 
 export function processTick(state: GameState, now: number = Date.now()): void {
-  const planet = activePlanet(state);
-  // Building queue
-  if (planet.buildingQueue.length > 0 && now >= planet.buildingQueue[0].completesAt) {
-    const item = planet.buildingQueue[0];
-    planet.buildings[item.id as BuildingId] = item.targetLevel!;
-    planet.buildingQueue.shift();
+  for (const planet of state.planets) {
+    // Building queue
+    if (planet.buildingQueue.length > 0 && now >= planet.buildingQueue[0].completesAt) {
+      const item = planet.buildingQueue[0];
+      planet.buildings[item.id as BuildingId] = item.targetLevel!;
+      planet.buildingQueue.shift();
 
-    const nextItem = planet.buildingQueue[0];
-    if (nextItem) {
-      const nextDef = BUILDINGS[nextItem.id as BuildingId];
-      const nextCost = buildingCostAtLevel(
-        nextDef.baseCost,
-        nextDef.costMultiplier,
-        nextItem.targetLevel!,
-      );
-      const nextDuration = buildingTime(
-        nextCost.metal,
-        nextCost.crystal,
-        planet.buildings.roboticsFactory,
-        planet.buildings.naniteFactory,
-        state.settings.gameSpeed,
-      );
-      nextItem.startedAt = now;
-      nextItem.completesAt = now + nextDuration * 1000;
+      const nextItem = planet.buildingQueue[0];
+      if (nextItem) {
+        const nextDef = BUILDINGS[nextItem.id as BuildingId];
+        const nextCost = buildingCostAtLevel(
+          nextDef.baseCost,
+          nextDef.costMultiplier,
+          nextItem.targetLevel!,
+        );
+        const nextDuration = buildingTime(
+          nextCost.metal,
+          nextCost.crystal,
+          planet.buildings.roboticsFactory,
+          planet.buildings.naniteFactory,
+          state.settings.gameSpeed,
+        );
+        nextItem.startedAt = now;
+        nextItem.completesAt = now + nextDuration * 1000;
+      }
+    }
+
+    // Shipyard queue (process front item)
+    if (planet.shipyardQueue.length > 0) {
+      const item = planet.shipyardQueue[0];
+      if (now >= item.completesAt) {
+        item.completed = (item.completed ?? 0) + 1;
+        if (item.type === 'defence') {
+          planet.defences[item.id as DefenceId] += 1;
+        } else {
+          planet.ships[item.id as ShipId] += 1;
+        }
+
+        if (item.completed >= item.quantity!) {
+          // Batch done, remove from queue
+          planet.shipyardQueue.shift();
+        } else {
+          // Start next unit
+          const perUnitSeconds =
+            item.type === 'defence'
+              ? defenceBuildTime(
+                  DEFENCES[item.id as DefenceId].structuralIntegrity,
+                  planet.buildings.shipyard,
+                  planet.buildings.naniteFactory,
+                  state.settings.gameSpeed,
+                )
+              : shipBuildTime(
+                  SHIPS[item.id as ShipId].structuralIntegrity,
+                  planet.buildings.shipyard,
+                  planet.buildings.naniteFactory,
+                  state.settings.gameSpeed,
+                );
+          item.completesAt = now + perUnitSeconds * 1000;
+        }
+      }
     }
   }
 
@@ -449,46 +502,11 @@ export function processTick(state: GameState, now: number = Date.now()): void {
       const nextDuration = researchTime(
         nextCost.metal,
         nextCost.crystal,
-        planet.buildings.researchLab,
+        researchLabLevelForItem(state, nextItem),
         state.settings.gameSpeed,
       );
       nextItem.startedAt = now;
       nextItem.completesAt = now + nextDuration * 1000;
-    }
-  }
-
-  // Shipyard queue (process front item)
-  if (planet.shipyardQueue.length > 0) {
-    const item = planet.shipyardQueue[0];
-    if (now >= item.completesAt) {
-      item.completed = (item.completed ?? 0) + 1;
-      if (item.type === 'defence') {
-        planet.defences[item.id as DefenceId] += 1;
-      } else {
-        planet.ships[item.id as ShipId] += 1;
-      }
-
-      if (item.completed >= item.quantity!) {
-        // Batch done, remove from queue
-        planet.shipyardQueue.shift();
-      } else {
-        // Start next unit
-        const perUnitSeconds =
-          item.type === 'defence'
-            ? defenceBuildTime(
-                DEFENCES[item.id as DefenceId].structuralIntegrity,
-                planet.buildings.shipyard,
-                planet.buildings.naniteFactory,
-                state.settings.gameSpeed,
-              )
-            : shipBuildTime(
-                SHIPS[item.id as ShipId].structuralIntegrity,
-                planet.buildings.shipyard,
-                planet.buildings.naniteFactory,
-                state.settings.gameSpeed,
-              );
-        item.completesAt = now + perUnitSeconds * 1000;
-      }
     }
   }
 }
@@ -501,31 +519,31 @@ export function rescaleQueueTimes(
   newSpeed: number,
   now: number = Date.now(),
 ): void {
-  const planet = activePlanet(state);
   if (oldSpeed === newSpeed) return;
   const ratio = oldSpeed / newSpeed;
 
-  // Building queue
-  if (planet.buildingQueue.length > 0) {
-    const item = planet.buildingQueue[0];
-    const remaining = item.completesAt - now;
-    if (remaining > 0) {
-      item.completesAt = now + remaining * ratio;
+  // Building and shipyard queues (front item only) on all planets
+  for (const planet of state.planets) {
+    if (planet.buildingQueue.length > 0) {
+      const item = planet.buildingQueue[0];
+      const remaining = item.completesAt - now;
+      if (remaining > 0) {
+        item.completesAt = now + remaining * ratio;
+      }
+    }
+
+    if (planet.shipyardQueue.length > 0) {
+      const item = planet.shipyardQueue[0];
+      const remaining = item.completesAt - now;
+      if (remaining > 0) {
+        item.completesAt = now + remaining * ratio;
+      }
     }
   }
 
-  // Research queue
+  // Research queue (global front item only)
   if (state.researchQueue.length > 0) {
     const item = state.researchQueue[0];
-    const remaining = item.completesAt - now;
-    if (remaining > 0) {
-      item.completesAt = now + remaining * ratio;
-    }
-  }
-
-  // Shipyard queue (only the front item has an active timer)
-  if (planet.shipyardQueue.length > 0) {
-    const item = planet.shipyardQueue[0];
     const remaining = item.completesAt - now;
     if (remaining > 0) {
       item.completesAt = now + remaining * ratio;

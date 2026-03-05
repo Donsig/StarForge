@@ -7,6 +7,7 @@ import {
   calcFleetSpeed,
   calcLoot,
   dispatch,
+  processTick,
   recallMission,
 } from '../FleetEngine.ts';
 
@@ -77,6 +78,14 @@ describe('FleetEngine', () => {
         { smallCargo: 5 },
       );
       expect(loot).toEqual({ metal: 0, crystal: 0, deuterium: 0 });
+    });
+
+    it('never steals more than 50% of any single resource even with excess cargo', () => {
+      const loot = calcLoot(
+        { metal: 1200, crystal: 800, deuterium: 400 },
+        { smallCargo: 100 },
+      );
+      expect(loot).toEqual({ metal: 600, crystal: 400, deuterium: 200 });
     });
   });
 
@@ -153,6 +162,25 @@ describe('FleetEngine', () => {
       expect(state.fleetMissions).toHaveLength(0);
       expect(sourcePlanet.ships.smallCargo).toBe(1);
     });
+
+    it('allows dispatching more than one espionage probe', () => {
+      const state = createNewGameState();
+      const sourcePlanet = state.planets[0];
+      sourcePlanet.ships.espionageProbe = 5;
+      sourcePlanet.resources.deuterium = 100;
+
+      const mission = dispatch(
+        state,
+        0,
+        { galaxy: 1, system: 1, slot: 8 },
+        { espionageProbe: 3 },
+        'espionage',
+      );
+
+      expect(mission).not.toBeNull();
+      expect(mission?.ships.espionageProbe).toBe(3);
+      expect(sourcePlanet.ships.espionageProbe).toBe(2);
+    });
   });
 
   describe('recallMission', () => {
@@ -174,12 +202,70 @@ describe('FleetEngine', () => {
       });
 
       vi.spyOn(Date, 'now').mockReturnValue(4_000);
-      recallMission(state, 'mission_1234abcd');
+      const recalled = recallMission(state, 'mission_1234abcd');
 
       const [mission] = state.fleetMissions;
+      expect(recalled).toBe(true);
       expect(mission.status).toBe('returning');
       expect(mission.returnTime).toBe(7_000);
       expect(mission.cargo).toEqual({ metal: 0, crystal: 0, deuterium: 0 });
+    });
+
+    it('does not recall missions that have effectively already arrived', () => {
+      const state = createNewGameState();
+      state.fleetMissions.push({
+        id: 'mission_abcd1234',
+        type: 'attack',
+        status: 'outbound',
+        sourcePlanetIndex: 0,
+        targetCoordinates: { galaxy: 1, system: 2, slot: 5 },
+        targetType: 'npc_colony',
+        ships: { smallCargo: 1 },
+        cargo: { metal: 0, crystal: 0, deuterium: 0 },
+        fuelCost: 10,
+        departureTime: 1_000,
+        arrivalTime: 9_000,
+        returnTime: 0,
+      });
+
+      vi.spyOn(Date, 'now').mockReturnValue(9_000);
+      const recalled = recallMission(state, 'mission_abcd1234');
+
+      expect(recalled).toBe(false);
+      expect(state.fleetMissions[0].status).toBe('outbound');
+      expect(state.fleetMissions[0].returnTime).toBe(0);
+    });
+  });
+
+  describe('processTick', () => {
+    it('returns mission safely when target npc colony no longer exists', () => {
+      const state = createNewGameState();
+      const now = 100_000;
+      state.fleetMissions.push({
+        id: 'mission_missingnpc',
+        type: 'attack',
+        status: 'outbound',
+        sourcePlanetIndex: 0,
+        targetCoordinates: { galaxy: 1, system: 9, slot: 12 },
+        targetType: 'npc_colony',
+        ships: { smallCargo: 2 },
+        cargo: { metal: 0, crystal: 0, deuterium: 0 },
+        fuelCost: 10,
+        departureTime: now - 5000,
+        arrivalTime: now - 1,
+        returnTime: 0,
+      });
+
+      processTick(state, now);
+
+      expect(state.fleetMissions[0].status).toBe('returning');
+      expect(state.fleetMissions[0].ships.smallCargo).toBe(2);
+      expect(state.fleetMissions[0].cargo).toEqual({
+        metal: 0,
+        crystal: 0,
+        deuterium: 0,
+      });
+      expect(state.fleetMissions[0].returnTime).toBeGreaterThan(now);
     });
   });
 });

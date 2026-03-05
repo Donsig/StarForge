@@ -170,6 +170,7 @@ describe('Integration: save/load cycle', () => {
         type: 'research',
         id: 'hyperspaceTechnology',
         targetLevel: 1,
+        sourcePlanetIndex: 0,
         startedAt: now - 1000,
         completesAt: now + 20_000,
       },

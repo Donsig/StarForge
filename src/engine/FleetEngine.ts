@@ -10,6 +10,8 @@ import type { Coordinates } from '../models/Galaxy.ts';
 import type { ShipId } from '../models/types.ts';
 
 const COMPLETED_MISSION_RETENTION_MS = 7 * 24 * 3600 * 1000;
+const HISTORY_RETENTION_MS = 30 * 24 * 3600 * 1000;
+const MAX_HISTORY_ENTRIES = 100;
 const ESPIONAGE_MAX_TRAVEL_SECONDS = 10;
 const ESPIONAGE_MIN_FUEL_COST = 1;
 const UPGRADE_SPEED_BY_SHIP: Partial<Record<CombatShipId, number>> = {
@@ -139,19 +141,33 @@ function applyNpcLosses(
   return updated;
 }
 
+function pruneTimedEntries<T extends { timestamp: number }>(
+  entries: T[],
+  minTimestamp: number,
+): T[] {
+  const filtered = entries
+    .filter((entry) => entry.timestamp >= minTimestamp)
+    .sort((a, b) => a.timestamp - b.timestamp);
+
+  if (filtered.length <= MAX_HISTORY_ENTRIES) {
+    return filtered;
+  }
+
+  return filtered.slice(filtered.length - MAX_HISTORY_ENTRIES);
+}
+
 function resolveAttackAtTarget(state: GameState, mission: FleetMission, now: number): void {
   const colony = state.galaxy.npcColonies.find((npc) =>
     isMatchingCoordinates(npc.coordinates, mission.targetCoordinates));
 
   if (!colony) {
-    mission.ships = {};
     mission.cargo = { metal: 0, crystal: 0, deuterium: 0 };
     mission.returnTime = now + calcMissionReturnTravelMs(state, mission);
     mission.status = 'returning';
     return;
   }
 
-  const npcResources = getNPCResources(colony, now);
+  const npcResources = getNPCResources(colony, now, state.settings.gameSpeed);
   const npcForce = getNPCCurrentForce(colony, now);
   const seed = (now ^ Number.parseInt(mission.id.slice(-8), 16)) >>> 0;
 
@@ -235,6 +251,7 @@ function resolveEspionageAtTarget(
     mission.sourcePlanetIndex,
     probeCount,
     state.research,
+    state.settings.gameSpeed,
     rng,
   );
 
@@ -400,25 +417,25 @@ export function calcLoot(
   npcResources: { metal: number; crystal: number; deuterium: number },
   survivingShips: MissionShips,
 ): { metal: number; crystal: number; deuterium: number } {
-  const available = {
+  const stealable = {
     metal: Math.max(0, Math.floor(npcResources.metal * 0.5)),
     crystal: Math.max(0, Math.floor(npcResources.crystal * 0.5)),
     deuterium: Math.max(0, Math.floor(npcResources.deuterium * 0.5)),
   };
 
   const capacity = Math.max(0, Math.floor(calcCargoCapacity(survivingShips)));
-  const totalAvailable = available.metal + available.crystal + available.deuterium;
+  const totalStealable = stealable.metal + stealable.crystal + stealable.deuterium;
 
-  if (totalAvailable <= capacity) {
-    return available;
+  if (totalStealable <= capacity) {
+    return stealable;
   }
 
   let remaining = capacity;
-  const metal = Math.min(available.metal, remaining);
+  const metal = Math.min(stealable.metal, remaining);
   remaining -= metal;
-  const crystal = Math.min(available.crystal, remaining);
+  const crystal = Math.min(stealable.crystal, remaining);
   remaining -= crystal;
-  const deuterium = Math.min(available.deuterium, remaining);
+  const deuterium = Math.min(stealable.deuterium, remaining);
 
   return { metal, crystal, deuterium };
 }
@@ -510,17 +527,22 @@ export function dispatch(
   return mission;
 }
 
-export function recallMission(state: GameState, missionId: string): void {
+export function recallMission(state: GameState, missionId: string): boolean {
   const mission = state.fleetMissions.find((item) => item.id === missionId);
-  if (!mission || mission.status !== 'outbound') return;
+  if (!mission || mission.status !== 'outbound') return false;
 
   const now = Date.now();
+  if (now >= mission.arrivalTime) {
+    return false;
+  }
+
   const elapsed = Math.max(0, now - mission.departureTime);
 
   mission.status = 'returning';
   mission.arrivalTime = now;
   mission.returnTime = now + elapsed;
   mission.cargo = { metal: 0, crystal: 0, deuterium: 0 };
+  return true;
 }
 
 export function rescaleMissionETAs(
@@ -567,5 +589,15 @@ export function processTick(state: GameState, now: number = Date.now()): void {
   state.fleetMissions = state.fleetMissions.filter(
     (mission) =>
       mission.status !== 'completed' || missionCompletedAt(mission) >= pruneBefore,
+  );
+
+  const historyPruneBefore = now - HISTORY_RETENTION_MS;
+  state.combatLog = pruneTimedEntries(state.combatLog, historyPruneBefore);
+  state.espionageReports = pruneTimedEntries(
+    state.espionageReports,
+    historyPruneBefore,
+  );
+  state.debrisFields = state.debrisFields.filter(
+    (field) => field.metal > 0 || field.crystal > 0,
   );
 }

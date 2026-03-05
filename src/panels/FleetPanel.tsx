@@ -33,6 +33,10 @@ function formatMissionType(type: MissionType): string {
   return type === 'espionage' ? 'Espionage' : 'Attack';
 }
 
+function formatCargo(cargo: { metal: number; crystal: number; deuterium: number }): string {
+  return `M ${formatNumber(cargo.metal)}  C ${formatNumber(cargo.crystal)}  D ${formatNumber(cargo.deuterium)}`;
+}
+
 interface MissionRowProps {
   mission: FleetMission;
   onRecall: (missionId: string) => void;
@@ -56,6 +60,9 @@ function MissionRow({ mission, onRecall, onResolve, godMode }: MissionRowProps) 
         : mission.status === 'at_target'
           ? 'At Target'
           : 'Completed';
+  const hasCargo =
+    mission.cargo.metal > 0 || mission.cargo.crystal > 0 || mission.cargo.deuterium > 0;
+  const showCargo = mission.status === 'returning' && hasCargo;
 
   return (
     <tr>
@@ -67,6 +74,7 @@ function MissionRow({ mission, onRecall, onResolve, godMode }: MissionRowProps) 
         </span>
       </td>
       <td className="number">{countdown || '00:00:00'}</td>
+      <td>{showCargo ? formatCargo(mission.cargo) : '—'}</td>
       <td>
         {mission.status === 'outbound' && (
           <button
@@ -520,6 +528,7 @@ export function FleetPanel() {
                   <th>Target</th>
                   <th>Status</th>
                   <th>Next Transition</th>
+                  <th>Cargo</th>
                   <th></th>
                 </tr>
               </thead>

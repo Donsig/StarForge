@@ -63,10 +63,18 @@ export function DefencePanel() {
           const quantity = Number.isInteger(parsedQuantity) && parsedQuantity > 0 ? parsedQuantity : 0;
           const unlocked = prerequisitesMet(definition.requires, gameState);
           const ownedCount = planet.defences[defenceId];
+          const queuedCount = planet.shipyardQueue.reduce((total, item) => {
+            if (item.type !== 'defence' || item.id !== defenceId) {
+              return total;
+            }
+            const quantityValue = Math.max(0, Math.floor(item.quantity ?? 0));
+            const completedValue = Math.max(0, Math.floor(item.completed ?? 0));
+            return total + Math.max(0, quantityValue - completedValue);
+          }, 0);
           const remainingMax =
             definition.maxCount === undefined
               ? null
-              : Math.max(definition.maxCount - ownedCount, 0);
+              : Math.max(definition.maxCount - (ownedCount + queuedCount), 0);
           const maxReached = remainingMax !== null && remainingMax === 0;
           const exceedsMax = remainingMax !== null && quantity > remainingMax;
 
@@ -112,7 +120,9 @@ export function DefencePanel() {
               {definition.maxCount !== undefined && (
                 <div className="item-meta">
                   <span className="label">Limit</span>
-                  <span className="number">Max: {definition.maxCount}</span>
+                  <span className="number">
+                    Max: {definition.maxCount} (Queued: {queuedCount})
+                  </span>
                 </div>
               )}
 

@@ -22,9 +22,9 @@ export function calcDetectionChance(
   probeCount: number,
 ): number {
   if (npcEspionageLevel === 0) return 0;
-  const ratio =
-    npcEspionageLevel /
-    (Math.max(1, playerEspionageTech) * Math.max(1, probeCount));
+  if (playerEspionageTech === 0) return 1;
+  if (probeCount <= 0) return 1;
+  const ratio = npcEspionageLevel / (playerEspionageTech * probeCount);
   return Math.min(1, ratio * ratio);
 }
 
@@ -53,6 +53,7 @@ export function generateReport(
   sourcePlanetIndex: number,
   probesSent: number,
   research: ResearchState,
+  gameSpeed: number,
   rng: () => number,
 ): EspionageReport {
   const npcEspLevel = calcNPCEspionageLevel(colony.tier);
@@ -84,7 +85,7 @@ export function generateReport(
   const currentForce = getNPCCurrentForce(colony, now);
   const report: EspionageReport = {
     ...baseReport,
-    resources: getNPCResources(colony, now),
+    resources: getNPCResources(colony, now, gameSpeed),
   };
 
   if (espionageTech >= 2) {
@@ -100,16 +101,20 @@ export function generateReport(
     report.tier = colony.tier;
   }
 
-  if (espionageTech >= 8 && colony.lastRaidedAt > 0) {
-    const elapsed = Math.min(
-      Math.max(0, now - colony.lastRaidedAt),
-      NPC_RECOVERY_MS,
-    );
-    const pct = elapsed / NPC_RECOVERY_MS;
-    report.rebuildStatus = {
-      defencePct: Math.round(pct * 100),
-      fleetPct: Math.round(pct * 100),
-    };
+  if (espionageTech >= 8) {
+    if (colony.lastRaidedAt === 0) {
+      report.rebuildStatus = { defencePct: 100, fleetPct: 100 };
+    } else {
+      const elapsed = Math.min(
+        Math.max(0, now - colony.lastRaidedAt),
+        NPC_RECOVERY_MS,
+      );
+      const pct = elapsed / NPC_RECOVERY_MS;
+      report.rebuildStatus = {
+        defencePct: Math.round(pct * 100),
+        fleetPct: Math.round(pct * 100),
+      };
+    }
   }
 
   return report;

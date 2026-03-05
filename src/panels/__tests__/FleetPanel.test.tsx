@@ -70,4 +70,72 @@ describe('FleetPanel', () => {
     await user.click(screen.getByRole('button', { name: 'Recall' }));
     expect(recallFleet).toHaveBeenCalledWith('mission_testdeadbeef');
   });
+
+  it('shows cargo details for returning missions carrying loot', () => {
+    renderWithGame(<FleetPanel />, {
+      gameState: {
+        fleetMissions: [
+          {
+            id: 'mission_returningcargo',
+            type: 'attack',
+            status: 'returning',
+            sourcePlanetIndex: 0,
+            targetCoordinates: { galaxy: 1, system: 5, slot: 9 },
+            targetType: 'npc_colony',
+            ships: { smallCargo: 1 },
+            cargo: { metal: 321, crystal: 654, deuterium: 987 },
+            fuelCost: 10,
+            departureTime: Date.now() - 20000,
+            arrivalTime: Date.now() - 10000,
+            returnTime: Date.now() + 10000,
+          },
+        ],
+      },
+    });
+
+    expect(screen.getByText(/M 321\s+C 654\s+D 987/)).toBeInTheDocument();
+  });
+
+  it('allows dispatching espionage with more than one probe', async () => {
+    const user = userEvent.setup();
+    const dispatchEspionage = vi.fn().mockReturnValue({
+      id: 'mission_probe3',
+      type: 'espionage',
+      status: 'outbound',
+      sourcePlanetIndex: 0,
+      targetCoordinates: { galaxy: 1, system: 4, slot: 6 },
+      targetType: 'npc_colony',
+      ships: { espionageProbe: 3 },
+      cargo: { metal: 0, crystal: 0, deuterium: 0 },
+      fuelCost: 1,
+      departureTime: Date.now(),
+      arrivalTime: Date.now() + 5000,
+      returnTime: 0,
+    });
+
+    renderWithGame(<FleetPanel />, {
+      gameState: {
+        planet: {
+          ships: { espionageProbe: 5 },
+          resources: { deuterium: 200 },
+        },
+      },
+      actions: {
+        fleetTarget: { galaxy: 1, system: 4, slot: 6 },
+        dispatchEspionage,
+      },
+    });
+
+    await user.selectOptions(screen.getByLabelText('Mission Type'), 'espionage');
+    const probeInput = screen.getByRole('spinbutton');
+    await user.clear(probeInput);
+    await user.type(probeInput, '3');
+    await user.click(screen.getByRole('button', { name: 'Dispatch Espionage' }));
+
+    expect(dispatchEspionage).toHaveBeenCalledWith(
+      0,
+      { galaxy: 1, system: 4, slot: 6 },
+      3,
+    );
+  });
 });

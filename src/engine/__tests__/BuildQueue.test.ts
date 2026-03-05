@@ -5,6 +5,7 @@ import { DEFENCES } from '../../data/defences.ts';
 import { RESEARCH } from '../../data/research.ts';
 import { SHIPS } from '../../data/ships.ts';
 import { createNewGameState, type GameState } from '../../models/GameState.ts';
+import { createDefaultPlanet } from '../../models/Planet.ts';
 import { type QueueItem, type ResourceCost } from '../../models/types.ts';
 import {
   buildingCostAtLevel,
@@ -22,6 +23,7 @@ import {
   processTick,
   rescaleQueueTimes,
   startBuildingUpgrade,
+  startDefenceBuild,
   startResearch,
   startShipBuild,
   usedFields,
@@ -164,6 +166,42 @@ describe('BuildQueue', () => {
     expect(state.planets[0].buildingQueue).toHaveLength(1);
   });
 
+  it('processTick advances building and shipyard queues for non-active planets', () => {
+    const state = createNewGameState();
+    const colony = createDefaultPlanet();
+    colony.coordinates = { galaxy: 1, system: 2, slot: 7 };
+    state.planets.push(colony);
+    state.activePlanetIndex = 0;
+
+    const now = 2_750_000;
+    state.planets[1].buildingQueue = [
+      {
+        type: 'building',
+        id: 'metalMine',
+        targetLevel: 1,
+        startedAt: now - 1000,
+        completesAt: now,
+      },
+    ];
+    state.planets[1].shipyardQueue = [
+      {
+        type: 'ship',
+        id: 'lightFighter',
+        quantity: 1,
+        completed: 0,
+        startedAt: now - 1000,
+        completesAt: now,
+      },
+    ];
+
+    processTick(state, now);
+
+    expect(state.planets[1].buildings.metalMine).toBe(1);
+    expect(state.planets[1].buildingQueue).toEqual([]);
+    expect(state.planets[1].ships.lightFighter).toBe(1);
+    expect(state.planets[1].shipyardQueue).toEqual([]);
+  });
+
   it('starting research deducts resources and sets research queue', () => {
     const state = createNewGameState();
     fundState(state);
@@ -193,6 +231,7 @@ describe('BuildQueue', () => {
         type: 'research',
         id: 'energyTechnology',
         targetLevel: 1,
+        sourcePlanetIndex: 0,
         startedAt: now,
         completesAt: now + duration * 1000,
       },
@@ -245,6 +284,54 @@ describe('BuildQueue', () => {
 
     expect(state.planets[0].resources).toEqual(before);
     expect(state.researchQueue).toEqual([]);
+  });
+
+  it('uses the queued research source planet lab level for next research timing', () => {
+    const state = createNewGameState();
+    const lowLabPlanet = createDefaultPlanet();
+    lowLabPlanet.coordinates = { galaxy: 1, system: 2, slot: 8 };
+    lowLabPlanet.buildings.researchLab = 1;
+    state.planets.push(lowLabPlanet);
+
+    state.planets[0].buildings.researchLab = 10;
+    state.activePlanetIndex = 1;
+    state.research.energyTechnology = 0;
+    state.researchQueue = [
+      {
+        type: 'research',
+        id: 'energyTechnology',
+        targetLevel: 1,
+        sourcePlanetIndex: 0,
+        startedAt: 0,
+        completesAt: 1000,
+      },
+      {
+        type: 'research',
+        id: 'energyTechnology',
+        targetLevel: 2,
+        sourcePlanetIndex: 0,
+        startedAt: 0,
+        completesAt: 0,
+      },
+    ];
+
+    processTick(state, 1000);
+
+    const costLevel2 = researchCostAtLevel(
+      RESEARCH.energyTechnology.baseCost,
+      RESEARCH.energyTechnology.costMultiplier,
+      2,
+    );
+    const expectedDurationSeconds = researchTime(
+      costLevel2.metal,
+      costLevel2.crystal,
+      10,
+      state.settings.gameSpeed,
+    );
+
+    expect(state.research.energyTechnology).toBe(1);
+    expect(state.researchQueue[0].sourcePlanetIndex).toBe(0);
+    expect(state.researchQueue[0].completesAt).toBe(1000 + expectedDurationSeconds * 1000);
   });
 
   it('starting ship building deducts batch cost and creates queue entry', () => {
@@ -436,6 +523,16 @@ describe('BuildQueue', () => {
     processTick(state, firstCompletion + perUnitSeconds * 1000);
     expect(state.planets[0].ships.lightFighter).toBe(2);
     expect(state.planets[0].shipyardQueue[0].completed).toBe(2);
+  });
+
+  it('prevents queueing shield domes above maxCount when one is already queued', () => {
+    const state = createNewGameState();
+    fundState(state);
+    state.planets[0].buildings.shipyard = 1;
+    state.research.shieldingTechnology = 2;
+
+    expect(startDefenceBuild(state, 'smallShieldDome', 1)).toBe(true);
+    expect(startDefenceBuild(state, 'smallShieldDome', 1)).toBe(false);
   });
 
   it('ship completion increments ship count', () => {
@@ -641,5 +738,39 @@ describe('BuildQueue', () => {
     expect(state.planets[0].buildingQueue[0].completesAt).toBe(now + 5000);
     expect(state.researchQueue[0].completesAt).toBe(now + 10_000);
     expect(state.planets[0].shipyardQueue[0].completesAt).toBe(now + 2000);
+  });
+
+  it('rescaleQueueTimes also rescales non-active planets', () => {
+    const state = createNewGameState();
+    const colony = createDefaultPlanet();
+    colony.coordinates = { galaxy: 1, system: 2, slot: 9 };
+    state.planets.push(colony);
+    state.activePlanetIndex = 0;
+    const now = 120_000;
+
+    state.planets[1].buildingQueue = [
+      {
+        type: 'building',
+        id: 'crystalMine',
+        targetLevel: 1,
+        startedAt: now - 5000,
+        completesAt: now + 30_000,
+      },
+    ];
+    state.planets[1].shipyardQueue = [
+      {
+        type: 'ship',
+        id: 'smallCargo',
+        quantity: 1,
+        completed: 0,
+        startedAt: now - 2000,
+        completesAt: now + 12_000,
+      },
+    ];
+
+    rescaleQueueTimes(state, 1, 2, now);
+
+    expect(state.planets[1].buildingQueue[0].completesAt).toBe(now + 15_000);
+    expect(state.planets[1].shipyardQueue[0].completesAt).toBe(now + 6000);
   });
 });
