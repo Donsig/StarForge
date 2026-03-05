@@ -26,6 +26,35 @@ import {
 } from '../ResourceEngine.ts';
 
 describe('ResourceEngine', () => {
+  describe('solar satellite energy', () => {
+    it('contributes energy based on planet temperature', () => {
+      const planet = createDefaultPlanet();
+      planet.maxTemperature = 50; // expected output = floor((50+140)/6) = floor(31.67) = 31 per satellite
+      planet.ships.solarSatellite = 10;
+      const research = createNewGameState().research;
+
+      const rates = calculateProduction(planet, research);
+      // 10 satellites * 31 = 310 energy
+      expect(rates.energyProduction).toBeGreaterThanOrEqual(310);
+    });
+
+    it('produces more energy on hotter planets', () => {
+      const hot = createDefaultPlanet();
+      hot.maxTemperature = 300;
+      hot.ships.solarSatellite = 1;
+
+      const cold = createDefaultPlanet();
+      cold.maxTemperature = -80;
+      cold.ships.solarSatellite = 1;
+
+      const research = createNewGameState().research;
+
+      const hotRates = calculateProduction(hot, research);
+      const coldRates = calculateProduction(cold, research);
+      expect(hotRates.energyProduction).toBeGreaterThan(coldRates.energyProduction);
+    });
+  });
+
   it('processTick increases resources by the correct per-second amount', () => {
     const state = createNewGameState();
     state.planets[0].resources.metal = 0;

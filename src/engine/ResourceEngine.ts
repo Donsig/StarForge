@@ -56,9 +56,14 @@ export function calculateProduction(
   const energyTechLevel = researchLevels.energyTechnology;
 
   // Energy
+  const satelliteEnergy =
+    Math.floor((planet.ships.solarSatellite ?? 0) *
+    Math.max(0, Math.floor((planet.maxTemperature + 140) / 6)));
+
   const eProd =
     solarPlantEnergy(buildings.solarPlant) +
-    fusionReactorEnergy(buildings.fusionReactor, energyTechLevel);
+    fusionReactorEnergy(buildings.fusionReactor, energyTechLevel) +
+    satelliteEnergy;
 
   const eCons =
     metalMineEnergy(buildings.metalMine) +
