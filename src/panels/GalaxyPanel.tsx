@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { HoverPortal } from '../components/HoverPortal';
 import type { EspionageReport } from '../models/Fleet.ts';
 import { useGame } from '../context/GameContext';
 import { GALAXY_CONSTANTS } from '../data/galaxy.ts';
@@ -10,6 +11,8 @@ import { getSystemSlots, canColonize, type SystemSlot } from '../engine/GalaxyEn
 import type { Coordinates, DebrisField } from '../models/Galaxy.ts';
 import type { ActivePanel } from '../models/types.ts';
 import { formatNumber } from '../utils/format.ts';
+
+const HOVER_CLOSE_DELAY_MS = 120;
 
 function npcStrengthLabel(tier: number): string {
   if (tier <= 3) return 'Weak';
@@ -95,18 +98,16 @@ interface EspionageHoverPanelProps {
 function EspionageHoverPanel({ report, now }: EspionageHoverPanelProps) {
   if (!report) {
     return (
-      <div className="galaxy-spy-hover-panel">
-        <p className="galaxy-intel-empty">No intelligence — send probes to gather data</p>
-      </div>
+      <p className="galaxy-intel-empty">No intelligence — send probes to gather data</p>
     );
   }
 
   if (report.detected) {
     return (
-      <div className="galaxy-spy-hover-panel">
+      <>
         <p className="galaxy-intel-title">Probes detected — last spy attempt failed</p>
         <p className="galaxy-intel-meta">{formatScannedAgo(report.timestamp, now)}</p>
-      </div>
+      </>
     );
   }
 
@@ -116,7 +117,7 @@ function EspionageHoverPanel({ report, now }: EspionageHoverPanelProps) {
   const abandonment = report.abandonmentProximity;
 
   return (
-    <div className="galaxy-spy-hover-panel">
+    <>
       <div className="galaxy-intel-header">
         <strong>{report.targetName}</strong>
         {report.tier !== undefined && (
@@ -217,7 +218,7 @@ function EspionageHoverPanel({ report, now }: EspionageHoverPanelProps) {
           </p>
         </div>
       )}
-    </div>
+    </>
   );
 }
 
@@ -242,8 +243,42 @@ export function GalaxyPanel({ onNavigate }: GalaxyPanelProps = {}) {
   const [currentSystem, setCurrentSystem] = useState(
     gameState.planets[activePlanetIndex].coordinates.system,
   );
-  const [hoveredNpcCoords, setHoveredNpcCoords] = useState<Coordinates | null>(null);
+  const [hoveredNpcKey, setHoveredNpcKey] = useState<string | null>(null);
+  const hoverAnchorRef = useRef<HTMLElement | null>(null);
+  const hoverCloseTimerRef = useRef<number | null>(null);
   const now = Date.now();
+
+  const clearNpcHoverCloseTimer = () => {
+    if (hoverCloseTimerRef.current !== null) {
+      window.clearTimeout(hoverCloseTimerRef.current);
+      hoverCloseTimerRef.current = null;
+    }
+  };
+
+  const scheduleNpcHoverClose = () => {
+    clearNpcHoverCloseTimer();
+    hoverCloseTimerRef.current = window.setTimeout(() => {
+      setHoveredNpcKey(null);
+      hoverAnchorRef.current = null;
+      hoverCloseTimerRef.current = null;
+    }, HOVER_CLOSE_DELAY_MS);
+  };
+
+  const openNpcHover = (key: string, anchorEl: HTMLElement) => {
+    clearNpcHoverCloseTimer();
+    hoverAnchorRef.current = anchorEl;
+    setHoveredNpcKey(key);
+  };
+
+  useEffect(
+    () => () => {
+      if (hoverCloseTimerRef.current !== null) {
+        window.clearTimeout(hoverCloseTimerRef.current);
+        hoverCloseTimerRef.current = null;
+      }
+    },
+    [],
+  );
 
   const slots = getSystemSlots(gameState, 1, currentSystem);
   const debrisByCoord = useMemo(() => {
@@ -291,6 +326,8 @@ export function GalaxyPanel({ onNavigate }: GalaxyPanelProps = {}) {
     }
     return latest;
   }, [espionageReports]);
+  const hoveredReport =
+    hoveredNpcKey !== null ? latestReportsByCoords.get(hoveredNpcKey) ?? null : null;
 
   return (
     <section className="panel">
@@ -306,7 +343,9 @@ export function GalaxyPanel({ onNavigate }: GalaxyPanelProps = {}) {
           disabled={currentSystem <= 1}
           onClick={() => {
             setCurrentSystem((s) => Math.max(1, s - 1));
-            setHoveredNpcCoords(null);
+            clearNpcHoverCloseTimer();
+            setHoveredNpcKey(null);
+            hoverAnchorRef.current = null;
           }}
         >
           Prev
@@ -326,7 +365,9 @@ export function GalaxyPanel({ onNavigate }: GalaxyPanelProps = {}) {
           disabled={currentSystem >= GALAXY_CONSTANTS.MAX_SYSTEMS}
           onClick={() => {
             setCurrentSystem((s) => Math.min(GALAXY_CONSTANTS.MAX_SYSTEMS, s + 1));
-            setHoveredNpcCoords(null);
+            clearNpcHoverCloseTimer();
+            setHoveredNpcKey(null);
+            hoverAnchorRef.current = null;
           }}
         >
           Next
@@ -348,7 +389,6 @@ export function GalaxyPanel({ onNavigate }: GalaxyPanelProps = {}) {
             {slots.map((slot, index) => {
               const targetCoords: Coordinates = { galaxy: 1, system: currentSystem, slot: index + 1 };
               const targetKey = coordsKey(targetCoords);
-              const report = latestReportsByCoords.get(coordsKey(targetCoords)) ?? null;
               const debrisField = debrisByCoord.get(targetKey) ?? null;
               const isActivePlayerSlot =
                 slot.type === 'player' &&
@@ -420,9 +460,8 @@ export function GalaxyPanel({ onNavigate }: GalaxyPanelProps = {}) {
                   }}
                   godMode={gameState.settings.godMode}
                   canSpy={availableProbes > 0}
-                  hoveredNpcCoords={hoveredNpcCoords}
-                  onHoverNpc={setHoveredNpcCoords}
-                  latestReport={report}
+                  onHoverNpc={openNpcHover}
+                  onLeaveNpcHover={scheduleNpcHoverClose}
                   now={now}
                 />
               );
@@ -436,6 +475,16 @@ export function GalaxyPanel({ onNavigate }: GalaxyPanelProps = {}) {
           Build a Colony Ship in the Shipyard to colonize empty slots.
         </p>
       )}
+      <HoverPortal
+        anchorRef={hoverAnchorRef}
+        open={hoveredNpcKey !== null}
+        align="below-right"
+        className="galaxy-spy-hover-panel"
+        onMouseEnter={clearNpcHoverCloseTimer}
+        onMouseLeave={scheduleNpcHoverClose}
+      >
+        <EspionageHoverPanel report={hoveredReport} now={now} />
+      </HoverPortal>
     </section>
   );
 }
@@ -458,9 +507,8 @@ function GalaxySlotRow({
   onGodDelete,
   godMode,
   canSpy,
-  hoveredNpcCoords,
   onHoverNpc,
-  latestReport,
+  onLeaveNpcHover,
   now,
 }: {
   slot: SystemSlot;
@@ -480,9 +528,8 @@ function GalaxySlotRow({
   onGodDelete: (coords: Coordinates) => void;
   godMode: boolean;
   canSpy: boolean;
-  hoveredNpcCoords: Coordinates | null;
-  onHoverNpc: (coords: Coordinates | null) => void;
-  latestReport: EspionageReport | null;
+  onHoverNpc: (key: string, anchorEl: HTMLElement) => void;
+  onLeaveNpcHover: () => void;
   now: number;
 }) {
   const isRebuilding =
@@ -492,10 +539,7 @@ function GalaxySlotRow({
   const isAbandoning = slot.type === 'npc' && slot.npc?.abandonedAt !== undefined;
 
   const targetCoords = { galaxy: 1, system, slot: slotNumber };
-  const isHovered =
-    hoveredNpcCoords?.galaxy === targetCoords.galaxy &&
-    hoveredNpcCoords?.system === targetCoords.system &&
-    hoveredNpcCoords?.slot === targetCoords.slot;
+  const targetKey = coordsKey(targetCoords);
 
   return (
     <tr
@@ -503,16 +547,6 @@ function GalaxySlotRow({
       onClick={() => {
         if (slot.type === 'npc' && !isAbandoning) {
           onAttackNpc(targetCoords);
-        }
-      }}
-      onMouseEnter={() => {
-        if (slot.type === 'npc') {
-          onHoverNpc(targetCoords);
-        }
-      }}
-      onMouseLeave={() => {
-        if (slot.type === 'npc') {
-          onHoverNpc(null);
         }
       }}
     >
@@ -587,7 +621,13 @@ function GalaxySlotRow({
           </div>
         )}
         {slot.type === 'npc' && (
-          <div className="galaxy-actions">
+          <div
+            className="galaxy-actions"
+            onMouseEnter={(event) => {
+              onHoverNpc(targetKey, event.currentTarget);
+            }}
+            onMouseLeave={onLeaveNpcHover}
+          >
             {!isAbandoning && (
               <>
                 <button
@@ -638,7 +678,6 @@ function GalaxySlotRow({
                 )}
               </>
             )}
-            {isHovered && <EspionageHoverPanel report={latestReport} now={now} />}
           </div>
         )}
         {slot.type === 'empty' && hasColonyShip && (

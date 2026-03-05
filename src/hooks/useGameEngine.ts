@@ -820,6 +820,7 @@ export function useGameEngine(): GameEngineState {
       const planet = stateRef.current.planets[planetIndex];
       if (!planet) return;
 
+      planet.maxFields = clampInt(40, fieldCount, 250);
       planet.fieldCount = clampInt(40, fieldCount, 250);
       syncReactState();
       saveState(stateRef.current);

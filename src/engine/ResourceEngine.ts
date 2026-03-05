@@ -56,9 +56,10 @@ export function calculateProduction(
   const energyTechLevel = researchLevels.energyTechnology;
 
   // Energy
-  const satelliteEnergy =
-    Math.floor((planet.ships.solarSatellite ?? 0) *
-    Math.max(0, Math.floor((planet.maxTemperature + 140) / 6)));
+  const satelliteCount = Math.max(0, planet.ships.solarSatellite ?? 0);
+  const satelliteEnergy = Number.isFinite(planet.maxTemperature)
+    ? Math.floor(satelliteCount * Math.max(0, Math.floor((planet.maxTemperature + 140) / 6)))
+    : 0;
 
   const eProd =
     solarPlantEnergy(buildings.solarPlant) +

@@ -14,9 +14,17 @@
 - [x] **Phase 2.5:** Admin Dashboard + bug fixes (v7→v8)
 - [x] **Phase 2.6:** NPC Dynamic Upgrade System (v8→v9)
 - [x] **Phase 3.1:** Debris Fields + Recycler Missions
-- [ ] **Phase 3.2:** Economy Polish (colony caps, slot-based planets, transport, solar satellites)
+- [x] **Phase 3.2:** Economy Polish (colony caps, slot-based planets, transport, solar satellites)
 - [ ] **Phase 3.3:** Messages Panel + Combat Reports
 - [ ] **Phase 3.4:** UI Polish (planet rename, IRN, fleet slots)
+
+### Post-3.2 UI Fixes (in progress)
+
+- [x] Energy hover panel on resource bar (production/consumption breakdown by source)
+- [x] Hover panels migrated to React portals (`HoverPortal` component) — fixes clipping behind `overflow-y: auto` scroll containers
+- [x] Hover panel stay-open fix — delayed close so user can move mouse into panel and scroll it
+- [x] Fleet page active mission hover tooltip migrated to `HoverPortal`
+- [ ] **Bug: HoverPortal left-edge clipping** — when the anchor (e.g. Spy button) is near the left edge of the viewport, the right-aligned panel overflows the left side of the screen and gets clipped. The panel's `right` position is calculated from the anchor's right edge, but no check is made to ensure `panel left >= 0`. Fix: after positioning, clamp so the panel never overflows the left edge of the viewport.
 
 ---
 

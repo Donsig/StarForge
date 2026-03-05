@@ -262,11 +262,19 @@ function migrate(state: GameState): GameState {
         state.galaxy.seed,
         planet.coordinates,
       );
-      if (typeof planet.maxTemperature !== 'number' || planet.maxTemperature === 35) {
+      if (typeof planet.maxTemperature !== 'number' || planet.maxTemperature === 35 || planet.maxTemperature === 0) {
         planet.maxTemperature = stats.maxTemperature;
       }
-      planet.maxFields = stats.maxFields;
-      planet.fieldCount = stats.maxFields;
+      if (typeof planet.maxFields !== 'number') {
+        planet.maxFields = stats.maxFields;
+      }
+      if (typeof planet.fieldCount !== 'number') {
+        planet.fieldCount = stats.maxFields;
+      }
+      // Ensure solarSatellite exists in ships record (new ship type in v10)
+      if (typeof (planet.ships as any).solarSatellite !== 'number') {
+        (planet.ships as any).solarSatellite = 0;
+      }
     }
 
     // Add temperature to all NPC colonies

@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FleetMission, MissionType } from '../models/Fleet.ts';
 import { SHIP_ORDER, SHIPS } from '../data/ships.ts';
 import { DEFENCES } from '../data/defences.ts';
 import { useGame } from '../context/GameContext';
+import { HoverPortal } from '../components/HoverPortal';
 import {
   calcCargoCapacity,
   calcDistance,
@@ -17,6 +18,7 @@ import { formatDuration } from '../utils/time.ts';
 
 const ESPIONAGE_MAX_TRAVEL_SECONDS = 10;
 const ESPIONAGE_MIN_FUEL_COST = 1;
+const HOVER_CLOSE_DELAY_MS = 120;
 
 function formatTargetLabel(coords: { galaxy: number; system: number; slot: number }): string {
   return `[G:${coords.galaxy} S:${coords.system} P:${coords.slot}]`;
@@ -68,6 +70,8 @@ interface MissionRowProps {
 
 function MissionRow({ mission, onRecall, onResolve, godMode }: MissionRowProps) {
   const [showTooltip, setShowTooltip] = useState(false);
+  const actionCellRef = useRef<HTMLTableCellElement>(null);
+  const hoverCloseTimerRef = useRef<number | null>(null);
   const nextTransition =
     mission.status === 'outbound'
       ? mission.arrivalTime
@@ -87,11 +91,42 @@ function MissionRow({ mission, onRecall, onResolve, godMode }: MissionRowProps) 
     mission.cargo.metal > 0 || mission.cargo.crystal > 0 || mission.cargo.deuterium > 0;
   const showCargo = mission.status === 'returning' && hasCargo;
   const shipDetails = missionShipManifest(mission.ships);
+  const tooltipOpen = showTooltip && shipDetails.length > 0;
+
+  const clearHoverCloseTimer = () => {
+    if (hoverCloseTimerRef.current !== null) {
+      window.clearTimeout(hoverCloseTimerRef.current);
+      hoverCloseTimerRef.current = null;
+    }
+  };
+
+  const openTooltip = () => {
+    clearHoverCloseTimer();
+    setShowTooltip(true);
+  };
+
+  const scheduleTooltipClose = () => {
+    clearHoverCloseTimer();
+    hoverCloseTimerRef.current = window.setTimeout(() => {
+      setShowTooltip(false);
+      hoverCloseTimerRef.current = null;
+    }, HOVER_CLOSE_DELAY_MS);
+  };
+
+  useEffect(
+    () => () => {
+      if (hoverCloseTimerRef.current !== null) {
+        window.clearTimeout(hoverCloseTimerRef.current);
+        hoverCloseTimerRef.current = null;
+      }
+    },
+    [],
+  );
 
   return (
     <tr
-      onMouseEnter={() => setShowTooltip(true)}
-      onMouseLeave={() => setShowTooltip(false)}
+      onMouseEnter={openTooltip}
+      onMouseLeave={scheduleTooltipClose}
     >
       <td>{formatMissionType(mission.type)}</td>
       <td className="number">{formatTargetLabel(mission.targetCoordinates)}</td>
@@ -102,7 +137,7 @@ function MissionRow({ mission, onRecall, onResolve, godMode }: MissionRowProps) 
       </td>
       <td className="number">{countdown || '00:00:00'}</td>
       <td>{showCargo ? formatCargo(mission.cargo) : '—'}</td>
-      <td style={{ position: 'relative' }}>
+      <td ref={actionCellRef}>
         {mission.status === 'outbound' && (
           <button
             type="button"
@@ -121,27 +156,16 @@ function MissionRow({ mission, onRecall, onResolve, godMode }: MissionRowProps) 
             ⚡ Resolve
           </button>
         )}
-        {showTooltip && shipDetails && (
-          <div
-            className="fleet-mission-tooltip"
-            style={{
-              position: 'absolute',
-              top: '100%',
-              right: 0,
-              zIndex: 5,
-              marginTop: 4,
-              padding: '6px 8px',
-              borderRadius: 6,
-              background: 'rgba(10, 16, 30, 0.95)',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
-              color: '#e7f2ff',
-              fontSize: 12,
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {shipDetails}
-          </div>
-        )}
+        <HoverPortal
+          anchorRef={actionCellRef}
+          open={tooltipOpen}
+          align="below-right"
+          className="fleet-mission-tooltip"
+          onMouseEnter={clearHoverCloseTimer}
+          onMouseLeave={scheduleTooltipClose}
+        >
+          {shipDetails}
+        </HoverPortal>
       </td>
     </tr>
   );

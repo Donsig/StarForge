@@ -1,6 +1,6 @@
 import userEvent from '@testing-library/user-event';
 import { FleetPanel } from '../FleetPanel';
-import { renderWithGame, screen } from '../../test/test-utils';
+import { fireEvent, renderWithGame, screen } from '../../test/test-utils';
 
 describe('FleetPanel', () => {
   it('shows Send To dropdown when transport is selected with no pre-filled target', async () => {
@@ -78,6 +78,37 @@ describe('FleetPanel', () => {
     expect(screen.getByText('[G:1 S:3 P:12]')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Recall' }));
     expect(recallFleet).toHaveBeenCalledWith('mission_testdeadbeef');
+  });
+
+  it('renders ship manifest tooltip in a portal for active missions', () => {
+    renderWithGame(<FleetPanel />, {
+      gameState: {
+        fleetMissions: [
+          {
+            id: 'mission_manifesttooltip',
+            type: 'attack',
+            status: 'outbound',
+            sourcePlanetIndex: 0,
+            targetCoordinates: { galaxy: 1, system: 8, slot: 4 },
+            targetType: 'npc_colony',
+            ships: { smallCargo: 1, cruiser: 2 },
+            cargo: { metal: 0, crystal: 0, deuterium: 0 },
+            fuelCost: 10,
+            departureTime: Date.now(),
+            arrivalTime: Date.now() + 10000,
+            returnTime: 0,
+          },
+        ],
+      },
+    });
+
+    const row = screen.getByText('[G:1 S:8 P:4]').closest('tr');
+    expect(row).not.toBeNull();
+    fireEvent.mouseEnter(row!);
+
+    const tooltip = document.body.querySelector('.fleet-mission-tooltip');
+    expect(tooltip).not.toBeNull();
+    expect(tooltip).toHaveTextContent('1× Small Cargo, 2× Cruiser');
   });
 
   it('shows cargo details for returning missions carrying loot', () => {

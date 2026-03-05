@@ -1,5 +1,5 @@
 import { ResourceBar } from '../ResourceBar';
-import { renderWithGame, screen } from '../../test/test-utils';
+import { act, fireEvent, renderWithGame, screen } from '../../test/test-utils';
 
 describe('ResourceBar', () => {
   it('shows formatted resource amounts and production rates', () => {
@@ -100,5 +100,39 @@ describe('ResourceBar', () => {
     expect(screen.getByText(/444\s*\/\s*10,000/)).toBeInTheDocument();
     expect(screen.getByText(/555\s*\/\s*10,000/)).toBeInTheDocument();
     expect(screen.getByText(/666\s*\/\s*10,000/)).toBeInTheDocument();
+  });
+
+  it('keeps the energy hover panel open while moving from anchor to panel', () => {
+    vi.useFakeTimers();
+    try {
+      renderWithGame(<ResourceBar />);
+      const energyEntry = screen.getByText('Energy').closest('.resource-entry');
+
+      expect(energyEntry).not.toBeNull();
+      fireEvent.mouseEnter(energyEntry!);
+      expect(screen.getByText('Production')).toBeInTheDocument();
+
+      fireEvent.mouseLeave(energyEntry!);
+      act(() => {
+        vi.advanceTimersByTime(60);
+      });
+
+      const hoverPanel = document.body.querySelector('.energy-hover-panel');
+      expect(hoverPanel).not.toBeNull();
+      fireEvent.mouseEnter(hoverPanel!);
+
+      act(() => {
+        vi.advanceTimersByTime(120);
+      });
+      expect(screen.getByText('Production')).toBeInTheDocument();
+
+      act(() => {
+        fireEvent.mouseLeave(hoverPanel!);
+        vi.advanceTimersByTime(130);
+      });
+      expect(screen.queryByText('Production')).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
