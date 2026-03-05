@@ -10,6 +10,7 @@ import {
   createNewGameState,
   type GameState,
 } from '../models/GameState.ts';
+import { createDefaultPlanet } from '../models/Planet.ts';
 
 export * from '@testing-library/react';
 
@@ -35,6 +36,7 @@ interface RenderWithGameOptions {
   productionRates?: Partial<ProductionRates>;
   storageCaps?: Partial<StorageCaps>;
   actions?: Partial<GameActions>;
+  withMultiplePlanets?: boolean;
 }
 
 const defaultActions: GameActions = {
@@ -50,7 +52,15 @@ const defaultActions: GameActions = {
   setActivePlanet: (_index: number) => {},
   fleetTarget: null,
   setFleetTarget: (_coords) => {},
-  dispatchFleet: (_sourcePlanetIndex, _targetCoords, _ships) => null,
+  pendingMissionTarget: null,
+  setPendingMissionTarget: (_target) => {},
+  dispatchFleet: (
+    _sourcePlanetIndex,
+    _targetCoords,
+    _ships,
+    _missionType,
+    _cargo,
+  ) => null,
   dispatchEspionage: (_sourcePlanetIndex, _targetCoords, _probeCount) => null,
   dispatchHarvest: (_sourcePlanetIndex, _coords) => null,
   recallFleet: (_missionId) => {},
@@ -96,13 +106,12 @@ const defaultActions: GameActions = {
   importSaveAction: () => false,
 };
 
-function buildGameState(overrides?: GameStateOverrides): GameState {
+function buildGameState(overrides?: GameStateOverrides, withMultiplePlanets = false): GameState {
   const baseState = createNewGameState();
-
-  if (!overrides) return baseState;
+  const resolvedOverrides = overrides ?? {};
 
   const basePlanet = baseState.planets[0];
-  const planetOverrides = overrides.planet;
+  const planetOverrides = resolvedOverrides.planet;
 
   const planet = {
     ...basePlanet,
@@ -129,29 +138,38 @@ function buildGameState(overrides?: GameStateOverrides): GameState {
         : planetOverrides.shipyardQueue,
   };
 
-  return {
+  const state: GameState = {
     ...baseState,
-    ...overrides,
+    ...resolvedOverrides,
     planets: [planet],
     research: {
       ...baseState.research,
-      ...overrides.research,
+      ...resolvedOverrides.research,
     },
     settings: {
       ...baseState.settings,
-      ...overrides.settings,
+      ...resolvedOverrides.settings,
     },
     researchQueue:
-      overrides.researchQueue === undefined
+      resolvedOverrides.researchQueue === undefined
         ? baseState.researchQueue
-        : overrides.researchQueue,
+        : resolvedOverrides.researchQueue,
   };
+
+  if (withMultiplePlanets) {
+    const colony = createDefaultPlanet();
+    colony.name = 'Colony 2';
+    colony.coordinates = { galaxy: 1, system: 1, slot: 5 };
+    state.planets.push(colony);
+  }
+
+  return state;
 }
 
 export function createMockGameContext(
   options: RenderWithGameOptions = {},
 ): GameContextType {
-  const gameState = buildGameState(options.gameState);
+  const gameState = buildGameState(options.gameState, options.withMultiplePlanets ?? false);
   const productionRates: ProductionRates = {
     ...calculateProduction(gameState),
     ...options.productionRates,

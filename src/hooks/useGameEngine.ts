@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { GameState } from '../models/GameState.ts';
 import type { CombatResult } from '../models/Combat.ts';
-import type { EspionageReport, FleetMission } from '../models/Fleet.ts';
+import type { EspionageReport, FleetMission, MissionType } from '../models/Fleet.ts';
 import type { Coordinates, NPCColony, NPCSpecialty } from '../models/Galaxy.ts';
 import { createDefaultPlanet, type PlanetState } from '../models/Planet.ts';
 import type { BuildingId, DefenceId, ResearchId, ShipId } from '../models/types.ts';
@@ -89,10 +89,16 @@ export interface GameEngineState {
   setActivePlanet: (index: number) => void;
   fleetTarget: Coordinates | null;
   setFleetTarget: (coords: Coordinates | null) => void;
+  pendingMissionTarget: { type: MissionType; coords: Coordinates } | null;
+  setPendingMissionTarget: (
+    target: { type: MissionType; coords: Coordinates } | null,
+  ) => void;
   dispatchFleet: (
     sourcePlanetIndex: number,
     targetCoords: Coordinates,
     ships: Record<string, number>,
+    missionType?: MissionType,
+    cargo?: { metal: number; crystal: number; deuterium: number },
   ) => FleetMission | null;
   dispatchEspionage: (
     sourcePlanetIndex: number,
@@ -286,6 +292,10 @@ function initializeState(): GameState {
 export function useGameEngine(): GameEngineState {
   const [gameState, setGameState] = useState<GameState>(() => initializeState());
   const [fleetTarget, setFleetTarget] = useState<Coordinates | null>(null);
+  const [pendingMissionTarget, setPendingMissionTarget] = useState<{
+    type: MissionType;
+    coords: Coordinates;
+  } | null>(null);
   const [productionRates, setProductionRates] = useState<ProductionRates>(() =>
     calculateProduction(gameState),
   );
@@ -445,6 +455,7 @@ export function useGameEngine(): GameEngineState {
     stateRef.current = resetState;
     refreshArrayReferences(resetState);
     setFleetTarget(null);
+    setPendingMissionTarget(null);
     setGameState({ ...resetState });
     setProductionRates(calculateProduction(resetState));
     setStorageCaps(getStorageCaps(resetState));
@@ -1334,12 +1345,16 @@ export function useGameEngine(): GameEngineState {
       sourcePlanetIndex: number,
       targetCoords: Coordinates,
       ships: Record<string, number>,
+      missionType: MissionType = 'attack',
+      cargo?: { metal: number; crystal: number; deuterium: number },
     ): FleetMission | null => {
       const mission = dispatchMission(
         stateRef.current,
         sourcePlanetIndex,
         targetCoords,
         ships,
+        missionType,
+        cargo,
       );
       syncReactState();
       if (mission) {
@@ -1440,6 +1455,7 @@ export function useGameEngine(): GameEngineState {
     stateRef.current = importedState;
     refreshArrayReferences(importedState);
     setFleetTarget(null);
+    setPendingMissionTarget(null);
     setGameState({ ...importedState });
     setProductionRates(calculateProduction(importedState));
     setStorageCaps(getStorageCaps(importedState));
@@ -1464,6 +1480,8 @@ export function useGameEngine(): GameEngineState {
     setActivePlanet: setActivePlanetAction,
     fleetTarget,
     setFleetTarget,
+    pendingMissionTarget,
+    setPendingMissionTarget,
     dispatchFleet,
     dispatchEspionage,
     dispatchHarvest,

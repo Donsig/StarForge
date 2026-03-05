@@ -4,6 +4,7 @@ import { SHIP_ORDER, SHIPS } from '../data/ships.ts';
 import { DEFENCES } from '../data/defences.ts';
 import { useGame } from '../context/GameContext';
 import {
+  calcCargoCapacity,
   calcDistance,
   calcFleetSpeed,
   calcFuelCost,
@@ -35,6 +36,9 @@ function formatMissionType(type: MissionType): string {
   }
   if (type === 'harvest') {
     return 'Harvest';
+  }
+  if (type === 'transport') {
+    return 'Transport';
   }
   return 'Attack';
 }
@@ -229,6 +233,8 @@ export function FleetPanel() {
     espionageReports,
     fleetTarget,
     setFleetTarget,
+    pendingMissionTarget,
+    setPendingMissionTarget,
     dispatchFleet,
     dispatchEspionage,
     recallFleet,
@@ -239,9 +245,16 @@ export function FleetPanel() {
   const sourcePlanet = gameState.planets[sourcePlanetIndex];
   const [selectedShips, setSelectedShips] = useState<Record<string, number>>({});
   const [missionType, setMissionType] = useState<MissionType>('attack');
+  const [transportTargetIndex, setTransportTargetIndex] = useState<number>(-1);
+  const [transportCargo, setTransportCargo] = useState({
+    metal: 0,
+    crystal: 0,
+    deuterium: 0,
+  });
 
   useEffect(() => {
     setSelectedShips({});
+    setTransportCargo({ metal: 0, crystal: 0, deuterium: 0 });
   }, [
     sourcePlanetIndex,
     fleetTarget?.galaxy,
@@ -256,6 +269,61 @@ export function FleetPanel() {
     }
   }, [missionType, sourcePlanet.ships.espionageProbe]);
 
+  const transportTargets = gameState.planets
+    .map((planet, index) => ({ planet, index }))
+    .filter(({ index }) => index !== sourcePlanetIndex);
+
+  useEffect(() => {
+    if (!pendingMissionTarget) {
+      return;
+    }
+
+    setSelectedShips({});
+    setTransportCargo({ metal: 0, crystal: 0, deuterium: 0 });
+
+    if (pendingMissionTarget.type === 'transport') {
+      setMissionType('transport');
+      setFleetTarget(null);
+      const targetIndex = gameState.planets.findIndex(
+        (planet, index) =>
+          index !== sourcePlanetIndex &&
+          planet.coordinates.galaxy === pendingMissionTarget.coords.galaxy &&
+          planet.coordinates.system === pendingMissionTarget.coords.system &&
+          planet.coordinates.slot === pendingMissionTarget.coords.slot,
+      );
+      if (targetIndex >= 0) {
+        setTransportTargetIndex(targetIndex);
+      }
+    } else {
+      setMissionType(pendingMissionTarget.type === 'espionage' ? 'espionage' : 'attack');
+      setFleetTarget(pendingMissionTarget.coords);
+    }
+
+    setPendingMissionTarget(null);
+  }, [
+    gameState.planets,
+    pendingMissionTarget,
+    setFleetTarget,
+    setPendingMissionTarget,
+    sourcePlanetIndex,
+  ]);
+
+  useEffect(() => {
+    if (missionType !== 'transport') {
+      return;
+    }
+
+    if (transportTargets.length === 0) {
+      setTransportTargetIndex(-1);
+      return;
+    }
+
+    const hasSelected = transportTargets.some(({ index }) => index === transportTargetIndex);
+    if (!hasSelected) {
+      setTransportTargetIndex(transportTargets[0].index);
+    }
+  }, [missionType, sourcePlanetIndex, transportTargetIndex, transportTargets]);
+
   const availableShips = SHIP_ORDER.filter(
     (shipId) => shipId !== 'solarSatellite' && sourcePlanet.ships[shipId] > 0,
   );
@@ -267,6 +335,16 @@ export function FleetPanel() {
   const shipSelection = missionType === 'espionage'
     ? availableShips.filter((shipId) => shipId === 'espionageProbe')
     : availableShips;
+  const transportTarget = transportTargets.find(
+    ({ index }) => index === transportTargetIndex,
+  )?.planet ?? null;
+  const missionTarget =
+    missionType === 'transport'
+      ? transportTarget?.coordinates ?? null
+      : fleetTarget;
+  const cargoCapacity = calcCargoCapacity(selectedShips);
+  const totalTransportCargo =
+    transportCargo.metal + transportCargo.crystal + transportCargo.deuterium;
 
   const activeMissions = gameState.fleetMissions.filter(
     (mission) => mission.status !== 'completed',
@@ -289,7 +367,7 @@ export function FleetPanel() {
   }, [maxProbePerMission, missionType, selectedShips]);
 
   const dispatchPreview = useMemo(() => {
-    if (!fleetTarget || selectedShipCount <= 0) {
+    if (!missionTarget || selectedShipCount <= 0) {
       return {
         distance: 0,
         speed: 0,
@@ -300,7 +378,7 @@ export function FleetPanel() {
       };
     }
 
-    const distance = calcDistance(sourcePlanet.coordinates, fleetTarget);
+    const distance = calcDistance(sourcePlanet.coordinates, missionTarget);
     const speed = calcFleetSpeed(selectedShips, gameState.research);
     const baseTravelSeconds = calcTravelSeconds(
       distance,
@@ -324,7 +402,7 @@ export function FleetPanel() {
       returnTime: now + travelSeconds * 2000,
     };
   }, [
-    fleetTarget,
+    missionTarget,
     gameState.research,
     gameState.settings.gameSpeed,
     missionType,
@@ -373,30 +451,59 @@ export function FleetPanel() {
   }, [gameState.research.weaponsTechnology, latestCombatIntel, selectedShipCount, selectedShips]);
 
   const insufficientFuel = sourcePlanet.resources.deuterium < dispatchPreview.fuelCost;
+  const invalidTransportCargo =
+    missionType === 'transport' &&
+    (totalTransportCargo <= 0 || totalTransportCargo > cargoCapacity);
   const canDispatch =
-    fleetTarget !== null &&
+    missionTarget !== null &&
     selectedShipCount > 0 &&
     !slotsFull &&
-    !insufficientFuel;
+    !insufficientFuel &&
+    !invalidTransportCargo;
 
   return (
     <section className="panel">
       <h1 className="panel-title">Fleet Command</h1>
       <p className="panel-subtitle">Dispatch attacks against NPC colonies and track active missions.</p>
 
-      {fleetTarget && (
-        <div className="panel-card fleet-dispatch-card">
-          <div className="fleet-target-row">
-            <span className="label">Target</span>
-            <span className="number">{formatTargetLabel(fleetTarget)}</span>
-            <button
-              type="button"
-              className="btn btn-sm"
-              onClick={() => setFleetTarget(null)}
-            >
-              Clear
-            </button>
-          </div>
+      <div className="panel-card fleet-dispatch-card">
+        {missionType !== 'transport' && !missionTarget && (
+          <p className="hint">Select an NPC target from the Galaxy panel to prepare an attack mission.</p>
+        )}
+
+          {missionType === 'transport' ? (
+            <div className="fleet-mission-type">
+              <label htmlFor="transport-target-select" className="label">Send To</label>
+              <select
+                id="transport-target-select"
+                className="input fleet-mission-select"
+                value={transportTargetIndex}
+                onChange={(event) => {
+                  setTransportTargetIndex(Number.parseInt(event.target.value, 10));
+                }}
+              >
+                {transportTargets.map(({ planet, index }) => (
+                  <option key={index} value={index}>
+                    {planet.name} {formatTargetLabel(planet.coordinates)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            missionTarget && (
+              <div className="fleet-target-row">
+                <span className="label">Target</span>
+                <span className="number">{formatTargetLabel(missionTarget)}</span>
+                <button
+                  type="button"
+                  className="btn btn-sm"
+                  onClick={() => setFleetTarget(null)}
+                >
+                  Clear
+                </button>
+              </div>
+            )
+          )}
 
           <div className="fleet-mission-type">
             <label htmlFor="fleet-mission-select" className="label">Mission Type</label>
@@ -405,13 +512,21 @@ export function FleetPanel() {
               className="input fleet-mission-select"
               value={missionType}
               onChange={(event) => {
-                const nextType = event.target.value === 'espionage' ? 'espionage' : 'attack';
+                const value = event.target.value;
+                const nextType =
+                  value === 'espionage'
+                    ? 'espionage'
+                    : value === 'transport'
+                      ? 'transport'
+                      : 'attack';
                 setMissionType(nextType);
                 setSelectedShips({});
+                setTransportCargo({ metal: 0, crystal: 0, deuterium: 0 });
               }}
             >
               <option value="attack">Attack</option>
               {espionageAvailable && <option value="espionage">Espionage</option>}
+              {transportTargets.length > 0 && <option value="transport">Transport</option>}
             </select>
           </div>
 
@@ -466,6 +581,60 @@ export function FleetPanel() {
                         Max
                       </button>
                     </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {missionType === 'transport' && (
+            <div className="fleet-ship-grid">
+              <div className="fleet-ship-row">
+                <div>
+                  <strong>Cargo Manifest</strong>
+                  <p className="hint">Capacity: {formatNumber(cargoCapacity)}</p>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-sm"
+                  onClick={() => {
+                    let remaining = cargoCapacity;
+                    const metal = Math.min(sourcePlanet.resources.metal, remaining);
+                    remaining -= metal;
+                    const crystal = Math.min(sourcePlanet.resources.crystal, remaining);
+                    remaining -= crystal;
+                    const deuterium = Math.min(sourcePlanet.resources.deuterium, remaining);
+                    setTransportCargo({ metal, crystal, deuterium });
+                  }}
+                >
+                  Max
+                </button>
+              </div>
+              {(['metal', 'crystal', 'deuterium'] as const).map((resource) => {
+                const available = sourcePlanet.resources[resource];
+                const maxEach = Math.max(0, Math.floor(Math.min(available, cargoCapacity / 3)));
+                return (
+                  <div key={resource} className="fleet-ship-row">
+                    <label className="label" htmlFor={`transport-${resource}`}>
+                      {resource[0].toUpperCase()}{resource.slice(1)}
+                    </label>
+                    <input
+                      id={`transport-${resource}`}
+                      type="number"
+                      min={0}
+                      max={maxEach}
+                      value={transportCargo[resource]}
+                      className="input quantity-input"
+                      onChange={(event) => {
+                        const parsed = Number.parseInt(event.target.value, 10);
+                        const nextValue = Number.isFinite(parsed) ? parsed : 0;
+                        const clamped = Math.max(0, Math.min(maxEach, nextValue));
+                        setTransportCargo((current) => ({
+                          ...current,
+                          [resource]: clamped,
+                        }));
+                      }}
+                    />
                   </div>
                 );
               })}
@@ -530,31 +699,36 @@ export function FleetPanel() {
               className="btn btn-primary"
               disabled={!canDispatch}
               onClick={() => {
-                if (!fleetTarget) return;
+                if (!missionTarget) return;
 
-                const mission = missionType === 'espionage'
-                  ? dispatchEspionage(
-                      sourcePlanetIndex,
-                      fleetTarget,
-                      Math.min(maxProbePerMission, selectedShips.espionageProbe ?? 0),
-                    )
-                  : dispatchFleet(sourcePlanetIndex, fleetTarget, selectedShips);
+                const mission =
+                  missionType === 'espionage'
+                    ? dispatchEspionage(
+                        sourcePlanetIndex,
+                        missionTarget,
+                        Math.min(maxProbePerMission, selectedShips.espionageProbe ?? 0),
+                      )
+                    : dispatchFleet(
+                        sourcePlanetIndex,
+                        missionTarget,
+                        selectedShips,
+                        missionType,
+                        missionType === 'transport' ? transportCargo : undefined,
+                      );
                 if (mission) {
                   setSelectedShips({});
+                  setTransportCargo({ metal: 0, crystal: 0, deuterium: 0 });
                 }
               }}
             >
-              {missionType === 'espionage' ? 'Dispatch Espionage' : 'Dispatch Attack'}
+              {missionType === 'espionage'
+                ? 'Dispatch Espionage'
+                : missionType === 'transport'
+                  ? 'Dispatch Transport'
+                  : 'Dispatch Attack'}
             </button>
           </div>
-        </div>
-      )}
-
-      {!fleetTarget && (
-        <div className="panel-card">
-          <p className="hint">Select an NPC target from the Galaxy panel to prepare an attack mission.</p>
-        </div>
-      )}
+      </div>
 
       <div className="panel-card">
         <div className="fleet-active-header">

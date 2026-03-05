@@ -3,13 +3,22 @@ import { FleetPanel } from '../FleetPanel';
 import { renderWithGame, screen } from '../../test/test-utils';
 
 describe('FleetPanel', () => {
-  it('shows target-selection hint when no fleet target is selected', () => {
-    renderWithGame(<FleetPanel />);
+  it('shows Send To dropdown when transport is selected with no pre-filled target', async () => {
+    const user = userEvent.setup();
+    renderWithGame(<FleetPanel />, { withMultiplePlanets: true });
 
-    expect(
-      screen.getByText('Select an NPC target from the Galaxy panel to prepare an attack mission.'),
-    ).toBeInTheDocument();
-    expect(screen.getByText('No active missions')).toBeInTheDocument();
+    await user.selectOptions(screen.getByLabelText('Mission Type'), 'transport');
+    expect(screen.getByLabelText(/send to/i)).toBeInTheDocument();
+  });
+
+  it('shows cargo inputs when transport mode is active', async () => {
+    const user = userEvent.setup();
+    renderWithGame(<FleetPanel />, { withMultiplePlanets: true });
+
+    await user.selectOptions(screen.getByLabelText('Mission Type'), 'transport');
+    expect(screen.getByLabelText(/metal/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/crystal/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/deuterium/i)).toBeInTheDocument();
   });
 
   it('shows dispatch form with selected target and available ships', () => {

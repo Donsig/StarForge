@@ -1,6 +1,6 @@
 import { createContext, useContext, type ReactNode } from 'react';
 import type { GameState } from '../models/GameState.ts';
-import type { EspionageReport, FleetMission } from '../models/Fleet.ts';
+import type { EspionageReport, FleetMission, MissionType } from '../models/Fleet.ts';
 import type { CombatResult } from '../models/Combat.ts';
 import type { Coordinates, NPCColony, NPCSpecialty } from '../models/Galaxy.ts';
 import type { PlanetState } from '../models/Planet.ts';
@@ -25,10 +25,16 @@ export interface GameContextType {
   setActivePlanet: (index: number) => void;
   fleetTarget: Coordinates | null;
   setFleetTarget: (coords: Coordinates | null) => void;
+  pendingMissionTarget: { type: MissionType; coords: Coordinates } | null;
+  setPendingMissionTarget: (
+    target: { type: MissionType; coords: Coordinates } | null,
+  ) => void;
   dispatchFleet: (
     sourcePlanetIndex: number,
     targetCoords: Coordinates,
     ships: Record<string, number>,
+    missionType?: MissionType,
+    cargo?: { metal: number; crystal: number; deuterium: number },
   ) => FleetMission | null;
   dispatchEspionage: (
     sourcePlanetIndex: number,
