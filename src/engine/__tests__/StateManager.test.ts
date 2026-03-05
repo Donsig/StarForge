@@ -424,7 +424,7 @@ describe('StateManager migration', () => {
     expect(loaded!.planets[0].buildings.metalMine).toBe(5);
     expect(loaded!.planets[0].ships.lightFighter).toBe(10);
     expect(loaded!.planets[0].coordinates).toEqual({ galaxy: 1, system: 1, slot: 4 });
-    expect(loaded!.planets[0].fieldCount).toBe(163);
+    expect(loaded!.planets[0].fieldCount).toBe(loaded!.planets[0].maxFields);
     expect(loaded!.activePlanetIndex).toBe(0);
     expect(loaded!.galaxy).toBeDefined();
     expect(loaded!.galaxy.npcColonies.length).toBeGreaterThan(0);

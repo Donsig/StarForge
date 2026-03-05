@@ -17,7 +17,7 @@ import {
   researchTime,
   shipBuildTime,
 } from './FormulasEngine.ts';
-import { generateNPCColonies } from './GalaxyEngine.ts';
+import { generateNPCColonies, planetStatsForSlot } from './GalaxyEngine.ts';
 import { processTick as processFleetTick } from './FleetEngine.ts';
 import { processUpgrades as processNPCUpgrades } from './NPCUpgradeEngine.ts';
 
@@ -248,6 +248,36 @@ function migrate(state: GameState): GameState {
     }
 
     state.version = 9;
+  }
+
+  if (state.version < 10) {
+    // Add astrophysicsTechnology to research
+    if (typeof (state.research as any).astrophysicsTechnology !== 'number') {
+      (state.research as any).astrophysicsTechnology = 0;
+    }
+
+    // Retroactively assign slot-based temperature and fields to all existing planets
+    for (const planet of state.planets) {
+      const stats = planetStatsForSlot(
+        state.galaxy.seed,
+        planet.coordinates,
+      );
+      if (typeof planet.maxTemperature !== 'number' || planet.maxTemperature === 35) {
+        planet.maxTemperature = stats.maxTemperature;
+      }
+      planet.maxFields = stats.maxFields;
+      planet.fieldCount = stats.maxFields;
+    }
+
+    // Add temperature to all NPC colonies
+    for (const colony of state.galaxy.npcColonies) {
+      if (typeof (colony as any).temperature !== 'number') {
+        const stats = planetStatsForSlot(state.galaxy.seed, colony.coordinates);
+        (colony as any).temperature = stats.maxTemperature;
+      }
+    }
+
+    state.version = 10;
   }
 
   return state;
