@@ -27,6 +27,7 @@ export interface NPCAbandonmentProximity {
 export interface NPCColony {
   coordinates: Coordinates;
   name: string;
+  temperature: number;
   tier: number;
   specialty: NPCSpecialty;
   maxTier: number;

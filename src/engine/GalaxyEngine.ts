@@ -242,10 +242,12 @@ export function createNPCColonyForTier(
   const baseShips = buildNPCShipsForTier(safeTier);
   const intervalMs = initialUpgradeIntervalMsForTier(safeTier);
   const specialty = specialtyForCoordinates(seed, coordinates);
+  const stats = planetStatsForSlot(seed, coordinates);
 
   return {
     coordinates: { ...coordinates },
     name: nameForNPC(seed, coordinates),
+    temperature: stats.maxTemperature,
     tier: safeTier,
     specialty,
     maxTier: maxTierForNPC(safeTier),
@@ -297,7 +299,7 @@ function createNPCProductionPlanet(colony: NPCColony): PlanetState {
   return {
     name: colony.name,
     coordinates: { ...colony.coordinates },
-    maxTemperature: 20 + colony.tier * 3,
+    maxTemperature: colony.temperature,
     maxFields: 0,
     fieldCount: 0,
     buildings: {
@@ -383,10 +385,12 @@ export function generateNPCColonies(seed: number): NPCColony[] {
       const baseShips = buildNPCShipsForTier(tier);
       const intervalMs = initialUpgradeIntervalMsForTier(tier);
       const specialty = specialtyForCoordinates(seed, { galaxy: 1, system, slot });
+      const stats = planetStatsForSlot(seed, { galaxy: 1, system, slot });
 
       colonies.push({
         coordinates: { galaxy: 1, system, slot },
         name: `${NPC_NAME_PREFIXES[Math.floor(rng() * NPC_NAME_PREFIXES.length)]} Colony`,
+        temperature: stats.maxTemperature,
         tier,
         specialty,
         maxTier: maxTierForNPC(tier),

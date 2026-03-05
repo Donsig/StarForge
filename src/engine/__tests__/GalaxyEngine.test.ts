@@ -20,6 +20,7 @@ function createNPCColony(overrides?: Partial<NPCColony>): NPCColony {
   return {
     coordinates: { galaxy: 1, system: 10, slot: 6 },
     name: 'Test Colony',
+    temperature: 150,
     tier: 6,
     specialty: 'balanced',
     maxTier: 8,
@@ -117,6 +118,17 @@ describe('planetStatsForSlot', () => {
 });
 
 describe('GalaxyEngine', () => {
+  describe('NPC colony temperature', () => {
+    it('assigns temperature within slot range', () => {
+      const colonies = generateNPCColonies(42);
+      for (const colony of colonies) {
+        const range = slotTemperatureRange(colony.coordinates.slot);
+        expect(colony.temperature).toBeGreaterThanOrEqual(range.min);
+        expect(colony.temperature).toBeLessThanOrEqual(range.max);
+      }
+    });
+  });
+
   it('generateNPCColonies produces deterministic colonies from seed', () => {
     const colonies1 = generateNPCColonies(42);
     const colonies2 = generateNPCColonies(42);
