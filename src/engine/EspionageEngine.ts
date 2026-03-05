@@ -3,6 +3,7 @@ import {
   getNPCCurrentForce,
   getNPCResources,
 } from './GalaxyEngine.ts';
+import { calcAbandonmentProximity } from './NPCUpgradeEngine.ts';
 import type { EspionageReport } from '../models/Fleet.ts';
 import type { NPCColony } from '../models/Galaxy.ts';
 import type { GameState } from '../models/GameState.ts';
@@ -90,6 +91,7 @@ export function generateReport(
   const report: EspionageReport = {
     ...baseReport,
     resources: getNPCResources(colony, now, gameSpeed),
+    abandonmentProximity: calcAbandonmentProximity(colony, now, gameSpeed),
   };
 
   if (espionageTech >= 2) {

@@ -12,8 +12,8 @@
 - [x] **Phase 2.3:** Fleet Dispatch + Player Raids on NPCs (v5→v6)
 - [x] **Phase 2.4:** Espionage System (v6→v7)
 - [x] **Phase 2.5:** Admin Dashboard + bug fixes (v7→v8)
-- [ ] **Phase 2.6:** NPC Dynamic Upgrade System (v8→v9)
-- [ ] **Phase 3.1:** Debris Fields + Recycler Missions
+- [x] **Phase 2.6:** NPC Dynamic Upgrade System (v8→v9)
+- [x] **Phase 3.1:** Debris Fields + Recycler Missions
 - [ ] **Phase 3.2:** Economy Polish (colony caps, slot-based planets, transport, solar satellites)
 - [ ] **Phase 3.3:** Messages Panel + Combat Reports
 - [ ] **Phase 3.4:** UI Polish (planet rename, IRN, fleet slots)

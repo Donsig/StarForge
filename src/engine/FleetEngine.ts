@@ -15,6 +15,7 @@ const HISTORY_RETENTION_MS = 30 * 24 * 3600 * 1000;
 const MAX_HISTORY_ENTRIES = 100;
 const ESPIONAGE_MAX_TRAVEL_SECONDS = 10;
 const ESPIONAGE_MIN_FUEL_COST = 1;
+const HARVEST_CAPACITY_PER_RECYCLER = 20_000;
 const UPGRADE_SPEED_BY_SHIP: Partial<Record<CombatShipId, number>> = {
   smallCargo: 10000,
   bomber: 5000,
@@ -281,9 +282,56 @@ function resolveEspionageAtTarget(
   mission.status = 'returning';
 }
 
+export function resolveHarvestAtTarget(
+  state: GameState,
+  mission: FleetMission,
+  now: number,
+): void {
+  const fieldIndex = state.debrisFields.findIndex((field) =>
+    isMatchingCoordinates(field.coordinates, mission.targetCoordinates));
+
+  if (fieldIndex < 0) {
+    mission.cargo = { metal: 0, crystal: 0, deuterium: 0 };
+    mission.returnTime = now + calcMissionReturnTravelMs(state, mission);
+    mission.status = 'returning';
+    return;
+  }
+
+  const field = state.debrisFields[fieldIndex];
+  const recyclerCount = Math.max(0, Math.floor(mission.ships.recycler ?? 0));
+  const totalCapacity = recyclerCount * HARVEST_CAPACITY_PER_RECYCLER;
+
+  const availableMetal = Math.max(0, Math.floor(field.metal));
+  const availableCrystal = Math.max(0, Math.floor(field.crystal));
+
+  let remainingCapacity = totalCapacity;
+  const collectedMetal = Math.min(availableMetal, remainingCapacity);
+  remainingCapacity -= collectedMetal;
+  const collectedCrystal = Math.min(availableCrystal, remainingCapacity);
+
+  field.metal = Math.max(0, availableMetal - collectedMetal);
+  field.crystal = Math.max(0, availableCrystal - collectedCrystal);
+
+  if (field.metal <= 0 && field.crystal <= 0) {
+    state.debrisFields.splice(fieldIndex, 1);
+  }
+
+  mission.cargo = {
+    metal: collectedMetal,
+    crystal: collectedCrystal,
+    deuterium: 0,
+  };
+  mission.returnTime = now + calcMissionReturnTravelMs(state, mission);
+  mission.status = 'returning';
+}
+
 function resolveAtTarget(state: GameState, mission: FleetMission, now: number): void {
   if (mission.type === 'espionage') {
     resolveEspionageAtTarget(state, mission, now);
+    return;
+  }
+  if (mission.type === 'harvest') {
+    resolveHarvestAtTarget(state, mission, now);
     return;
   }
   resolveAttackAtTarget(state, mission, now);
@@ -536,6 +584,83 @@ export function dispatch(
     sourcePlanetIndex,
     targetCoordinates: { ...targetCoords },
     targetType: 'npc_colony',
+    ships: { ...selectedShips },
+    cargo: { metal: 0, crystal: 0, deuterium: 0 },
+    fuelCost,
+    departureTime: now,
+    arrivalTime: now + travelSeconds * 1000,
+    returnTime: 0,
+  };
+
+  state.fleetMissions.push(mission);
+  return mission;
+}
+
+export function dispatchHarvest(
+  state: GameState,
+  sourcePlanetIndex: number,
+  targetCoords: Coordinates,
+): FleetMission | null {
+  const sourcePlanet = state.planets[sourcePlanetIndex];
+  if (!sourcePlanet) return null;
+
+  const debrisField = state.debrisFields.find((field) =>
+    isMatchingCoordinates(field.coordinates, targetCoords));
+  if (!debrisField) return null;
+
+  const availableRecyclers = Math.max(0, Math.floor(sourcePlanet.ships.recycler ?? 0));
+  if (availableRecyclers <= 0) {
+    return null;
+  }
+
+  const activeMissions = state.fleetMissions.filter(
+    (mission) => mission.status !== 'completed',
+  ).length;
+  if (activeMissions >= calcMaxFleetSlots(state.research)) {
+    return null;
+  }
+
+  const totalDebris =
+    Math.max(0, Math.floor(debrisField.metal)) +
+    Math.max(0, Math.floor(debrisField.crystal));
+  const recyclerCount = Math.min(
+    availableRecyclers,
+    Math.ceil(totalDebris / HARVEST_CAPACITY_PER_RECYCLER),
+  );
+  if (recyclerCount <= 0) {
+    return null;
+  }
+
+  const selectedShips: MissionShips = { recycler: recyclerCount };
+  const distance = calcDistance(sourcePlanet.coordinates, targetCoords);
+  const fleetSpeed = calcFleetSpeed(selectedShips, state.research);
+  if (fleetSpeed <= 0) {
+    return null;
+  }
+
+  const fuelCost = calcFuelCost(selectedShips, distance);
+  if (sourcePlanet.resources.deuterium < fuelCost) {
+    return null;
+  }
+
+  sourcePlanet.ships.recycler -= recyclerCount;
+  sourcePlanet.resources.deuterium -= fuelCost;
+
+  const now = Date.now();
+  const travelSeconds = calcMissionTravelSeconds(
+    'harvest',
+    distance,
+    fleetSpeed,
+    state.settings.gameSpeed,
+  );
+
+  const mission: FleetMission = {
+    id: nextMissionId(state, now),
+    type: 'harvest',
+    status: 'outbound',
+    sourcePlanetIndex,
+    targetCoordinates: { ...targetCoords },
+    targetType: 'debris_field',
     ships: { ...selectedShips },
     cargo: { metal: 0, crystal: 0, deuterium: 0 },
     fuelCost,

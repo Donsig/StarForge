@@ -12,6 +12,18 @@ export type NPCSpecialty =
   | 'raider'
   | 'researcher';
 
+export type NPCAbandonmentStatus = 'stable' | 'atRisk' | 'imminent';
+
+export interface NPCAbandonmentProximity {
+  status: NPCAbandonmentStatus;
+  recentRaidCount: number;
+  raidThreshold: number;
+  progressPct: number;
+  windowGameHours: number;
+  lastRaidGameHoursAgo?: number;
+  pressureWindowExpiresInGameHours?: number;
+}
+
 export interface NPCColony {
   coordinates: Coordinates;
   name: string;

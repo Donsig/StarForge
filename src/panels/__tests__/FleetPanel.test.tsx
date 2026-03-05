@@ -96,6 +96,31 @@ describe('FleetPanel', () => {
     expect(screen.getByText(/M 321\s+C 654\s+D 987/)).toBeInTheDocument();
   });
 
+  it('shows Harvest badge for harvest missions', () => {
+    renderWithGame(<FleetPanel />, {
+      gameState: {
+        fleetMissions: [
+          {
+            id: 'mission_harvestbadge',
+            type: 'harvest',
+            status: 'outbound',
+            sourcePlanetIndex: 0,
+            targetCoordinates: { galaxy: 1, system: 7, slot: 3 },
+            targetType: 'debris_field',
+            ships: { recycler: 2 },
+            cargo: { metal: 0, crystal: 0, deuterium: 0 },
+            fuelCost: 42,
+            departureTime: Date.now(),
+            arrivalTime: Date.now() + 20000,
+            returnTime: 0,
+          },
+        ],
+      },
+    });
+
+    expect(screen.getByText('Harvest')).toBeInTheDocument();
+  });
+
   it('allows dispatching espionage with more than one probe', async () => {
     const user = userEvent.setup();
     const dispatchEspionage = vi.fn().mockReturnValue({

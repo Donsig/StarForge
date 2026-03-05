@@ -1,5 +1,29 @@
 # Repository Guidelines
 
+## Scope
+This repo contains independent subprojects. Keep root-level guidance minimal and apply project rules from each subfolder.
+
+## Project Guides
+Use the guide in the project you are modifying:
+- `OGameClone/AGENTS.md` for the React + Vite game client.
+- `VulnLab/AGENTS.md` for the Express + EJS security lab.
+
+If a project has its own `CLAUDE.md`, read it alongside its `AGENTS.md` before making code changes.
+
+## Shared Workflow
+- Keep changes scoped to one project unless cross-project edits are explicitly required.
+- Run build/test/lint commands from the project directory, not from repo root.
+- Avoid introducing repo-wide tooling changes without discussion.
+
+## Commits and Pull Requests
+- Use imperative commit subjects (for example, `Add queue persistence fix`).
+- Keep commits focused and easy to review.
+- In PRs, include changed paths, validation commands run, and any manual verification notes.
+- Include screenshots or GIFs for UI-facing changes.
+
+
+## Repository Guidelines
+
 ## Project Structure & Module Organization
 `OGameClone` is a Vite + React + TypeScript app. Main folders in `src/`:
 - `engine/`: pure game logic (no React imports).

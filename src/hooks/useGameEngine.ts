@@ -56,6 +56,7 @@ import {
 import {
   calcLoot,
   dispatch as dispatchMission,
+  dispatchHarvest as dispatchHarvestMission,
   processTick as processFleetTick,
   recallMission,
   resolveMissionToCompletion,
@@ -97,6 +98,10 @@ export interface GameEngineState {
     sourcePlanetIndex: number,
     targetCoords: Coordinates,
     probeCount: number,
+  ) => FleetMission | null;
+  dispatchHarvest: (
+    sourcePlanetIndex: number,
+    targetCoords: Coordinates,
   ) => FleetMission | null;
   recallFleet: (missionId: string) => void;
   markReportRead: (reportId: string) => void;
@@ -1389,6 +1394,25 @@ export function useGameEngine(): GameEngineState {
     [syncReactState],
   );
 
+  const dispatchHarvest = useCallback(
+    (
+      sourcePlanetIndex: number,
+      targetCoords: Coordinates,
+    ): FleetMission | null => {
+      const mission = dispatchHarvestMission(
+        stateRef.current,
+        sourcePlanetIndex,
+        targetCoords,
+      );
+      syncReactState();
+      if (mission) {
+        saveState(stateRef.current);
+      }
+      return mission;
+    },
+    [syncReactState],
+  );
+
   const markReportRead = useCallback(
     (reportId: string): void => {
       const report = stateRef.current.espionageReports.find((item) => item.id === reportId);
@@ -1442,6 +1466,7 @@ export function useGameEngine(): GameEngineState {
     setFleetTarget,
     dispatchFleet,
     dispatchEspionage,
+    dispatchHarvest,
     recallFleet,
     markReportRead,
     setGameSpeed,

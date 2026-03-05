@@ -1,11 +1,18 @@
 import type { GameState } from '../models/GameState.ts';
-import type { Coordinates, NPCColony } from '../models/Galaxy.ts';
+import type {
+  Coordinates,
+  NPCAbandonmentProximity,
+  NPCColony,
+} from '../models/Galaxy.ts';
 
 const NPC_RECOVERY_MS = 48 * 3600 * 1000;
 const RAID_WINDOW_MS = 24 * 3600 * 1000;
 const SAFE_RETURN_MS = 30_000;
 const MAX_CATCHUP_REAL_MS = 7 * 24 * 3600 * 1000;
 const MAX_UPGRADE_ITERATIONS = 500;
+
+export const NPC_ABANDONMENT_RAID_THRESHOLD = 3;
+export const NPC_ABANDONMENT_WINDOW_GAME_HOURS = 24;
 
 /** Simple seedable PRNG (mulberry32). */
 function mulberry32(seed: number): () => number {
@@ -202,13 +209,79 @@ export function recordRaid(colony: NPCColony, now: number, gameSpeed: number): v
     colony.specialty = 'turtle';
   }
 
-  const safeGameSpeed = Math.max(0, gameSpeed);
-  const recentRaidCount = colony.recentRaidTimestamps.filter(
-    (timestamp) => (now - timestamp) * safeGameSpeed < RAID_WINDOW_MS,
-  ).length;
-  if (recentRaidCount >= 3 && colony.abandonedAt === undefined) {
+  const abandonment = calcAbandonmentProximity(colony, now, gameSpeed);
+  if (
+    abandonment.recentRaidCount >= NPC_ABANDONMENT_RAID_THRESHOLD &&
+    colony.abandonedAt === undefined
+  ) {
     colony.abandonedAt = now;
   }
+}
+
+function countRecentRaids(colony: NPCColony, now: number, gameSpeed: number): number {
+  const safeGameSpeed = Math.max(0, gameSpeed);
+  return colony.recentRaidTimestamps.filter(
+    (timestamp) => (now - timestamp) * safeGameSpeed < RAID_WINDOW_MS,
+  ).length;
+}
+
+function toGameHours(elapsedMs: number, gameSpeed: number): number {
+  const safeGameSpeed = Math.max(0, gameSpeed);
+  return (elapsedMs * safeGameSpeed) / (3600 * 1000);
+}
+
+export function calcAbandonmentProximity(
+  colony: NPCColony,
+  now: number,
+  gameSpeed: number,
+): NPCAbandonmentProximity {
+  const safeGameSpeed = Math.max(0, gameSpeed);
+  const recentRaidCount = countRecentRaids(colony, now, gameSpeed);
+  const progressPct = Math.min(
+    100,
+    Math.round((recentRaidCount / NPC_ABANDONMENT_RAID_THRESHOLD) * 100),
+  );
+  const status =
+    colony.abandonedAt !== undefined || recentRaidCount >= NPC_ABANDONMENT_RAID_THRESHOLD
+      ? 'imminent'
+      : recentRaidCount === NPC_ABANDONMENT_RAID_THRESHOLD - 1
+        ? 'atRisk'
+        : 'stable';
+
+  const recentTimestamps = colony.recentRaidTimestamps.filter(
+    (timestamp) => (now - timestamp) * safeGameSpeed < RAID_WINDOW_MS,
+  );
+
+  const lastRaidTimestamp =
+    recentTimestamps.length > 0
+      ? Math.max(...recentTimestamps)
+      : undefined;
+  const oldestRaidTimestamp =
+    recentTimestamps.length > 0
+      ? Math.min(...recentTimestamps)
+      : undefined;
+  const lastRaidGameHoursAgo =
+    lastRaidTimestamp !== undefined
+      ? toGameHours(now - lastRaidTimestamp, safeGameSpeed)
+      : undefined;
+  const pressureWindowExpiresInGameHours =
+    oldestRaidTimestamp !== undefined
+      ? Math.max(
+          0,
+          NPC_ABANDONMENT_WINDOW_GAME_HOURS -
+            toGameHours(now - oldestRaidTimestamp, safeGameSpeed),
+        )
+      : undefined;
+
+  return {
+    status,
+    recentRaidCount,
+    raidThreshold: NPC_ABANDONMENT_RAID_THRESHOLD,
+    progressPct,
+    windowGameHours: NPC_ABANDONMENT_WINDOW_GAME_HOURS,
+    lastRaidGameHoursAgo,
+    pressureWindowExpiresInGameHours,
+  };
 }
 
 export function processUpgrades(state: GameState, now: number): void {

@@ -116,6 +116,7 @@ describe('EspionageEngine', () => {
       expect(report.buildings).toBeUndefined();
       expect(report.tier).toBeUndefined();
       expect(report.rebuildStatus).toBeUndefined();
+      expect(report.abandonmentProximity).toBeUndefined();
     });
 
     it('gates intel tiers by player espionage technology on undetected scans', () => {
@@ -126,6 +127,15 @@ describe('EspionageEngine', () => {
       expect(tech1.detected).toBe(false);
       expect(tech1.probesLost).toBe(0);
       expect(tech1.resources).toBeDefined();
+      expect(tech1.abandonmentProximity).toEqual({
+        status: 'stable',
+        recentRaidCount: 0,
+        raidThreshold: 3,
+        progressPct: 0,
+        windowGameHours: 24,
+        lastRaidGameHoursAgo: undefined,
+        pressureWindowExpiresInGameHours: undefined,
+      });
       expect(tech1.fleet).toBeUndefined();
       expect(tech1.defences).toBeUndefined();
       expect(tech1.buildings).toBeUndefined();
@@ -172,6 +182,29 @@ describe('EspionageEngine', () => {
       expect(tech8NoRaid.rebuildStatus).toEqual({
         defencePct: 100,
         fleetPct: 100,
+      });
+    });
+
+    it('includes abandonment proximity from recent raid pressure', () => {
+      const now = 24 * 3600 * 1000;
+      const oneGameHourMs = 3600 * 1000;
+      const colony = createColony({
+        recentRaidTimestamps: [
+          now - (2 * oneGameHourMs),
+          now - (5 * oneGameHourMs),
+        ],
+      });
+
+      const report = generateReport(colony, now, 0, 5, createResearch(1), 1, () => 1);
+
+      expect(report.abandonmentProximity).toEqual({
+        status: 'atRisk',
+        recentRaidCount: 2,
+        raidThreshold: 3,
+        progressPct: 67,
+        windowGameHours: 24,
+        lastRaidGameHoursAgo: 2,
+        pressureWindowExpiresInGameHours: 19,
       });
     });
   });

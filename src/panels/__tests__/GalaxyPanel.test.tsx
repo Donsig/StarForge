@@ -1,6 +1,9 @@
 import userEvent from '@testing-library/user-event';
 import { GalaxyPanel } from '../GalaxyPanel';
 import { renderWithGame, screen } from '../../test/test-utils';
+import { dispatchHarvest as dispatchHarvestMission } from '../../engine/FleetEngine.ts';
+import type { GameState } from '../../models/GameState.ts';
+import type { Coordinates } from '../../models/Galaxy.ts';
 
 describe('GalaxyPanel', () => {
   afterEach(() => {
@@ -23,7 +26,7 @@ describe('GalaxyPanel', () => {
     expect(screen.getByText(/Build a Colony Ship/)).toBeInTheDocument();
   });
 
-  it('shows NPC strength label and debris indicator on occupied slots', () => {
+  it('shows NPC strength label and debris indicator with formatted debris amounts', () => {
     vi.spyOn(Date, 'now').mockReturnValue(200_000);
 
     renderWithGame(<GalaxyPanel />, {
@@ -54,13 +57,13 @@ describe('GalaxyPanel', () => {
             },
           ],
         },
-        debrisFields: [{ coordinates: { galaxy: 1, system: 1, slot: 1 }, metal: 100, crystal: 50 }],
+        debrisFields: [{ coordinates: { galaxy: 1, system: 1, slot: 1 }, metal: 12_345, crystal: 6_789 }],
       },
     });
 
     expect(screen.getByText('Strength Strong')).toBeInTheDocument();
     expect(screen.getByText('Rebuilding')).toBeInTheDocument();
-    expect(screen.getByText('Debris Field')).toBeInTheDocument();
+    expect(screen.getByText('Debris Field M 12,345 | C 6,789')).toBeInTheDocument();
   });
 
   it('targets NPC slot and navigates to fleet panel when attack is clicked', async () => {
@@ -105,5 +108,53 @@ describe('GalaxyPanel', () => {
     await user.click(screen.getByRole('button', { name: 'Attack' }));
     expect(setFleetTarget).toHaveBeenCalledWith({ galaxy: 1, system: 1, slot: 5 });
     expect(onNavigate).toHaveBeenCalledWith('fleet');
+  });
+
+  it('dispatches harvest missions and auto-calculates recycler count', async () => {
+    const user = userEvent.setup();
+    let gameStateRef: GameState | null = null;
+    const dispatchHarvest = vi.fn((sourcePlanetIndex: number, coords: Coordinates) => {
+      if (!gameStateRef) {
+        return null;
+      }
+      return dispatchHarvestMission(gameStateRef, sourcePlanetIndex, coords);
+    });
+
+    const { gameContext } = renderWithGame(<GalaxyPanel />, {
+      gameState: {
+        planet: {
+          ships: { recycler: 5 },
+          resources: { deuterium: 10_000 },
+        },
+        debrisFields: [{ coordinates: { galaxy: 1, system: 1, slot: 6 }, metal: 30_000, crystal: 15_000 }],
+      },
+      actions: {
+        dispatchHarvest,
+      },
+    });
+    gameStateRef = gameContext.gameState;
+
+    await user.click(screen.getByRole('button', { name: 'Harvest' }));
+
+    expect(dispatchHarvest).toHaveBeenCalledWith(0, { galaxy: 1, system: 1, slot: 6 });
+    const harvestMission = gameStateRef?.fleetMissions.find(
+      (mission) => mission.type === 'harvest',
+    );
+    expect(harvestMission?.ships.recycler).toBe(3);
+  });
+
+  it('disables harvest button when no recyclers are available', () => {
+    renderWithGame(<GalaxyPanel />, {
+      gameState: {
+        planet: {
+          ships: { recycler: 0 },
+          resources: { deuterium: 10_000 },
+        },
+        debrisFields: [{ coordinates: { galaxy: 1, system: 1, slot: 6 }, metal: 10_000, crystal: 5_000 }],
+      },
+    });
+
+    expect(screen.getByRole('button', { name: 'Harvest' })).toBeDisabled();
+    expect(screen.getByText('No recyclers on active planet')).toBeInTheDocument();
   });
 });

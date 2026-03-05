@@ -8,7 +8,9 @@ import {
   calcFleetSpeed,
   calcLoot,
   dispatch,
+  dispatchHarvest,
   processTick,
+  resolveHarvestAtTarget,
   recallMission,
 } from '../FleetEngine.ts';
 
@@ -220,6 +222,209 @@ describe('FleetEngine', () => {
       );
 
       expect(mission).toBeNull();
+    });
+  });
+
+  describe('dispatchHarvest', () => {
+    it('fails when no debris field exists at target', () => {
+      const state = createNewGameState();
+      state.planets[0].ships.recycler = 3;
+      state.planets[0].resources.deuterium = 1000;
+
+      const mission = dispatchHarvest(
+        state,
+        0,
+        { galaxy: 1, system: 1, slot: 9 },
+      );
+
+      expect(mission).toBeNull();
+      expect(state.fleetMissions).toHaveLength(0);
+    });
+
+    it('fails when source planet has no recyclers', () => {
+      const state = createNewGameState();
+      state.planets[0].ships.recycler = 0;
+      state.planets[0].resources.deuterium = 1000;
+      state.debrisFields = [
+        {
+          coordinates: { galaxy: 1, system: 1, slot: 9 },
+          metal: 15_000,
+          crystal: 5_000,
+        },
+      ];
+
+      const mission = dispatchHarvest(
+        state,
+        0,
+        { galaxy: 1, system: 1, slot: 9 },
+      );
+
+      expect(mission).toBeNull();
+      expect(state.fleetMissions).toHaveLength(0);
+    });
+
+    it('fails when fleet slots are full', () => {
+      const state = createNewGameState();
+      state.research.computerTechnology = 0;
+      state.planets[0].ships.recycler = 5;
+      state.planets[0].resources.deuterium = 1000;
+      state.debrisFields = [
+        {
+          coordinates: { galaxy: 1, system: 1, slot: 9 },
+          metal: 20_000,
+          crystal: 20_000,
+        },
+      ];
+      state.fleetMissions.push({
+        id: 'mission_existingharvest',
+        type: 'attack',
+        status: 'outbound',
+        sourcePlanetIndex: 0,
+        targetCoordinates: { galaxy: 1, system: 1, slot: 6 },
+        targetType: 'npc_colony',
+        ships: { smallCargo: 1 },
+        cargo: { metal: 0, crystal: 0, deuterium: 0 },
+        fuelCost: 10,
+        departureTime: 10_000,
+        arrivalTime: 20_000,
+        returnTime: 0,
+      });
+
+      const mission = dispatchHarvest(
+        state,
+        0,
+        { galaxy: 1, system: 1, slot: 9 },
+      );
+
+      expect(mission).toBeNull();
+      expect(state.fleetMissions).toHaveLength(1);
+    });
+  });
+
+  describe('resolveHarvestAtTarget', () => {
+    it('collects all debris when recycler capacity is enough', () => {
+      const state = createNewGameState();
+      const now = 250_000;
+      state.debrisFields = [
+        {
+          coordinates: { galaxy: 1, system: 2, slot: 8 },
+          metal: 12_000,
+          crystal: 4_000,
+        },
+      ];
+      const mission: FleetMission = {
+        id: 'mission_harvest_full',
+        type: 'harvest',
+        status: 'at_target',
+        sourcePlanetIndex: 0,
+        targetCoordinates: { galaxy: 1, system: 2, slot: 8 },
+        targetType: 'debris_field',
+        ships: { recycler: 1 },
+        cargo: { metal: 0, crystal: 0, deuterium: 0 },
+        fuelCost: 10,
+        departureTime: now - 60_000,
+        arrivalTime: now,
+        returnTime: 0,
+      };
+
+      resolveHarvestAtTarget(state, mission, now);
+
+      expect(mission.status).toBe('returning');
+      expect(mission.cargo).toEqual({ metal: 12_000, crystal: 4_000, deuterium: 0 });
+      expect(mission.returnTime).toBeGreaterThan(now);
+      expect(state.debrisFields).toHaveLength(0);
+    });
+
+    it('collects partial debris with metal-first priority', () => {
+      const state = createNewGameState();
+      const now = 250_000;
+      state.debrisFields = [
+        {
+          coordinates: { galaxy: 1, system: 2, slot: 9 },
+          metal: 5_000,
+          crystal: 25_000,
+        },
+      ];
+      const mission: FleetMission = {
+        id: 'mission_harvest_partial',
+        type: 'harvest',
+        status: 'at_target',
+        sourcePlanetIndex: 0,
+        targetCoordinates: { galaxy: 1, system: 2, slot: 9 },
+        targetType: 'debris_field',
+        ships: { recycler: 1 },
+        cargo: { metal: 0, crystal: 0, deuterium: 0 },
+        fuelCost: 10,
+        departureTime: now - 60_000,
+        arrivalTime: now,
+        returnTime: 0,
+      };
+
+      resolveHarvestAtTarget(state, mission, now);
+
+      expect(mission.cargo).toEqual({ metal: 5_000, crystal: 15_000, deuterium: 0 });
+      expect(state.debrisFields).toEqual([
+        {
+          coordinates: { galaxy: 1, system: 2, slot: 9 },
+          metal: 0,
+          crystal: 10_000,
+        },
+      ]);
+    });
+
+    it('removes debris field when fully harvested', () => {
+      const state = createNewGameState();
+      const now = 250_000;
+      state.debrisFields = [
+        {
+          coordinates: { galaxy: 1, system: 3, slot: 1 },
+          metal: 10_000,
+          crystal: 10_000,
+        },
+      ];
+      const mission: FleetMission = {
+        id: 'mission_harvest_emptyfield',
+        type: 'harvest',
+        status: 'at_target',
+        sourcePlanetIndex: 0,
+        targetCoordinates: { galaxy: 1, system: 3, slot: 1 },
+        targetType: 'debris_field',
+        ships: { recycler: 1 },
+        cargo: { metal: 0, crystal: 0, deuterium: 0 },
+        fuelCost: 10,
+        departureTime: now - 60_000,
+        arrivalTime: now,
+        returnTime: 0,
+      };
+
+      resolveHarvestAtTarget(state, mission, now);
+
+      expect(state.debrisFields).toHaveLength(0);
+    });
+
+    it('returns empty cargo when debris field is missing', () => {
+      const state = createNewGameState();
+      const now = 250_000;
+      const mission: FleetMission = {
+        id: 'mission_harvest_missing',
+        type: 'harvest',
+        status: 'at_target',
+        sourcePlanetIndex: 0,
+        targetCoordinates: { galaxy: 1, system: 4, slot: 4 },
+        targetType: 'debris_field',
+        ships: { recycler: 2 },
+        cargo: { metal: 10, crystal: 10, deuterium: 0 },
+        fuelCost: 10,
+        departureTime: now - 60_000,
+        arrivalTime: now,
+        returnTime: 0,
+      };
+
+      resolveHarvestAtTarget(state, mission, now);
+
+      expect(mission.status).toBe('returning');
+      expect(mission.cargo).toEqual({ metal: 0, crystal: 0, deuterium: 0 });
+      expect(mission.returnTime).toBeGreaterThan(now);
     });
   });
 

@@ -52,6 +52,7 @@ const defaultActions: GameActions = {
   setFleetTarget: (_coords) => {},
   dispatchFleet: (_sourcePlanetIndex, _targetCoords, _ships) => null,
   dispatchEspionage: (_sourcePlanetIndex, _targetCoords, _probeCount) => null,
+  dispatchHarvest: (_sourcePlanetIndex, _coords) => null,
   recallFleet: (_missionId) => {},
   markReportRead: (_reportId) => {},
   setGameSpeed: () => {},

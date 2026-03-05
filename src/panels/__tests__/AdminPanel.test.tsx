@@ -48,6 +48,7 @@ function Harness({ children }: { children?: ReactNode }) {
     setFleetTarget: () => {},
     dispatchFleet: () => null,
     dispatchEspionage: () => null,
+    dispatchHarvest: () => null,
     recallFleet: () => {},
     markReportRead: () => {},
     setGameSpeed: (n: number) => {
@@ -150,7 +151,11 @@ function Harness({ children }: { children?: ReactNode }) {
     adminNPCTriggerUpgrade: () => {},
     adminClearNPCRaidHistory: () => {},
     adminForceAbandonNPC: () => {},
-    adminSetPlanetFieldCount: () => {},
+    adminSetPlanetFieldCount: (planetIndex, fieldCount) => {
+      withPlanetMutation(setGameState, planetIndex, (planet) => {
+        planet.fieldCount = Math.max(40, Math.min(250, Math.floor(fieldCount)));
+      });
+    },
     adminCompleteBuilding: () => {},
     adminCompleteResearch: () => {},
     adminCompleteShipyard: () => {},
@@ -205,6 +210,32 @@ describe('AdminPanel', () => {
     await user.type(input, '300');
     await user.click(within(row).getByRole('button', { name: 'Add' }));
     expect(within(row).getByText(/Current 1,500/)).toBeInTheDocument();
+  });
+
+  it('keeps planet size draft local until Apply is clicked', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <Harness>
+        <AdminPanel />
+      </Harness>,
+    );
+
+    await user.click(screen.getByRole('tab', { name: 'Player Editor' }));
+    const fieldInput = screen.getByLabelText('Field Count');
+
+    await user.clear(fieldInput);
+    await user.type(fieldInput, '200');
+    expect(fieldInput).toHaveValue(200);
+
+    await user.click(screen.getByRole('tab', { name: 'Resources' }));
+    const metalRow = screen.getByText('metal').closest('.admin-resource-row');
+    expect(metalRow).not.toBeNull();
+    const row = metalRow as HTMLElement;
+    await user.click(within(row).getByRole('button', { name: 'Set' }));
+
+    await user.click(screen.getByRole('tab', { name: 'Player Editor' }));
+    expect(screen.getByLabelText('Field Count')).toHaveValue(200);
   });
 
   it('force colonize creates a planet', async () => {

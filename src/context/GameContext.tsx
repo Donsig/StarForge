@@ -35,6 +35,10 @@ export interface GameContextType {
     targetCoords: Coordinates,
     probeCount: number,
   ) => FleetMission | null;
+  dispatchHarvest: (
+    sourcePlanetIndex: number,
+    coords: Coordinates,
+  ) => FleetMission | null;
   recallFleet: (missionId: string) => void;
   markReportRead: (reportId: string) => void;
   setGameSpeed: (n: number) => void;

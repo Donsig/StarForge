@@ -1,3 +1,11 @@
+# Local Claude Code settings
+.claude/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
 # Logs
 logs
 *.log

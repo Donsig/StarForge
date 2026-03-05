@@ -30,7 +30,13 @@ function formatEta(timestamp: number): string {
 }
 
 function formatMissionType(type: MissionType): string {
-  return type === 'espionage' ? 'Espionage' : 'Attack';
+  if (type === 'espionage') {
+    return 'Espionage';
+  }
+  if (type === 'harvest') {
+    return 'Harvest';
+  }
+  return 'Attack';
 }
 
 function formatCargo(cargo: { metal: number; crystal: number; deuterium: number }): string {

@@ -206,9 +206,10 @@ export function AdminPanel() {
   const [combatResult, setCombatResult] = useState<CombatResult | null>(null);
   const [customSimMinutes, setCustomSimMinutes] = useState('60');
   const [regenSeedInput, setRegenSeedInput] = useState('');
-  const [fieldCountDraft, setFieldCountDraft] = useState<number>(163);
+  const [fieldCountDraft, setFieldCountDraft] = useState('163');
 
   const planet = gameState.planets[selectedPlanetIndex] ?? gameState.planets[0];
+  const selectedPlanetFieldCount = gameState.planets[selectedPlanetIndex]?.fieldCount;
   const selectedPlanetCaps = planet ? getStorageCaps(planet) : { metal: 0, crystal: 0, deuterium: 0 };
   const npcColonies = gameState.galaxy.npcColonies;
   const activePlanet = gameState.planets[gameState.activePlanetIndex];
@@ -220,9 +221,10 @@ export function AdminPanel() {
   }, [gameState.planets.length, selectedPlanetIndex]);
 
   useEffect(() => {
-    const p = gameState.planets[selectedPlanetIndex];
-    if (p) setFieldCountDraft(p.fieldCount);
-  }, [selectedPlanetIndex, gameState.planets]);
+    if (selectedPlanetFieldCount !== undefined) {
+      setFieldCountDraft(String(selectedPlanetFieldCount));
+    }
+  }, [selectedPlanetFieldCount, selectedPlanetIndex]);
 
   useEffect(() => {
     if (npcColonies.length === 0) {
@@ -443,15 +445,21 @@ export function AdminPanel() {
                     min={40}
                     max={250}
                     value={fieldCountDraft}
-                    onChange={(e) => setFieldCountDraft(parseIntOrZero(e.target.value))}
+                    onChange={(event) => setFieldCountDraft(event.target.value)}
                   />
                   <button
-                    className="btn btn-sm"
+                    type="button"
+                    className="btn"
                     onClick={() => {
-                      const val = clampInt(40, fieldCountDraft, 250);
+                      const parsed = parseOptionalInt(fieldCountDraft);
+                      if (parsed === null) {
+                        setStatus('Enter a field count between 40 and 250.');
+                        return;
+                      }
+                      const val = clampInt(40, parsed, 250);
                       adminSetPlanetFieldCount(selectedPlanetIndex, val);
-                      setFieldCountDraft(val);
-                      setStatus(`Field count set to ${val}`);
+                      setFieldCountDraft(String(val));
+                      setStatus(`Field count set to ${val}.`);
                     }}
                   >
                     Apply

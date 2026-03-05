@@ -5,8 +5,9 @@ import { GALAXY_CONSTANTS } from '../data/galaxy.ts';
 import { BUILDINGS } from '../data/buildings.ts';
 import { DEFENCES } from '../data/defences.ts';
 import { SHIPS } from '../data/ships.ts';
+import { calcDistance, calcFuelCost, calcMaxFleetSlots } from '../engine/FleetEngine.ts';
 import { getSystemSlots, canColonize, type SystemSlot } from '../engine/GalaxyEngine.ts';
-import type { Coordinates } from '../models/Galaxy.ts';
+import type { Coordinates, DebrisField } from '../models/Galaxy.ts';
 import type { ActivePanel } from '../models/types.ts';
 import { formatNumber } from '../utils/format.ts';
 
@@ -44,6 +45,20 @@ function formatScannedAgo(timestamp: number, now: number): string {
 
   const elapsedDays = Math.floor(elapsedHours / 24);
   return `Scanned ${elapsedDays}d ago`;
+}
+
+function formatGameHours(hours: number): string {
+  const clamped = Math.max(0, hours);
+  const digits = clamped >= 10 ? 0 : 1;
+  return `${clamped.toFixed(digits)}h`;
+}
+
+function abandonmentStatusLabel(
+  abandonment: NonNullable<EspionageReport['abandonmentProximity']>,
+): string {
+  if (abandonment.status === 'imminent') return 'Imminent';
+  if (abandonment.status === 'atRisk') return 'At Risk';
+  return 'Stable';
 }
 
 function unitName(unitId: string): string {
@@ -98,6 +113,7 @@ function EspionageHoverPanel({ report, now }: EspionageHoverPanelProps) {
   const fleetEntries = listEntries(report.fleet, unitName);
   const defenceEntries = listEntries(report.defences, defenceName);
   const buildingEntries = listEntries(report.buildings, buildingName);
+  const abandonment = report.abandonmentProximity;
 
   return (
     <div className="galaxy-spy-hover-panel">
@@ -115,6 +131,35 @@ function EspionageHoverPanel({ report, now }: EspionageHoverPanelProps) {
           <p className="galaxy-intel-line">
             Specialty: <span className="number">{formatSpecialtyLabel(report.specialty)}</span>
           </p>
+        </div>
+      )}
+
+      {abandonment && (
+        <div className="galaxy-intel-block">
+          <p className="galaxy-intel-label">Abandonment</p>
+          <p className={`galaxy-intel-line galaxy-intel-abandonment galaxy-intel-abandonment-${abandonment.status}`}>
+            {abandonmentStatusLabel(abandonment)}{' '}
+            <span className="number">
+              ({abandonment.recentRaidCount}/{abandonment.raidThreshold} raids)
+            </span>
+          </p>
+          <div className="galaxy-intel-progress" role="presentation" aria-hidden="true">
+            <span
+              className={`galaxy-intel-progress-fill galaxy-intel-progress-fill-${abandonment.status}`}
+              style={{ width: `${abandonment.progressPct}%` }}
+            />
+          </div>
+          {abandonment.lastRaidGameHoursAgo !== undefined && (
+            <p className="galaxy-intel-line">
+              Last raid: <span className="number">{formatGameHours(abandonment.lastRaidGameHoursAgo)} ago</span>
+            </p>
+          )}
+          {abandonment.pressureWindowExpiresInGameHours !== undefined &&
+            abandonment.recentRaidCount > 0 && (
+              <p className="galaxy-intel-line">
+                Window reset in: <span className="number">{formatGameHours(abandonment.pressureWindowExpiresInGameHours)}</span>
+              </p>
+            )}
         </div>
       )}
 
@@ -187,29 +232,48 @@ export function GalaxyPanel({ onNavigate }: GalaxyPanelProps = {}) {
     colonizeAction,
     setFleetTarget,
     dispatchEspionage,
+    dispatchHarvest,
     adminForceColonize,
     adminTriggerCombat,
     adminRemoveNPC,
   } = useGame();
+  const activePlanetIndex = gameState.activePlanetIndex;
   const [currentSystem, setCurrentSystem] = useState(
-    gameState.planets[gameState.activePlanetIndex].coordinates.system,
+    gameState.planets[activePlanetIndex].coordinates.system,
   );
   const [hoveredNpcCoords, setHoveredNpcCoords] = useState<Coordinates | null>(null);
   const now = Date.now();
 
   const slots = getSystemSlots(gameState, 1, currentSystem);
-  const debrisSlots = new Set(
-    gameState.debrisFields
-      .filter(
-        (field) =>
-          field.coordinates.galaxy === 1 &&
-          field.coordinates.system === currentSystem &&
-          (field.metal > 0 || field.crystal > 0),
-      )
-      .map((field) => field.coordinates.slot),
+  const debrisByCoord = useMemo(() => {
+    const fields = new Map<string, DebrisField>();
+    for (const field of gameState.debrisFields) {
+      if (field.metal <= 0 && field.crystal <= 0) {
+        continue;
+      }
+      fields.set(coordsKey(field.coordinates), field);
+    }
+    return fields;
+  }, [gameState.debrisFields]);
+
+  const activeMissions = gameState.fleetMissions.filter(
+    (mission) => mission.status !== 'completed',
   );
+  const slotsFull = activeMissions.length >= calcMaxFleetSlots(gameState.research);
+  const activeHarvestTargets = useMemo(() => {
+    const targets = new Set<string>();
+    for (const mission of activeMissions) {
+      if (mission.type !== 'harvest') {
+        continue;
+      }
+      targets.add(coordsKey(mission.targetCoordinates));
+    }
+    return targets;
+  }, [activeMissions]);
+
   const hasColonyShip = canColonize(gameState);
-  const activePlanet = gameState.planets[gameState.activePlanetIndex];
+  const activePlanet = gameState.planets[activePlanetIndex];
+  const availableRecyclers = Math.max(0, Math.floor(activePlanet.ships.recycler));
   const availableProbes = Math.min(
     activePlanet.ships.espionageProbe,
     gameState.settings.maxProbeCount,
@@ -282,7 +346,31 @@ export function GalaxyPanel({ onNavigate }: GalaxyPanelProps = {}) {
           <tbody>
             {slots.map((slot, index) => {
               const targetCoords: Coordinates = { galaxy: 1, system: currentSystem, slot: index + 1 };
+              const targetKey = coordsKey(targetCoords);
               const report = latestReportsByCoords.get(coordsKey(targetCoords)) ?? null;
+              const debrisField = debrisByCoord.get(targetKey) ?? null;
+
+              let harvestDisabledReason: string | null = null;
+              if (debrisField) {
+                if (availableRecyclers <= 0) {
+                  harvestDisabledReason = 'No recyclers on active planet';
+                } else if (activeHarvestTargets.has(targetKey)) {
+                  harvestDisabledReason = 'Harvest mission already in-flight';
+                } else if (slotsFull) {
+                  harvestDisabledReason = 'Fleet slots full';
+                } else {
+                  const totalDebris = Math.max(0, debrisField.metal + debrisField.crystal);
+                  const recyclerCount = Math.min(
+                    availableRecyclers,
+                    Math.ceil(totalDebris / 20_000),
+                  );
+                  const distance = calcDistance(activePlanet.coordinates, targetCoords);
+                  const fuelCost = calcFuelCost({ recycler: recyclerCount }, distance);
+                  if (activePlanet.resources.deuterium < fuelCost) {
+                    harvestDisabledReason = 'Insufficient deuterium';
+                  }
+                }
+              }
 
               return (
                 <GalaxySlotRow
@@ -291,8 +379,12 @@ export function GalaxyPanel({ onNavigate }: GalaxyPanelProps = {}) {
                   slotNumber={index + 1}
                   system={currentSystem}
                   hasColonyShip={hasColonyShip}
-                  hasDebris={debrisSlots.has(index + 1)}
+                  debrisField={debrisField}
+                  harvestDisabledReason={harvestDisabledReason}
                   onColonize={colonizeAction}
+                  onHarvest={(coords) => {
+                    dispatchHarvest(activePlanetIndex, coords);
+                  }}
                   onAttackNpc={(coords) => {
                     setFleetTarget(coords);
                     onNavigate?.('fleet');
@@ -300,7 +392,7 @@ export function GalaxyPanel({ onNavigate }: GalaxyPanelProps = {}) {
                   onSpyNpc={(coords) => {
                     if (availableProbes <= 0) return;
                     const probeCount = Math.max(1, availableProbes);
-                    dispatchEspionage(gameState.activePlanetIndex, coords, probeCount);
+                    dispatchEspionage(activePlanetIndex, coords, probeCount);
                   }}
                   onGodColonize={(coords) => {
                     adminForceColonize(coords);
@@ -338,8 +430,10 @@ function GalaxySlotRow({
   slotNumber,
   system,
   hasColonyShip,
-  hasDebris,
+  debrisField,
+  harvestDisabledReason,
   onColonize,
+  onHarvest,
   onAttackNpc,
   onSpyNpc,
   onGodColonize,
@@ -356,8 +450,10 @@ function GalaxySlotRow({
   slotNumber: number;
   system: number;
   hasColonyShip: boolean;
-  hasDebris: boolean;
+  debrisField: DebrisField | null;
+  harvestDisabledReason: string | null;
   onColonize: (coords: Coordinates) => boolean;
+  onHarvest: (coords: Coordinates) => void;
   onAttackNpc: (coords: Coordinates) => void;
   onSpyNpc: (coords: Coordinates) => void;
   onGodColonize: (coords: Coordinates) => void;
@@ -430,9 +526,35 @@ function GalaxySlotRow({
           <span className="galaxy-strength galaxy-strength-dim number">Abandoning</span>
         )}
         {isRebuilding && <span className="galaxy-rebuilding">Rebuilding</span>}
-        {hasDebris && <span className="galaxy-debris number">Debris Field</span>}
+        {debrisField && (
+          <span className="galaxy-debris number">
+            Debris Field M {formatNumber(debrisField.metal)} | C {formatNumber(debrisField.crystal)}
+          </span>
+        )}
       </td>
       <td className="galaxy-actions-cell">
+        {debrisField && (
+          <div className="galaxy-actions">
+            <button
+              type="button"
+              className="btn btn-sm"
+              disabled={harvestDisabledReason !== null}
+              title={harvestDisabledReason ?? 'Dispatch recyclers'}
+              onClick={(event) => {
+                event.stopPropagation();
+                if (harvestDisabledReason !== null) {
+                  return;
+                }
+                onHarvest(targetCoords);
+              }}
+            >
+              Harvest
+            </button>
+            {harvestDisabledReason && (
+              <span className="hint">{harvestDisabledReason}</span>
+            )}
+          </div>
+        )}
         {slot.type === 'npc' && (
           <div className="galaxy-actions">
             {!isAbandoning && (
