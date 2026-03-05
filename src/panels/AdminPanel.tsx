@@ -206,6 +206,7 @@ export function AdminPanel() {
   const [combatResult, setCombatResult] = useState<CombatResult | null>(null);
   const [customSimMinutes, setCustomSimMinutes] = useState('60');
   const [regenSeedInput, setRegenSeedInput] = useState('');
+  const [fieldCountDraft, setFieldCountDraft] = useState<number>(163);
 
   const planet = gameState.planets[selectedPlanetIndex] ?? gameState.planets[0];
   const selectedPlanetCaps = planet ? getStorageCaps(planet) : { metal: 0, crystal: 0, deuterium: 0 };
@@ -217,6 +218,11 @@ export function AdminPanel() {
       setSelectedPlanetIndex(0);
     }
   }, [gameState.planets.length, selectedPlanetIndex]);
+
+  useEffect(() => {
+    const p = gameState.planets[selectedPlanetIndex];
+    if (p) setFieldCountDraft(p.fieldCount);
+  }, [selectedPlanetIndex, gameState.planets]);
 
   useEffect(() => {
     if (npcColonies.length === 0) {
@@ -436,12 +442,20 @@ export function AdminPanel() {
                     className="input quantity-input"
                     min={40}
                     max={250}
-                    value={planet.fieldCount}
-                    onChange={(event) => {
-                      const nextValue = parseIntOrZero(event.target.value);
-                      adminSetPlanetFieldCount(selectedPlanetIndex, nextValue);
-                    }}
+                    value={fieldCountDraft}
+                    onChange={(e) => setFieldCountDraft(parseIntOrZero(e.target.value))}
                   />
+                  <button
+                    className="btn btn-sm"
+                    onClick={() => {
+                      const val = clampInt(40, fieldCountDraft, 250);
+                      adminSetPlanetFieldCount(selectedPlanetIndex, val);
+                      setFieldCountDraft(val);
+                      setStatus(`Field count set to ${val}`);
+                    }}
+                  >
+                    Apply
+                  </button>
                 </div>
               </section>
 
