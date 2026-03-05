@@ -4,6 +4,8 @@ import type { Coordinates, NPCColony } from '../models/Galaxy.ts';
 const NPC_RECOVERY_MS = 48 * 3600 * 1000;
 const RAID_WINDOW_MS = 24 * 3600 * 1000;
 const SAFE_RETURN_MS = 30_000;
+const MAX_CATCHUP_REAL_MS = 7 * 24 * 3600 * 1000;
+const MAX_UPGRADE_ITERATIONS = 500;
 
 /** Simple seedable PRNG (mulberry32). */
 function mulberry32(seed: number): () => number {
@@ -20,14 +22,50 @@ function sameCoords(a: Coordinates, b: Coordinates): boolean {
   return a.galaxy === b.galaxy && a.system === b.system && a.slot === b.slot;
 }
 
+function maxShipsForTier(colony: NPCColony, shipId: string): number {
+  switch (shipId) {
+    case 'lightFighter':
+      return colony.tier * 25;
+    case 'heavyFighter':
+      return colony.tier * 15;
+    case 'cruiser':
+      return colony.tier * 10;
+    case 'battleship':
+      return colony.tier * 6;
+    case 'battlecruiser':
+      return colony.tier * 4;
+    default:
+      return Infinity;
+  }
+}
+
+function maxDefencesForTier(colony: NPCColony, defenceId: string): number {
+  switch (defenceId) {
+    case 'rocketLauncher':
+      return colony.tier * 40;
+    case 'lightLaser':
+      return colony.tier * 20;
+    case 'heavyLaser':
+      return colony.tier * 15;
+    case 'ionCannon':
+      return colony.tier * 10;
+    case 'plasmaTurret':
+      return colony.tier * 5;
+    default:
+      return Infinity;
+  }
+}
+
 function addShip(colony: NPCColony, shipId: string, amount: number): void {
   const current = Math.max(0, Math.floor(colony.baseShips[shipId] ?? 0));
-  colony.baseShips[shipId] = current + amount;
+  const next = current + amount;
+  colony.baseShips[shipId] = Math.min(next, maxShipsForTier(colony, shipId));
 }
 
 function addDefence(colony: NPCColony, defenceId: string, amount: number): void {
   const current = Math.max(0, Math.floor(colony.baseDefences[defenceId] ?? 0));
-  colony.baseDefences[defenceId] = current + amount;
+  const next = current + amount;
+  colony.baseDefences[defenceId] = Math.min(next, maxDefencesForTier(colony, defenceId));
 }
 
 function upgradeBuilding(colony: NPCColony, buildingId: string, maxLevel: number): boolean {
@@ -198,10 +236,19 @@ export function processUpgrades(state: GameState, now: number): void {
       continue;
     }
 
+    if (safeGameSpeed > 0) {
+      const maxCatchupLagMs = MAX_CATCHUP_REAL_MS / safeGameSpeed;
+      if (now - colony.lastUpgradeAt > maxCatchupLagMs) {
+        colony.lastUpgradeAt = now - maxCatchupLagMs;
+      }
+    }
+
+    let upgradeIterations = 0;
     while (
       colony.abandonedAt === undefined &&
       safeGameSpeed > 0 &&
-      (now - colony.lastUpgradeAt) * safeGameSpeed >= colony.currentUpgradeIntervalMs
+      (now - colony.lastUpgradeAt) * safeGameSpeed >= colony.currentUpgradeIntervalMs &&
+      upgradeIterations < MAX_UPGRADE_ITERATIONS
     ) {
       const rng = mulberry32(
         state.galaxy.seed ^
@@ -211,6 +258,7 @@ export function processUpgrades(state: GameState, now: number): void {
       applyUpgradeIncrement(colony, rng);
       colony.lastUpgradeAt += colony.currentUpgradeIntervalMs / safeGameSpeed;
       colony.upgradeTickCount += 1;
+      upgradeIterations += 1;
     }
 
     index += 1;
