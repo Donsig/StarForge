@@ -1,73 +1,53 @@
-# React + TypeScript + Vite
+# Star Forge
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A single-player browser idle game inspired by OGame. Real-time resource production, building upgrades, research trees, ship construction, planetary defences, galaxy exploration, and fleet combat — all running in the browser with no backend. State persists to `localStorage`.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Resources** — Metal, Crystal, Deuterium with real-time production, energy balance, and storage caps
+- **Buildings** — Mine upgrades, energy structures (Solar Plant, Fusion Reactor, Solar Satellites), storage, robotics, shipyard, nanite factory, research lab
+- **Research** — Full tech tree with prerequisite chains (energy, weapons, shields, armour, drive techs, espionage, astrophysics, plasma tech, and more)
+- **Ships & Defences** — 10 ship types, 8 defence types with OGame-accurate combat stats and rapid-fire tables
+- **Galaxy** — 5 galaxies × 50 systems × 15 slots. Slot-based planet properties (temperature, field count). NPC colonies with dynamic tier upgrades and specialty behaviours
+- **Fleet Missions** — Attack, Espionage, Harvest (recycler), Transport between your own colonies
+- **Combat** — Round-based engine with shields, hull explosion chance, 1% deflection rule, loot calculation
+- **Espionage** — Probe-based intel gathering with detection chance scaling
+- **Colonisation** — Gated behind Astrophysics research; colony count scales with tech level
+- **Offline catch-up** — Up to 7 days of production and queue completions processed on load
+- **Admin panel** — God-mode tools for testing: set resources, buildings, ships, simulate time, trigger combat
 
-## React Compiler
+## Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Vite + React 19 + TypeScript (strict)**
+- **Game engine** — Pure TypeScript, zero React imports. Runs independently of the UI.
+- **State** — Single `GameState` object mutated by the engine, spread-copied into React on each tick
+- **Persistence** — `localStorage` with versioned schema migrations (currently v10)
+- **Tests** — Vitest + Testing Library, 257+ tests across engine units, integration flows, and components
 
-## Expanding the ESLint configuration
+## Getting Started
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev       # Dev server at http://localhost:5173 (HMR)
+npm run build     # Production build to dist/
+npm run preview   # Preview production build at http://localhost:4173
+npm test          # Run all tests once
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Project Structure
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
 ```
+src/
+  engine/       # Pure game logic (ResourceEngine, BuildQueue, FormulasEngine, FleetEngine, ...)
+  data/         # Static definitions — buildings, research, ships, defences, combat tables
+  models/       # TypeScript interfaces only (GameState, PlanetState, Fleet, ...)
+  hooks/        # React hooks bridging engine to UI (useGameEngine)
+  context/      # GameContext — state + actions for the component tree
+  components/   # Shared UI (ResourceBar, NavSidebar, HoverPortal, ...)
+  panels/       # Page-level views (Buildings, Research, Shipyard, Fleet, Galaxy, ...)
+  utils/        # Pure utilities (number/time formatting)
+```
+
+## Roadmap
+
+See [PLAN.md](PLAN.md) for the full feature roadmap and current phase status.

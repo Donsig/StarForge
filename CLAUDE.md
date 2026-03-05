@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Purpose
 
-Single-player OGame-inspired idle browser game called "Star Forge." Real-time resource production, building upgrades, research tree, ship construction, and planetary defences. No backend — all state in localStorage. See `PLAN.md` for Phase 2 roadmap (galaxy, combat, raids).
+Single-player OGame-inspired idle browser game called "Star Forge." Real-time resource production, building upgrades, research tree, ship construction, planetary defences, galaxy exploration, fleet combat, espionage, and transport missions. No backend — all state in localStorage. See `PLAN.md` for roadmap and current phase status.
 
 ## Quick Start
 
@@ -45,7 +45,7 @@ npx vitest run src/engine/__tests__/FormulasEngine.test.ts  # run a single test 
 - `src/models/` — TypeScript interfaces only. GameState, PlanetState, types. No logic.
 - `src/hooks/` — React hooks bridging engine to UI. `useGameEngine` owns the engine instance and pushes state into React.
 - `src/context/` — GameContext providing state + action functions to the component tree.
-- `src/components/` — Shared React components (ResourceBar, NavSidebar, QueueDisplay, CostDisplay).
+- `src/components/` — Shared React components (ResourceBar, NavSidebar, QueueDisplay, CostDisplay, HoverPortal).
 - `src/panels/` — Page-level panel components (Buildings, Research, Shipyard, Defence, Fleet, Overview, Settings).
 - `src/utils/` — Pure utility functions (number formatting, time formatting).
 
@@ -75,7 +75,18 @@ On load, elapsed seconds since `lastSaveTimestamp` are calculated. Build queue c
 
 ### State Persistence
 
-localStorage key: `starforge_save`. State has a `version` field (currently v6) for schema migration via `StateManager.migrate()`. Migrations: v1→v2 added defences, v2→v3 converted building/research queues from single-item to arrays, v3→v4 multi-planet/galaxy refactor, v4→v5 NPC colony model + debris fields, v5→v6 fleet missions + combat log.
+localStorage key: `starforge_save`. State has a `version` field (currently **v10**) for schema migration via `StateManager.migrate()`.
+
+Migration history:
+- v1→v2: added defences
+- v2→v3: building/research queues from single-item to arrays
+- v3→v4: multi-planet/galaxy refactor
+- v4→v5: NPC colony model + debris fields
+- v5→v6: fleet missions + combat log
+- v6→v7: espionage reports
+- v7→v8: admin panel settings, NPC specialty/upgrade fields
+- v8→v9: NPC raid memory, abandonment proximity
+- v9→v10: astrophysicsTechnology research, slot-based planet temperature/fields, solarSatellite ship type, NPC colony temperatures
 
 ## Formulas Reference
 
@@ -97,3 +108,6 @@ Energy penalty: if consumption > production, all output scaled by `available / r
 - **Build queues are arrays** — building and research queues are `QueueItem[]`, not nullable. Always check `.length > 0` and access `[0]` for front item.
 - **Defences share shipyard queue** — `QueueItem.type === 'defence'` distinguishes them from ships. Shield domes have `maxCount: 1`.
 - **Save after mutations** — queue-mutating actions save immediately to localStorage (plus `beforeunload` handler).
+- **`maxFields` vs `fieldCount`** — `planet.maxFields` is the building slot cap used everywhere in the engine and UI. `planet.fieldCount` is a display/legacy field. Always set both together; admin actions must update `maxFields` to affect the building cap.
+- **`solarSatellite` is a ship** — built via the shipyard queue (also exposed in the Buildings panel as a convenience). Energy contribution: `Math.floor(count * Math.max(0, Math.floor((maxTemperature + 140) / 6)))`. Guard with `Number.isFinite(maxTemperature)`.
+- **HoverPortal** — use `src/components/HoverPortal.tsx` for any hover panels. Renders via React portal into `document.body` to avoid clipping inside `overflow-y: auto` containers. Accepts `onMouseEnter`/`onMouseLeave` for stay-open behaviour when cursor moves into the panel.
