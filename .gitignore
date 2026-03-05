@@ -1,10 +1,26 @@
 # Local Claude Code settings
 .claude/
 
+# MCP configuration (may contain API keys / auth tokens)
+.mcp.json
+
 # Environment / secrets
 .env
 .env.*
 !.env.example
+
+# Private keys and certificates
+*.pem
+*.key
+*.cert
+*.crt
+*.p12
+*.pfx
+*.jks
+*.keystore
+
+# npm auth tokens
+.npmrc
 
 # Logs
 logs
@@ -20,11 +36,15 @@ dist
 dist-ssr
 *.local
 
+# Test coverage
+coverage/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
 .idea
 .DS_Store
+Thumbs.db
 *.suo
 *.ntvs*
 *.njsproj
