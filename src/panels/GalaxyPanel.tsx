@@ -277,6 +277,7 @@ export function GalaxyPanel({ onNavigate }: GalaxyPanelProps = {}) {
   const [hoveredNpcKey, setHoveredNpcKey] = useState<string | null>(null);
   const hoverAnchorRef = useRef<HTMLElement | null>(null);
   const hoverCloseTimerRef = useRef<number | null>(null);
+  const jumpErrorTimerRef = useRef<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
 
   const clearNpcHoverCloseTimer = () => {
@@ -319,8 +320,12 @@ export function GalaxyPanel({ onNavigate }: GalaxyPanelProps = {}) {
       system > GALAXY_CONSTANTS.MAX_SYSTEMS
     ) {
       setJumpError(`System must be 1-${GALAXY_CONSTANTS.MAX_SYSTEMS}`);
-      window.setTimeout(() => {
+      if (jumpErrorTimerRef.current !== null) {
+        window.clearTimeout(jumpErrorTimerRef.current);
+      }
+      jumpErrorTimerRef.current = window.setTimeout(() => {
         setJumpError('');
+        jumpErrorTimerRef.current = null;
       }, 2000);
       return;
     }
@@ -336,6 +341,10 @@ export function GalaxyPanel({ onNavigate }: GalaxyPanelProps = {}) {
       if (hoverCloseTimerRef.current !== null) {
         window.clearTimeout(hoverCloseTimerRef.current);
         hoverCloseTimerRef.current = null;
+      }
+      if (jumpErrorTimerRef.current !== null) {
+        window.clearTimeout(jumpErrorTimerRef.current);
+        jumpErrorTimerRef.current = null;
       }
     },
     [],
