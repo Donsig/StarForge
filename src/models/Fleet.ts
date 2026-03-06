@@ -47,4 +47,16 @@ export interface EspionageReport {
   rebuildStatus?: { defencePct: number; fleetPct: number };
   abandonmentProximity?: NPCAbandonmentProximity;
   read: boolean;
+  detectionChance: number;
+}
+
+export interface FleetNotification {
+  id: string;
+  missionId: string;
+  timestamp: number;
+  missionType: 'harvest' | 'transport';
+  targetCoordinates: Coordinates;
+  targetName: string;
+  loot: { metal: number; crystal: number; deuterium: number };
+  read: boolean;
 }

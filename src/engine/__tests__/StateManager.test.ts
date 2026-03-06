@@ -338,6 +338,33 @@ describe('StateManager migration', () => {
     localStorage.clear();
   });
 
+  it('migrates v10 save to v11 by adding fleetNotifications array', async () => {
+    vi.resetModules();
+    const { loadState } = await import('../StateManager.ts');
+
+    const v10Save = {
+      version: 10,
+      lastSaveTimestamp: Date.now(),
+      tickCount: 0,
+      planets: [],
+      activePlanetIndex: 0,
+      galaxy: { seed: 42, npcColonies: [] },
+      debrisFields: [],
+      fleetMissions: [],
+      combatLog: [],
+      espionageReports: [],
+      research: {},
+      researchQueue: [],
+      settings: { gameSpeed: 1, godMode: false, maxProbeCount: 10 },
+    };
+    localStorage.setItem('starforge_save', JSON.stringify(v10Save));
+
+    const state = loadState();
+    expect(state).not.toBeNull();
+    expect(state!.version).toBe(11);
+    expect(state!.fleetNotifications).toEqual([]);
+  });
+
   it('migrates v3 save to v5 with planets array + npc/debris fields', async () => {
     const { loadState } = await import('../StateManager.ts');
 

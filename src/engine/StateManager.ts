@@ -288,6 +288,11 @@ function migrate(state: GameState): GameState {
     state.version = 10;
   }
 
+  if (state.version < 11) {
+    (state as any).fleetNotifications = [];
+    state.version = 11;
+  }
+
   return state;
 }
 

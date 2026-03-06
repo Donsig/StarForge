@@ -1,6 +1,6 @@
 import type { PlanetState } from './Planet.ts';
 import type { DebrisField, GalaxyState } from './Galaxy.ts';
-import type { CombatLogEntry, EspionageReport, FleetMission } from './Fleet.ts';
+import type { CombatLogEntry, EspionageReport, FleetMission, FleetNotification } from './Fleet.ts';
 import type { GameSettings, ResearchId, QueueItem } from './types.ts';
 import { GAME_CONSTANTS } from './types.ts';
 import { createDefaultPlanet } from './Planet.ts';
@@ -18,6 +18,7 @@ export interface GameState {
   fleetMissions: FleetMission[];
   combatLog: CombatLogEntry[];
   espionageReports: EspionageReport[];
+  fleetNotifications: FleetNotification[];
   research: ResearchLevels;
   researchQueue: QueueItem[];
   settings: GameSettings;
@@ -38,6 +39,7 @@ export function createNewGameState(): GameState {
     fleetMissions: [],
     combatLog: [],
     espionageReports: [],
+    fleetNotifications: [],
     research: {
       energyTechnology: 0,
       laserTechnology: 0,
