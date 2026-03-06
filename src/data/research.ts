@@ -161,7 +161,7 @@ export const RESEARCH: Record<ResearchId, ResearchDefinition> = {
     costMultiplier: 2.0,
     requires: [
       { type: 'research', id: 'astrophysicsTechnology', level: 4 },
-      { type: 'research', id: 'hyperspaceTechnology', level: 5 },
+      { type: 'research', id: 'hyperspaceTechnology', level: 8 },
       { type: 'research', id: 'computerTechnology', level: 8 },
     ],
   },

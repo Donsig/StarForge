@@ -1,6 +1,8 @@
 import type { GameState } from '../../models/GameState.ts';
 import { createNewGameState } from '../../models/GameState.ts';
+import { createDefaultPlanet } from '../../models/Planet.ts';
 import {
+  effectiveResearchLabLevel,
   processTick as processQueueTick,
   startBuildingUpgrade,
   startResearch,
@@ -117,5 +119,77 @@ describe('Integration: research chains', () => {
     completeCurrentResearch(state);
     expect(state.researchQueue).toEqual([]);
     expect(state.research.energyTechnology).toBe(1);
+  });
+});
+
+describe('Integration: Intergalactic Research Network', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it('IRN has the correct prerequisites', () => {
+    expect(RESEARCH.intergalacticResearchNetwork.requires).toEqual([
+      { type: 'research', id: 'astrophysicsTechnology', level: 4 },
+      { type: 'research', id: 'hyperspaceTechnology', level: 8 },
+      { type: 'research', id: 'computerTechnology', level: 8 },
+    ]);
+  });
+
+  it('IRN has the correct base cost', () => {
+    expect(RESEARCH.intergalacticResearchNetwork.baseCost).toEqual({
+      metal: 240_000,
+      crystal: 400_000,
+      deuterium: 160_000,
+    });
+  });
+
+  it('cannot research IRN without prerequisites met', () => {
+    const state = createNewGameState();
+    grantAbundantResources(state);
+    state.planets[0].buildings.researchLab = 10;
+
+    expect(startResearch(state, 'intergalacticResearchNetwork')).toBe(false);
+  });
+
+  it('can research IRN once prerequisites are met', () => {
+    const state = createNewGameState();
+    grantAbundantResources(state);
+    state.planets[0].buildings.researchLab = 10;
+    state.research.astrophysicsTechnology = 4;
+    state.research.hyperspaceTechnology = 8;
+    state.research.computerTechnology = 8;
+
+    expect(startResearch(state, 'intergalacticResearchNetwork')).toBe(true);
+    completeCurrentResearch(state);
+    expect(state.research.intergalacticResearchNetwork).toBe(1);
+  });
+
+  it('IRN level 1 causes effectiveResearchLabLevel to sum top 2 labs across planets', () => {
+    const state = createNewGameState();
+    state.planets[0].buildings.researchLab = 10;
+
+    const colony = createDefaultPlanet();
+    colony.buildings.researchLab = 7;
+    colony.coordinates = { galaxy: 1, system: 1, slot: 5 };
+    state.planets.push(colony);
+
+    const colony2 = createDefaultPlanet();
+    colony2.buildings.researchLab = 3;
+    colony2.coordinates = { galaxy: 1, system: 1, slot: 6 };
+    state.planets.push(colony2);
+
+    state.research.intergalacticResearchNetwork = 1;
+
+    const item = {
+      type: 'research' as const,
+      id: 'energyTechnology',
+      targetLevel: 1,
+      sourcePlanetIndex: 0,
+      startedAt: 0,
+      completesAt: 0,
+    };
+
+    // IRN 1 → top 2 labs: 10 + 7 = 17
+    expect(effectiveResearchLabLevel(state, item)).toBe(17);
   });
 });
