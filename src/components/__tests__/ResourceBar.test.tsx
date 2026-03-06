@@ -1,5 +1,5 @@
 import { ResourceBar } from '../ResourceBar';
-import { act, fireEvent, renderWithGame, screen } from '../../test/test-utils';
+import { act, fireEvent, renderWithGame, screen, waitFor } from '../../test/test-utils';
 
 describe('ResourceBar', () => {
   it('shows formatted resource amounts and production rates', () => {
@@ -134,5 +134,38 @@ describe('ResourceBar', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('hovering Metal entry shows Metal Mine level', async () => {
+    const { container } = renderWithGame(<ResourceBar />, {
+      gameState: { planet: { buildings: { metalMine: 7 } } },
+    });
+
+    const metalEntry = container.querySelector('.resource-entry--metal');
+    expect(metalEntry).not.toBeNull();
+
+    fireEvent.mouseEnter(metalEntry!);
+    await waitFor(() => {
+      expect(document.body.querySelector('.resource-hover-panel')).not.toBeNull();
+    });
+
+    expect(document.body.textContent).toContain('Metal Mine');
+    expect(document.body.textContent).toContain('Lv 7');
+  });
+
+  it('hovering Deuterium entry shows temperature modifier', async () => {
+    const { container } = renderWithGame(<ResourceBar />, {
+      gameState: { planet: { maxTemperature: 100 } },
+    });
+
+    const deutEntry = container.querySelector('.resource-entry--deuterium');
+    expect(deutEntry).not.toBeNull();
+
+    fireEvent.mouseEnter(deutEntry!);
+    await waitFor(() => {
+      expect(document.body.querySelector('.resource-hover-panel')).not.toBeNull();
+    });
+
+    expect(document.body.textContent).toMatch(/Temp/i);
   });
 });
