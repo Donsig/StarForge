@@ -104,6 +104,28 @@ describe('EspionageEngine', () => {
   });
 
   describe('generateReport', () => {
+    it('stores detectionChance on the report', () => {
+      const colony = createColony({ tier: 1 });
+      const research = createResearch(2);
+      const rng = () => 0.99;
+
+      const report = generateReport(colony, Date.now(), 0, 5, research, 1, rng);
+
+      expect(typeof report.detectionChance).toBe('number');
+      expect(report.detectionChance).toBeGreaterThanOrEqual(0);
+      expect(report.detectionChance).toBeLessThanOrEqual(1);
+    });
+
+    it('stores detectionChance = 0 when npcEspionageLevel is 0', () => {
+      const colony = createColony({ tier: 1 });
+      const research = createResearch(1);
+      const rng = () => 0.5;
+
+      const report = generateReport(colony, Date.now(), 0, 1, research, 1, rng);
+
+      expect(report.detectionChance).toBe(0);
+    });
+
     it('returns no intel fields when probes are detected', () => {
       const now = 50_000;
       const colony = createColony({ tier: 10 });

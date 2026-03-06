@@ -80,6 +80,7 @@ export function generateReport(
     probesLost: detected ? probesSent : 0,
     detected,
     read: false,
+    detectionChance,
   };
 
   if (detected) {
