@@ -15,6 +15,16 @@ export function OverviewPanel() {
 
   const fieldsUsed = usedFields(gameState);
   const editing = editingPlanetIndex === activePlanetIndex;
+
+  const [lastActivePlanetIndex, setLastActivePlanetIndex] = useState(activePlanetIndex);
+  if (lastActivePlanetIndex !== activePlanetIndex) {
+    setLastActivePlanetIndex(activePlanetIndex);
+    if (editingPlanetIndex !== null) {
+      setEditingPlanetIndex(null);
+      setDraft('');
+    }
+  }
+
   const totalResearchLevels = Object.values(gameState.research).reduce(
     (sum, level) => sum + level,
     0,
