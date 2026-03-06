@@ -763,7 +763,7 @@ body {
   padding: 0.2rem 0.3rem;
   font-size: 1rem;
   font-family: var(--font-mono, monospace);
-  background: var(--surface);
+  background: var(--bg-panel);
   border: 1px solid var(--border);
   color: var(--text);
   border-radius: 4px;

@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Workflow
 
 - Use `AskUserQuestion` tool when clarifying questions are needed before proceeding with design or implementation decisions.
-- **Continuously save learnings to memory** (`C:\Users\ander\.claude\projects\C--dev-repos-StarForge\memory\`). Update immediately — not at end of session — whenever you discover: a Codex interaction pattern that worked or failed, a planning workflow step, a user collaboration preference, or a project gotcha. Keep `MEMORY.md` under 200 lines; use topic files for detail.
+- **Continuously save learnings to memory** (in this project's Claude memory directory, e.g. `.claude/projects/StarForge/memory/` under your user profile). Update immediately — not at end of session — whenever you discover: a Codex interaction pattern that worked or failed, a planning workflow step, a user collaboration preference, or a project gotcha. Keep `MEMORY.md` under 200 lines; use topic files for detail.
 
 ## Implementation Rules
 

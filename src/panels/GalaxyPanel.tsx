@@ -314,7 +314,6 @@ export function GalaxyPanel({ onNavigate }: GalaxyPanelProps = {}) {
       ? Math.min(GALAXY_CONSTANTS.MAX_SYSTEMS, Math.max(1, n))
       : currentSystem;
     setCurrentSystem(clamped);
-    setSystemDraft(String(clamped));
     clearHoveredNpc();
   }
 
@@ -412,6 +411,7 @@ export function GalaxyPanel({ onNavigate }: GalaxyPanelProps = {}) {
         <button
           type="button"
           className="btn btn-primary"
+          aria-label="Previous system"
           disabled={currentSystem <= 1}
           onClick={() => {
             setCurrentSystem((s) => Math.max(1, s - 1));
@@ -446,7 +446,6 @@ export function GalaxyPanel({ onNavigate }: GalaxyPanelProps = {}) {
             onBlur={(e) => commitSystem(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
-                commitSystem((e.target as HTMLInputElement).value);
                 (e.target as HTMLInputElement).blur();
               }
             }}
@@ -456,6 +455,7 @@ export function GalaxyPanel({ onNavigate }: GalaxyPanelProps = {}) {
         <button
           type="button"
           className="btn btn-primary"
+          aria-label="Next system"
           disabled={currentSystem >= GALAXY_CONSTANTS.MAX_SYSTEMS}
           onClick={() => {
             setCurrentSystem((s) => Math.min(GALAXY_CONSTANTS.MAX_SYSTEMS, s + 1));
