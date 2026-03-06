@@ -158,6 +158,34 @@ function pruneTimedEntries<T extends { timestamp: number }>(
   return filtered.slice(filtered.length - MAX_HISTORY_ENTRIES);
 }
 
+function formatTargetLabel(coords: Coordinates): string {
+  return `[G:${coords.galaxy} S:${coords.system} P:${coords.slot}]`;
+}
+
+function pushFleetNotification(
+  state: GameState,
+  mission: FleetMission,
+  timestamp: number,
+  targetName: string,
+  loot: { metal: number; crystal: number; deuterium: number },
+): void {
+  const alreadyNotified = state.fleetNotifications.some((entry) => entry.missionId === mission.id);
+  if (alreadyNotified) {
+    return;
+  }
+
+  state.fleetNotifications.push({
+    id: `${mission.id}-notif`,
+    missionId: mission.id,
+    timestamp,
+    missionType: mission.type as 'harvest' | 'transport',
+    targetCoordinates: { ...mission.targetCoordinates },
+    targetName,
+    loot: { ...loot },
+    read: false,
+  });
+}
+
 function resolveAttackAtTarget(state: GameState, mission: FleetMission, now: number): void {
   const colony = state.galaxy.npcColonies.find((npc) =>
     isMatchingCoordinates(npc.coordinates, mission.targetCoordinates));
@@ -294,6 +322,13 @@ export function resolveHarvestAtTarget(
     mission.cargo = { metal: 0, crystal: 0, deuterium: 0 };
     mission.returnTime = now + calcMissionReturnTravelMs(state, mission);
     mission.status = 'returning';
+    pushFleetNotification(
+      state,
+      mission,
+      now,
+      formatTargetLabel(mission.targetCoordinates),
+      { metal: 0, crystal: 0, deuterium: 0 },
+    );
     return;
   }
 
@@ -323,6 +358,17 @@ export function resolveHarvestAtTarget(
   };
   mission.returnTime = now + calcMissionReturnTravelMs(state, mission);
   mission.status = 'returning';
+  pushFleetNotification(
+    state,
+    mission,
+    now,
+    formatTargetLabel(mission.targetCoordinates),
+    {
+      metal: collectedMetal,
+      crystal: collectedCrystal,
+      deuterium: 0,
+    },
+  );
 }
 
 function resolveTransportAtTarget(state: GameState, mission: FleetMission, now: number): void {
@@ -331,6 +377,13 @@ function resolveTransportAtTarget(state: GameState, mission: FleetMission, now: 
 
   if (!targetPlanet) {
     // Target no longer exists — return everything
+    pushFleetNotification(
+      state,
+      mission,
+      now,
+      formatTargetLabel(mission.targetCoordinates),
+      { metal: 0, crystal: 0, deuterium: 0 },
+    );
     mission.returnTime = now + calcMissionReturnTravelMs(state, mission);
     mission.status = 'returning';
     return;
@@ -363,6 +416,17 @@ function resolveTransportAtTarget(state: GameState, mission: FleetMission, now: 
     deuterium: mission.cargo.deuterium - deliveredDeuterium,
   };
 
+  pushFleetNotification(
+    state,
+    mission,
+    now,
+    targetPlanet.name,
+    {
+      metal: deliveredMetal,
+      crystal: deliveredCrystal,
+      deuterium: deliveredDeuterium,
+    },
+  );
   mission.returnTime = now + calcMissionReturnTravelMs(state, mission);
   mission.status = 'returning';
 }
@@ -816,6 +880,10 @@ export function processTick(state: GameState, now: number = Date.now()): void {
   state.combatLog = pruneTimedEntries(state.combatLog, historyPruneBefore);
   state.espionageReports = pruneTimedEntries(
     state.espionageReports,
+    historyPruneBefore,
+  );
+  state.fleetNotifications = pruneTimedEntries(
+    state.fleetNotifications,
     historyPruneBefore,
   );
   state.debrisFields = state.debrisFields.filter(
