@@ -151,7 +151,7 @@ describe('NPCUpgradeEngine', () => {
         }),
       ];
 
-      processUpgrades(state, 30_000);
+      processUpgrades(state, 30_000, 0);
 
       const colony = state.galaxy.npcColonies[0];
       expect(colony.upgradeTickCount).toBe(3);
@@ -188,7 +188,7 @@ describe('NPCUpgradeEngine', () => {
         },
       ];
 
-      processUpgrades(state, now);
+      processUpgrades(state, now, 0);
 
       expect(state.galaxy.npcColonies).toHaveLength(0);
       expect(state.fleetMissions[0].status).toBe('returning');

@@ -50,6 +50,7 @@ import {
   processUpgrades as processNPCUpgrades,
   recordRaid,
 } from '../engine/NPCUpgradeEngine.ts';
+import { computePlayerScores } from '../engine/ScoreEngine.ts';
 import { simulate as simulateCombat } from '../engine/CombatEngine.ts';
 import {
   buildingCostAtLevel,
@@ -354,7 +355,9 @@ export function useGameEngine(): GameEngineState {
         processResourceTick(currentState);
         processQueueTick(currentState, now);
         processFleetTick(currentState, now);
-        processNPCUpgrades(currentState, now);
+        const scores = computePlayerScores(currentState);
+        currentState.playerScores = scores;
+        processNPCUpgrades(currentState, now, scores.total);
         currentState.tickCount += 1;
 
         if (currentState.tickCount % GAME_CONSTANTS.AUTO_SAVE_TICKS === 0) {

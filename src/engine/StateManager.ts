@@ -574,7 +574,7 @@ export function processOfflineTime(state: GameState): { elapsedSeconds: number }
     accumulateBulk(state, remainingSeconds * state.settings.gameSpeed);
   }
 
-  processNPCUpgrades(state, endTime);
+  processNPCUpgrades(state, endTime, state.playerScores?.total ?? 0);
 
   state.lastSaveTimestamp = now;
   return { elapsedSeconds };
