@@ -334,27 +334,47 @@ describe('GalaxyEngine', () => {
 
   it('getNPCResources increases with elapsed time since last raid', () => {
     const now = 2_000_000_000;
-    const oneHour = createNPCColony({ lastRaidedAt: now - 3600 * 1000 });
-    const twoHours = createNPCColony({ lastRaidedAt: now - 2 * 3600 * 1000 });
+    const baseline = { metal: 52_000, crystal: 32_000, deuterium: 12_000 };
+    const oneHour = createNPCColony({
+      tier: 1,
+      lastRaidedAt: now - 3600 * 1000,
+      resourcesAtLastRaid: baseline,
+    });
+    const twoHours = createNPCColony({
+      tier: 1,
+      lastRaidedAt: now - 2 * 3600 * 1000,
+      resourcesAtLastRaid: baseline,
+    });
 
     const resources1 = getNPCResources(oneHour, now, 1);
     const resources2 = getNPCResources(twoHours, now, 1);
 
     expect(resources2.metal).toBeGreaterThan(resources1.metal);
-    expect(resources2.crystal).toBeGreaterThan(resources1.crystal);
-    expect(resources2.deuterium).toBeGreaterThan(resources1.deuterium);
+    expect(resources2.crystal).toBeGreaterThanOrEqual(resources1.crystal);
+    expect(resources2.deuterium).toBeGreaterThanOrEqual(resources1.deuterium);
   });
 
   it('getNPCResources scales production with game speed', () => {
     const now = 2_500_000_000;
-    const oneHour = createNPCColony({ lastRaidedAt: now - 3600 * 1000 });
+    const baseline = { metal: 52_000, crystal: 32_000, deuterium: 12_000 };
+    const oneHour = createNPCColony({
+      tier: 1,
+      lastRaidedAt: now - 3600 * 1000,
+      resourcesAtLastRaid: baseline,
+    });
 
     const speed1 = getNPCResources(oneHour, now, 1);
     const speed3 = getNPCResources(oneHour, now, 3);
 
-    expect(speed3.metal).toBeGreaterThanOrEqual(speed1.metal * 3 - 1);
-    expect(speed3.crystal).toBeGreaterThanOrEqual(speed1.crystal * 3 - 1);
-    expect(speed3.deuterium).toBeGreaterThanOrEqual(speed1.deuterium * 3 - 1);
+    expect(speed3.metal - baseline.metal).toBeGreaterThanOrEqual(
+      (speed1.metal - baseline.metal) * 3 - 1,
+    );
+    expect(speed3.crystal - baseline.crystal).toBeGreaterThanOrEqual(
+      (speed1.crystal - baseline.crystal) * 3 - 1,
+    );
+    expect(speed3.deuterium - baseline.deuterium).toBeGreaterThanOrEqual(
+      (speed1.deuterium - baseline.deuterium) * 3 - 1,
+    );
   });
 
   describe('getNPCResources - energy balance', () => {

@@ -1,4 +1,4 @@
-import { generateNPCColonies } from '../GalaxyEngine';
+import { generateNPCColonies, getNPCResources } from '../GalaxyEngine';
 import { createNewGameState } from '../../models/GameState';
 import { computeEffectiveMinTier, processUpgrades } from '../NPCUpgradeEngine';
 
@@ -135,5 +135,28 @@ describe('catch-up upgrade mode', () => {
     processUpgrades(state, 100_000, 0);
     expect(colony.tier).toBe(2);
     expect(colony.catchUpProgressTicks).toBe(0);
+  });
+});
+
+describe('getNPCResources tier² floor', () => {
+  it('tier-1 NPC has at least BASE_POOL × 1 resources', () => {
+    const colony = {
+      ...makeStateWithColony().galaxy.npcColonies[0]!,
+      tier: 1,
+      lastRaidedAt: Date.now() - 1000, // recently raided
+      resourcesAtLastRaid: { metal: 0, crystal: 0, deuterium: 0 },
+    };
+    const resources = getNPCResources(colony, Date.now(), 1);
+    expect(resources.metal).toBeGreaterThanOrEqual(50_000);
+    expect(resources.crystal).toBeGreaterThanOrEqual(30_000);
+  });
+
+  it('tier-4 NPC floor is 16× tier-1 floor', () => {
+    const base = makeStateWithColony().galaxy.npcColonies[0]!;
+    const colony4 = { ...base, tier: 4, lastRaidedAt: Date.now() - 1000, resourcesAtLastRaid: { metal: 0, crystal: 0, deuterium: 0 } };
+    const colony1 = { ...base, tier: 1, lastRaidedAt: Date.now() - 1000, resourcesAtLastRaid: { metal: 0, crystal: 0, deuterium: 0 } };
+    const r4 = getNPCResources(colony4, Date.now(), 1);
+    const r1 = getNPCResources(colony1, Date.now(), 1);
+    expect(r4.metal).toBeGreaterThanOrEqual(r1.metal * 16 * 0.9); // tier² scaling with 10% tolerance
   });
 });
