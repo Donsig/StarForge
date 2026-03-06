@@ -32,6 +32,8 @@ export interface GameContextType {
   renamePlanet: (planetIndex: number, name: string) => void;
   fleetTarget: Coordinates | null;
   setFleetTarget: (coords: Coordinates | null) => void;
+  galaxyJumpTarget: Coordinates | null;
+  setGalaxyJumpTarget: (coords: Coordinates | null) => void;
   pendingMissionTarget: { type: MissionType; coords: Coordinates } | null;
   setPendingMissionTarget: (
     target: { type: MissionType; coords: Coordinates } | null,

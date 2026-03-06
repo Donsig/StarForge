@@ -97,6 +97,8 @@ export interface GameEngineState {
   renamePlanet: (planetIndex: number, name: string) => void;
   fleetTarget: Coordinates | null;
   setFleetTarget: (coords: Coordinates | null) => void;
+  galaxyJumpTarget: Coordinates | null;
+  setGalaxyJumpTarget: (coords: Coordinates | null) => void;
   pendingMissionTarget: { type: MissionType; coords: Coordinates } | null;
   setPendingMissionTarget: (
     target: { type: MissionType; coords: Coordinates } | null,
@@ -308,6 +310,7 @@ function initializeState(): GameState {
 export function useGameEngine(): GameEngineState {
   const [gameState, setGameState] = useState<GameState>(() => initializeState());
   const [fleetTarget, setFleetTarget] = useState<Coordinates | null>(null);
+  const [galaxyJumpTarget, setGalaxyJumpTarget] = useState<Coordinates | null>(null);
   const [pendingMissionTarget, setPendingMissionTarget] = useState<{
     type: MissionType;
     coords: Coordinates;
@@ -471,6 +474,7 @@ export function useGameEngine(): GameEngineState {
     stateRef.current = resetState;
     refreshArrayReferences(resetState);
     setFleetTarget(null);
+    setGalaxyJumpTarget(null);
     setPendingMissionTarget(null);
     setGameState({ ...resetState });
     setProductionRates(calculateProduction(resetState));
@@ -1552,6 +1556,7 @@ export function useGameEngine(): GameEngineState {
     stateRef.current = importedState;
     refreshArrayReferences(importedState);
     setFleetTarget(null);
+    setGalaxyJumpTarget(null);
     setPendingMissionTarget(null);
     setGameState({ ...importedState });
     setProductionRates(calculateProduction(importedState));
@@ -1579,6 +1584,8 @@ export function useGameEngine(): GameEngineState {
     renamePlanet,
     fleetTarget,
     setFleetTarget,
+    galaxyJumpTarget,
+    setGalaxyJumpTarget,
     pendingMissionTarget,
     setPendingMissionTarget,
     dispatchFleet,
