@@ -122,7 +122,8 @@ body {
   color: #ffa500;
 }
 
-.energy-hover-panel {
+.energy-hover-panel,
+.resource-hover-panel {
   min-width: 240px;
   border: 1px solid var(--border);
   border-radius: 0.5rem;

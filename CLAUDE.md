@@ -7,6 +7,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Use `AskUserQuestion` tool when clarifying questions are needed before proceeding with design or implementation decisions.
 - **Continuously save learnings to memory** (`C:\Users\ander\.claude\projects\C--dev-repos-StarForge\memory\`). Update immediately — not at end of session — whenever you discover: a Codex interaction pattern that worked or failed, a planning workflow step, a user collaboration preference, or a project gotcha. Keep `MEMORY.md` under 200 lines; use topic files for detail.
 
+## Implementation Rules
+
+- **Never write code without explicit user approval.** Claude's role is design, planning, review, and orchestration — not implementation.
+- **Codex handles all implementation.** Once a plan is approved, use the `codex-agent` skill to send it to Codex (gpt-5.4, `reasoning_effort: high` for complex tasks).
+- **Codex reviews the plan before implementation.** After a plan is written and user-approved, send it to Codex (`sandbox: "read-only"`) for a review pass. Surface any gaps or issues back to the user before dispatching for implementation.
+- **Codex only implements after user approval.** Present the plan or feature table first, get a "yes", then dispatch to Codex.
+- **Always use the `codex-agent` skill** before invoking any Codex MCP tool or Bash codex command. The skill defines the correct invocation patterns for this project.
+
 ## Purpose
 
 Single-player OGame-inspired idle browser game called "Star Forge." Real-time resource production, building upgrades, research tree, ship construction, planetary defences, galaxy exploration, fleet combat, espionage, and transport missions. No backend — all state in localStorage. See `PLAN.md` for roadmap and current phase status.

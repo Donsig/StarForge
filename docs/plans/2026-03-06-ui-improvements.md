@@ -56,14 +56,14 @@ it('Max button sets quantity to max affordable count', async () => {
   renderWithGame(<ShipyardPanel />, {
     gameState: {
       planet: {
-        buildings: { shipyard: 1 },
+        buildings: { shipyard: 2 },
         resources: { metal: 6000, crystal: 2000, deuterium: 0 },
       },
-      research: { combustionDrive: 1 },
+      research: { combustionDrive: 2 },
     },
   });
 
-  // Small Cargo costs 2000M / 2000C / 0D each
+  // Small Cargo costs 2000M / 2000C / 0D each (requires shipyard 2, combustionDrive 2)
   // With 6000M / 2000C → max = floor(min(6000/2000, 2000/2000)) = 1
   const card = screen.getByRole('heading', { name: 'Small Cargo', level: 3 }).closest('article')!;
   const maxButton = within(card).getByRole('button', { name: 'Max' });
@@ -183,14 +183,15 @@ it('Max button caps at remainingMax for limited defences', async () => {
   renderWithGame(<DefencePanel />, {
     gameState: {
       planet: {
-        buildings: { shipyard: 1, shieldDome: 0 },
+        buildings: { shipyard: 2 },
         resources: { metal: 10_000_000, crystal: 10_000_000, deuterium: 10_000_000 },
-        defences: { smallShieldDome: 0 },
       },
+      research: { shieldingTechnology: 2 },
     },
   });
 
-  // Small Shield Dome has maxCount: 1 — so max affordable but capped at 1
+  // Small Shield Dome has maxCount: 1 and requires shieldingTechnology 2 — so max affordable but capped at 1
+  // (do NOT pass defences: { smallShieldDome: 0 } — defences is not partial in renderWithGame)
   const heading = screen.getByRole('heading', { name: 'Small Shield Dome', level: 3 });
   const card = heading.closest('article')!;
   await user.click(within(card).getByRole('button', { name: 'Max' }));
@@ -310,8 +311,8 @@ describe('QueueDisplay', () => {
       },
     });
 
-    // Second item should show "2h 00m" (its own duration)
-    expect(screen.getByText('2h 00m')).toBeInTheDocument();
+    // Second item should show "2h" (formatDuration omits zero-padded minutes/seconds)
+    expect(screen.getByText('2h')).toBeInTheDocument();
   });
 
   it('shows duration for queued shipyard batches as total batch time', () => {
@@ -343,8 +344,8 @@ describe('QueueDisplay', () => {
       },
     });
 
-    // Second item (4 cruisers × 30min each) should show "2h 00m"
-    expect(screen.getByText('2h 00m')).toBeInTheDocument();
+    // Second item (4 cruisers × 30min each) should show "2h" (formatDuration omits zero-padded minutes)
+    expect(screen.getByText('2h')).toBeInTheDocument();
   });
 });
 ```
@@ -637,6 +638,10 @@ it('shows cargo capacity helper with + cargo buttons when attacking NPC with kno
   const user = userEvent.setup();
   const now = Date.now();
 
+  // NOTE: `fleetTarget` is a context field (not in GameState). Codex must add
+  // `fleetTarget?: Coordinates` as a supported option in renderWithGame (src/test/test-utils.tsx)
+  // and seed the mock context with it — similar to how `actions` are handled.
+  // `espionageReports` IS part of GameState — pass it under gameState.espionageReports.
   renderWithGame(<FleetPanel />, {
     gameState: {
       galaxy: {
@@ -669,23 +674,27 @@ it('shows cargo capacity helper with + cargo buttons when attacking NPC with kno
           },
         ],
       },
-      fleetTarget: { galaxy: 1, system: 2, slot: 4 },
+      espionageReports: [
+        {
+          id: 'report_1',
+          timestamp: now - 1000,
+          targetCoordinates: { galaxy: 1, system: 2, slot: 4 },
+          targetName: 'Target Base',
+          sourcePlanetIndex: 0,
+          probesSent: 1,
+          probesLost: 0,
+          detected: false,
+          detectionChance: 0,
+          read: false,
+          resources: { metal: 200_000, crystal: 100_000, deuterium: 50_000 },
+        },
+      ],
       planet: {
         ships: { largeCargo: 10, smallCargo: 5 },
         resources: { deuterium: 50_000 },
       },
     },
-    espionageReports: [
-      {
-        id: 'report_1',
-        timestamp: now - 1000,
-        targetCoordinates: { galaxy: 1, system: 2, slot: 4 },
-        detected: false,
-        probesLost: 0,
-        detectionChance: 0,
-        resources: { metal: 200_000, crystal: 100_000, deuterium: 50_000 },
-      },
-    ],
+    fleetTarget: { galaxy: 1, system: 2, slot: 4 },
   });
 
   // Lootable = floor((200000+100000+50000) * 0.5) = 175000
@@ -694,10 +703,10 @@ it('shows cargo capacity helper with + cargo buttons when attacking NPC with kno
   // + Large Cargo button: ceil(175000 / 25000) = 7
   expect(screen.getByRole('button', { name: /\+ 7 Large Cargo/i })).toBeInTheDocument();
 
-  // Click it — should add 7 large cargo to selected ships
+  // Click it — adds 7 large cargo to selectedShips → fleet capacity becomes 7 × 25000 = 175,000
   await user.click(screen.getByRole('button', { name: /\+ 7 Large Cargo/i }));
-  // The cargo capacity shown should now be >= 175000
-  expect(screen.getByText(/175,000/)).toBeInTheDocument();
+  // After click, "175,000" appears twice: once for Lootable, once for Fleet cargo capacity
+  expect(screen.getAllByText(/175,000/)).toHaveLength(2);
 });
 ```
 
@@ -898,7 +907,10 @@ git log --oneline -6
 
 - All panels are in `src/panels/`. Tests are in `src/panels/__tests__/`.
 - `renderWithGame` is in `src/test/test-utils.tsx`. It accepts deep partial `gameState` overrides — only specify what you need.
-- The `espionageReports` option in `renderWithGame` may need to be added to test-utils if it's not already there. Check `src/test/test-utils.tsx` to verify — it was added in a previous phase.
+- `espionageReports` is part of `GameState` — pass it under `gameState.espionageReports` (not at the top level).
+- `fleetTarget` is a context field (NOT in `GameState`). Codex must add `fleetTarget?: Coordinates` as a supported option to `renderWithGame` in `src/test/test-utils.tsx` and seed the mock context with it. Check if already present before adding.
+- `planet.defences` is NOT partial in `renderWithGame` — do not pass a partial `defences` object. Omit it entirely and rely on defaults.
+- Only `planet.buildings`, `planet.ships`, and `planet.resources` accept partial overrides.
 - Never use `Math.random()` — all randomness goes through the seeded PRNG.
 - `formatDuration` accepts seconds (number), not milliseconds.
 - Do NOT change any engine files (`src/engine/`). All changes are UI-only.
