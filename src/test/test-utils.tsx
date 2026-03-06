@@ -16,7 +16,7 @@ export * from '@testing-library/react';
 
 type GameActions = Omit<
   GameContextType,
-  'gameState' | 'espionageReports' | 'productionRates' | 'storageCaps'
+  'gameState' | 'espionageReports' | 'fleetNotifications' | 'productionRates' | 'storageCaps'
 >;
 type StorageCaps = GameContextType['storageCaps'];
 
@@ -64,7 +64,15 @@ const defaultActions: GameActions = {
   dispatchEspionage: (_sourcePlanetIndex, _targetCoords, _probeCount) => null,
   dispatchHarvest: (_sourcePlanetIndex, _coords) => null,
   recallFleet: (_missionId) => {},
-  markReportRead: (_reportId) => {},
+  markCombatRead: (_id) => {},
+  markAllCombatRead: () => {},
+  markEspionageRead: (_id) => {},
+  markAllEspionageRead: () => {},
+  markFleetRead: (_id) => {},
+  markAllFleetRead: () => {},
+  deleteCombatEntry: (_id) => {},
+  deleteEspionageReport: (_id) => {},
+  deleteFleetNotification: (_id) => {},
   setGameSpeed: () => {},
   setMaxProbeCount: () => {},
   setGodMode: () => {},
@@ -101,7 +109,6 @@ const defaultActions: GameActions = {
   adminClearCombatLog: () => {},
   adminClearEspionageReports: () => {},
   adminClearDebrisFields: () => {},
-  adminMarkAllRead: () => {},
   exportSaveAction: () => '',
   importSaveAction: () => false,
 };
@@ -184,6 +191,7 @@ export function createMockGameContext(
   return {
     gameState,
     espionageReports: gameState.espionageReports,
+    fleetNotifications: gameState.fleetNotifications,
     productionRates,
     storageCaps,
     ...defaultActions,

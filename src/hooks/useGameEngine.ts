@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { GameState } from '../models/GameState.ts';
 import type { CombatResult } from '../models/Combat.ts';
-import type { EspionageReport, FleetMission, MissionType } from '../models/Fleet.ts';
+import type {
+  EspionageReport,
+  FleetMission,
+  FleetNotification,
+  MissionType,
+} from '../models/Fleet.ts';
 import type { Coordinates, NPCColony, NPCSpecialty } from '../models/Galaxy.ts';
 import { createDefaultPlanet, type PlanetState } from '../models/Planet.ts';
 import type { BuildingId, DefenceId, ResearchId, ShipId } from '../models/types.ts';
@@ -75,6 +80,7 @@ import {
 export interface GameEngineState {
   gameState: GameState;
   espionageReports: EspionageReport[];
+  fleetNotifications: FleetNotification[];
   productionRates: ProductionRates;
   storageCaps: { metal: number; crystal: number; deuterium: number };
   upgradeBuilding: (id: BuildingId) => boolean;
@@ -110,7 +116,15 @@ export interface GameEngineState {
     targetCoords: Coordinates,
   ) => FleetMission | null;
   recallFleet: (missionId: string) => void;
-  markReportRead: (reportId: string) => void;
+  markCombatRead: (id: string) => void;
+  markAllCombatRead: () => void;
+  markEspionageRead: (id: string) => void;
+  markAllEspionageRead: () => void;
+  markFleetRead: (id: string) => void;
+  markAllFleetRead: () => void;
+  deleteCombatEntry: (id: string) => void;
+  deleteEspionageReport: (id: string) => void;
+  deleteFleetNotification: (id: string) => void;
   setGameSpeed: (n: number) => void;
   setMaxProbeCount: (n: number) => void;
   setGodMode: (enabled: boolean) => void;
@@ -180,7 +194,6 @@ export interface GameEngineState {
   adminClearCombatLog: () => void;
   adminClearEspionageReports: () => void;
   adminClearDebrisFields: () => void;
-  adminMarkAllRead: () => void;
   exportSaveAction: () => string;
   importSaveAction: (json: string) => boolean;
 }
@@ -278,6 +291,7 @@ function refreshArrayReferences(state: GameState): void {
     npcColonies: [...state.galaxy.npcColonies],
   };
   state.espionageReports = [...state.espionageReports];
+  state.fleetNotifications = [...state.fleetNotifications];
   state.combatLog = [...state.combatLog];
   state.debrisFields = [...state.debrisFields];
 }
@@ -1303,6 +1317,7 @@ export function useGameEngine(): GameEngineState {
       stateRef.current.fleetMissions = [];
       stateRef.current.combatLog = [];
       stateRef.current.espionageReports = [];
+      stateRef.current.fleetNotifications = [];
       stateRef.current.debrisFields = [];
 
       setFleetTarget(null);
@@ -1330,12 +1345,58 @@ export function useGameEngine(): GameEngineState {
     saveState(stateRef.current);
   }, [syncReactState]);
 
-  const adminMarkAllRead = useCallback((): void => {
+  const markCombatRead = useCallback((id: string): void => {
+    const entry = stateRef.current.combatLog.find((item) => item.id === id);
+    if (!entry || entry.read) {
+      return;
+    }
+
+    entry.read = true;
+    syncReactState();
+    saveState(stateRef.current);
+  }, [syncReactState]);
+
+  const markAllCombatRead = useCallback((): void => {
     for (const entry of stateRef.current.combatLog) {
       entry.read = true;
     }
+    syncReactState();
+    saveState(stateRef.current);
+  }, [syncReactState]);
+
+  const markEspionageRead = useCallback((id: string): void => {
+    const report = stateRef.current.espionageReports.find((item) => item.id === id);
+    if (!report || report.read) {
+      return;
+    }
+
+    report.read = true;
+    syncReactState();
+    saveState(stateRef.current);
+  }, [syncReactState]);
+
+  const markAllEspionageRead = useCallback((): void => {
     for (const report of stateRef.current.espionageReports) {
       report.read = true;
+    }
+    syncReactState();
+    saveState(stateRef.current);
+  }, [syncReactState]);
+
+  const markFleetRead = useCallback((id: string): void => {
+    const notification = stateRef.current.fleetNotifications.find((item) => item.id === id);
+    if (!notification || notification.read) {
+      return;
+    }
+
+    notification.read = true;
+    syncReactState();
+    saveState(stateRef.current);
+  }, [syncReactState]);
+
+  const markAllFleetRead = useCallback((): void => {
+    for (const notification of stateRef.current.fleetNotifications) {
+      notification.read = true;
     }
     syncReactState();
     saveState(stateRef.current);
@@ -1429,19 +1490,40 @@ export function useGameEngine(): GameEngineState {
     [syncReactState],
   );
 
-  const markReportRead = useCallback(
-    (reportId: string): void => {
-      const report = stateRef.current.espionageReports.find((item) => item.id === reportId);
-      if (!report || report.read) {
-        return;
-      }
+  const deleteCombatEntry = useCallback((id: string): void => {
+    const nextEntries = stateRef.current.combatLog.filter((entry) => entry.id !== id);
+    if (nextEntries.length === stateRef.current.combatLog.length) {
+      return;
+    }
 
-      report.read = true;
-      syncReactState();
-      saveState(stateRef.current);
-    },
-    [syncReactState],
-  );
+    stateRef.current.combatLog = nextEntries;
+    syncReactState();
+    saveState(stateRef.current);
+  }, [syncReactState]);
+
+  const deleteEspionageReport = useCallback((id: string): void => {
+    const nextReports = stateRef.current.espionageReports.filter((report) => report.id !== id);
+    if (nextReports.length === stateRef.current.espionageReports.length) {
+      return;
+    }
+
+    stateRef.current.espionageReports = nextReports;
+    syncReactState();
+    saveState(stateRef.current);
+  }, [syncReactState]);
+
+  const deleteFleetNotification = useCallback((id: string): void => {
+    const nextNotifications = stateRef.current.fleetNotifications.filter(
+      (notification) => notification.id !== id,
+    );
+    if (nextNotifications.length === stateRef.current.fleetNotifications.length) {
+      return;
+    }
+
+    stateRef.current.fleetNotifications = nextNotifications;
+    syncReactState();
+    saveState(stateRef.current);
+  }, [syncReactState]);
 
   const exportSaveAction = useCallback((): string => {
     return exportSave(stateRef.current);
@@ -1467,6 +1549,7 @@ export function useGameEngine(): GameEngineState {
   return {
     gameState,
     espionageReports: gameState.espionageReports,
+    fleetNotifications: gameState.fleetNotifications,
     productionRates,
     storageCaps,
     upgradeBuilding,
@@ -1487,7 +1570,15 @@ export function useGameEngine(): GameEngineState {
     dispatchEspionage,
     dispatchHarvest,
     recallFleet,
-    markReportRead,
+    markCombatRead,
+    markAllCombatRead,
+    markEspionageRead,
+    markAllEspionageRead,
+    markFleetRead,
+    markAllFleetRead,
+    deleteCombatEntry,
+    deleteEspionageReport,
+    deleteFleetNotification,
     setGameSpeed,
     setMaxProbeCount,
     setGodMode,
@@ -1524,7 +1615,6 @@ export function useGameEngine(): GameEngineState {
     adminClearCombatLog,
     adminClearEspionageReports,
     adminClearDebrisFields,
-    adminMarkAllRead,
     exportSaveAction,
     importSaveAction,
   };

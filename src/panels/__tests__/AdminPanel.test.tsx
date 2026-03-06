@@ -32,6 +32,7 @@ function Harness({ children }: { children?: ReactNode }) {
   const contextValue = useMemo<GameContextType>(() => ({
     gameState,
     espionageReports: gameState.espionageReports,
+    fleetNotifications: gameState.fleetNotifications,
     productionRates: calculateProduction(gameState),
     storageCaps: getStorageCaps(gameState),
     upgradeBuilding: () => false,
@@ -52,7 +53,15 @@ function Harness({ children }: { children?: ReactNode }) {
     dispatchEspionage: () => null,
     dispatchHarvest: () => null,
     recallFleet: () => {},
-    markReportRead: () => {},
+    markCombatRead: () => {},
+    markAllCombatRead: () => {},
+    markEspionageRead: () => {},
+    markAllEspionageRead: () => {},
+    markFleetRead: () => {},
+    markAllFleetRead: () => {},
+    deleteCombatEntry: () => {},
+    deleteEspionageReport: () => {},
+    deleteFleetNotification: () => {},
     setGameSpeed: (n: number) => {
       setGameState((current) => ({
         ...current,
@@ -170,7 +179,6 @@ function Harness({ children }: { children?: ReactNode }) {
     adminClearCombatLog: () => {},
     adminClearEspionageReports: () => {},
     adminClearDebrisFields: () => {},
-    adminMarkAllRead: () => {},
     exportSaveAction: () => '',
     importSaveAction: () => false,
   }), [gameState]);

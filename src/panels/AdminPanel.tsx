@@ -151,7 +151,9 @@ export function AdminPanel() {
     adminClearCombatLog,
     adminClearEspionageReports,
     adminClearDebrisFields,
-    adminMarkAllRead,
+    markAllCombatRead,
+    markAllEspionageRead,
+    markAllFleetRead,
   } = useGame();
 
   const [activeTab, setActiveTab] = useState<AdminTab>('resources');
@@ -1329,7 +1331,9 @@ export function AdminPanel() {
               type="button"
               className="btn"
               onClick={() => {
-                adminMarkAllRead();
+                markAllCombatRead();
+                markAllEspionageRead();
+                markAllFleetRead();
                 setStatus('All reports marked as read.');
               }}
             >
