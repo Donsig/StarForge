@@ -19,14 +19,20 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
         run: |
+          # Fetch all existing issue titles once (both open and closed) for efficient deduplication
+          ALL_TITLES=$(gh issue list --repo "$REPO" --state all --limit 500 --json title --jq '.[].title' 2>/dev/null || echo "")
+
           create_if_not_exists() {
             local title="$1"
             local body="$2"
-            if gh issue list --repo "$REPO" --search "in:title $title" --state all --json title --jq '.[].title' 2>/dev/null | grep -qF "$title"; then
+            if echo "$ALL_TITLES" | grep -qF "$title"; then
               echo "Already exists: $title"
             else
               gh issue create --repo "$REPO" --title "$title" --body "$body"
               echo "Created: $title"
+              # Add to ALL_TITLES so the next check sees it (avoids race conditions on re-run)
+              ALL_TITLES="$ALL_TITLES
+$title"
               sleep 1
             fi
           }
@@ -496,5 +502,79 @@ jobs:
 
           ## OGame Reference
           Standard OGame universes have 499 systems × 15 slots = 7,485 possible planet positions per galaxy."
+
+          # ─── Save & QoL Features ─────────────────────────────────────────────────
+          create_if_not_exists \
+            "Feature: Save file export and import" \
+            "## Overview
+          Allow the player to export their save file to a JSON file and import it back, providing a portable backup and the ability to transfer saves between browsers or devices.
+
+          ## Current State
+          Game state is saved exclusively to \`localStorage\` under the key \`starforge_save\`. There is no export/import functionality.
+
+          ## Requirements
+          - **Export**: Serialize the full game state to a JSON file and trigger a browser download
+          - **Import**: Allow the player to upload a previously exported JSON file; validate the schema and run migrations if needed before loading
+          - **Location**: Add Export/Import buttons to the Settings panel
+          - **Warnings**: Show a confirmation dialog before importing (overwrites current save)
+
+          ## Implementation Notes
+          - Export: \`JSON.stringify(gameState, null, 2)\` → Blob → \`<a download>\` click
+          - Import: \`<input type=\"file\">\` → \`FileReader\` → parse JSON → \`StateManager.migrate()\` → \`setGameState\`
+          - Validate: check that the imported file has the expected structure before loading
+
+          ## OGame Reference
+          OGame is server-side so this is not applicable there. For a browser-based local game, export/import is essential for data longevity and cross-device play."
+
+          create_if_not_exists \
+            "Feature: Newer OGame ships — Pathfinder, Crawler, and Reaper" \
+            "## Overview
+          Add three ships from newer OGame versions that bring strategic depth to expeditions, mining, and late-game combat.
+
+          ## Ships
+
+          ### Pathfinder
+          - **Role**: Expedition specialist; doubles the maximum resource reward on expeditions; also counts as a discovery ship for finding abandoned vessels
+          - **Stats**: Fast, low cargo, moderate combat ability
+          - **Prerequisites**: Hyperspace Technology 8, Combustion Drive 4, Shielding Technology 4
+          - **OGame Role**: Makes expeditions significantly more rewarding; essentially required for efficient expedition farming
+
+          ### Crawler
+          - **Role**: Production booster; can be placed on a planet to increase resource output of mines (costs energy per crawler)
+          - **Mechanic**: Each Crawler increases mine production by a small percentage; capped at a max number per planet (based on combined mine/energy levels); not combat-capable (speed 0)
+          - **Prerequisites**: Combustion Drive 4, Armour Technology 4, Laser Technology 4
+          - **OGame Role**: Late-game production multiplier; important for maximizing colony output
+
+          ### Reaper
+          - **Role**: Powerful late-game combat ship with the ability to collect 20% of a debris field during combat (built-in collector)
+          - **Stats**: Very high attack and hull, slower speed, large cargo
+          - **Prerequisites**: Hyperspace Technology 10, Hyperspace Drive 7, Shielding Technology 7
+          - **OGame Role**: The premier combat ship in newer OGame versions
+
+          ## Implementation Notes
+          - Add all three ships to \`src/data/ships.ts\` with combat stats and prerequisites
+          - Pathfinder: boost expedition rewards in \`FleetEngine\` when present
+          - Crawler: add production modifier in \`ResourceEngine\`, capped per planet, excluded from fleet dispatch (speed: 0)
+          - Reaper: add to combat simulation; built-in debris collection flag"
+
+          create_if_not_exists \
+            "Feature: Alliance Depot building (Deuterium resupply for deployed fleets)" \
+            "## Overview
+          Add the **Alliance Depot** building, which allows resupplying deployed (stationed) fleets with Deuterium so they can remain at a planet longer without returning for fuel.
+
+          ## Game Mechanic
+          - Planet-side building; each level stores a larger deuterium supply for refuelling
+          - When a fleet is deployed (stationed) at a planet, Deuterium consumption per hour is deducted from the planet's depot supply
+          - Alliance Depot level determines how much deuterium can be provided per resupply action
+          - Prerequisites: Shipyard level 1
+
+          ## Single-Player Adaptation
+          In OGame, this building primarily serves alliance members refuelling ally fleets. In a single-player adaptation, it refuels the player's own deployed fleets:
+          - A deployed fleet consumes deuterium passively (like a maintenance cost)
+          - Without an Alliance Depot, deployed fleets eventually run out of fuel and return home automatically
+          - With a high-level Alliance Depot, fleets can be stationed indefinitely
+
+          ## OGame Reference
+          The Alliance Depot in OGame allows allies to send deuterium supplies to help fuel defending fleets — a key part of alliance defense."
 
           echo "All issues processed."
