@@ -343,17 +343,34 @@ export function processUpgrades(state: GameState, now: number, playerTotal: numb
     while (
       colony.abandonedAt === undefined &&
       safeGameSpeed > 0 &&
-      (now - colony.lastUpgradeAt) * safeGameSpeed >= colony.currentUpgradeIntervalMs &&
       upgradeIterations < MAX_UPGRADE_ITERATIONS
     ) {
+      const isCatchingUp = colony.tier < colony.targetTier;
+      const activeInterval = isCatchingUp
+        ? colony.catchUpUpgradeIntervalMs
+        : colony.currentUpgradeIntervalMs;
+
+      if ((now - colony.lastUpgradeAt) * safeGameSpeed < activeInterval) {
+        break;
+      }
+
       const rng = mulberry32(
         state.galaxy.seed ^
           (colony.coordinates.system * 100 + colony.coordinates.slot) ^
           colony.upgradeTickCount,
       );
       applyUpgradeIncrement(colony, rng);
-      colony.lastUpgradeAt += colony.currentUpgradeIntervalMs / safeGameSpeed;
+      colony.lastUpgradeAt += activeInterval / safeGameSpeed;
       colony.upgradeTickCount += 1;
+      if (isCatchingUp) {
+        colony.catchUpProgressTicks += 1;
+        if (colony.catchUpProgressTicks % CATCH_UP_TICKS_PER_TIER === 0) {
+          colony.tier = Math.min(colony.targetTier, colony.tier + 1);
+          if (colony.tier >= colony.targetTier) {
+            colony.catchUpProgressTicks = 0;
+          }
+        }
+      }
       upgradeIterations += 1;
     }
 
