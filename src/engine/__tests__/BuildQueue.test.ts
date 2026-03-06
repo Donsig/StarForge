@@ -19,6 +19,7 @@ import {
   cancelResearchAtIndex,
   cancelShipyardAtIndex,
   canAfford,
+  effectiveResearchLabLevel,
   prerequisitesMet,
   processTick,
   rescaleQueueTimes,
@@ -34,6 +35,85 @@ function fundState(state: GameState): void {
   state.planets[0].resources.crystal = 10_000_000;
   state.planets[0].resources.deuterium = 10_000_000;
 }
+
+describe('effectiveResearchLabLevel', () => {
+  it('returns source planet lab level when IRN = 0', () => {
+    const state = createNewGameState();
+    state.planets[0].buildings.researchLab = 5;
+    state.research.intergalacticResearchNetwork = 0;
+
+    const item: QueueItem = {
+      type: 'research',
+      id: 'energyTechnology',
+      targetLevel: 1,
+      sourcePlanetIndex: 0,
+      startedAt: 0,
+      completesAt: 0,
+    };
+
+    expect(effectiveResearchLabLevel(state, item)).toBe(5);
+  });
+
+  it('returns source planet lab when only 1 planet regardless of IRN', () => {
+    const state = createNewGameState();
+    state.planets[0].buildings.researchLab = 8;
+    state.research.intergalacticResearchNetwork = 3;
+
+    const item: QueueItem = {
+      type: 'research',
+      id: 'energyTechnology',
+      targetLevel: 1,
+      sourcePlanetIndex: 0,
+      startedAt: 0,
+      completesAt: 0,
+    };
+
+    expect(effectiveResearchLabLevel(state, item)).toBe(8);
+  });
+
+  it('sums top (IRN+1) labs when multiple planets and IRN > 0', () => {
+    const state = createNewGameState();
+    state.planets[0].buildings.researchLab = 10;
+    const colony = createDefaultPlanet();
+    colony.buildings.researchLab = 6;
+    colony.coordinates = { galaxy: 1, system: 1, slot: 5 };
+    state.planets.push(colony);
+    const colony2 = createDefaultPlanet();
+    colony2.buildings.researchLab = 4;
+    colony2.coordinates = { galaxy: 1, system: 1, slot: 6 };
+    state.planets.push(colony2);
+
+    state.research.intergalacticResearchNetwork = 1;
+
+    const item: QueueItem = {
+      type: 'research',
+      id: 'energyTechnology',
+      targetLevel: 1,
+      sourcePlanetIndex: 0,
+      startedAt: 0,
+      completesAt: 0,
+    };
+
+    expect(effectiveResearchLabLevel(state, item)).toBe(16);
+  });
+
+  it('uses source planet lab as fallback when sourcePlanetIndex missing and IRN = 0', () => {
+    const state = createNewGameState();
+    state.planets[0].buildings.researchLab = 3;
+    state.research.intergalacticResearchNetwork = 0;
+
+    const item: QueueItem = {
+      type: 'research',
+      id: 'energyTechnology',
+      targetLevel: 1,
+      sourcePlanetIndex: undefined,
+      startedAt: 0,
+      completesAt: 0,
+    };
+
+    expect(effectiveResearchLabLevel(state, item)).toBe(3);
+  });
+});
 
 describe('BuildQueue', () => {
   beforeEach(() => {

@@ -21,12 +21,21 @@ import {
 } from './FormulasEngine.ts';
 import { activePlanet } from './helpers.ts';
 
-function researchLabLevelForItem(state: GameState, item: QueueItem): number {
-  const sourcePlanet =
-    state.planets[item.sourcePlanetIndex ?? state.activePlanetIndex] ??
-    state.planets[state.activePlanetIndex] ??
-    state.planets[0];
-  return sourcePlanet?.buildings.researchLab ?? 0;
+export function effectiveResearchLabLevel(state: GameState, item: QueueItem): number {
+  const irnLevel = (state.research as Record<string, number>).intergalacticResearchNetwork ?? 0;
+  if (irnLevel === 0 || state.planets.length <= 1) {
+    const sourcePlanet =
+      state.planets[item.sourcePlanetIndex ?? state.activePlanetIndex] ??
+      state.planets[state.activePlanetIndex] ??
+      state.planets[0];
+    return sourcePlanet?.buildings.researchLab ?? 0;
+  }
+
+  return state.planets
+    .map((planet) => planet.buildings.researchLab)
+    .sort((a, b) => b - a)
+    .slice(0, irnLevel + 1)
+    .reduce((sum, labLevel) => sum + labLevel, 0);
 }
 
 // ── Prerequisite checking ───────────────────────────────────────
@@ -201,10 +210,18 @@ export function startResearch(
 
   deductCost(cost, state);
 
+  const tempItem: QueueItem = {
+    type: 'research',
+    id: researchId,
+    targetLevel: nextLevel,
+    sourcePlanetIndex: state.activePlanetIndex,
+    startedAt: 0,
+    completesAt: 0,
+  };
   const duration = researchTime(
     cost.metal,
     cost.crystal,
-    planet.buildings.researchLab,
+    effectiveResearchLabLevel(state, tempItem),
     state.settings.gameSpeed,
   );
 
@@ -273,7 +290,7 @@ export function cancelResearchAtIndex(state: GameState, index: number): void {
     const nextDuration = researchTime(
       nextCost.metal,
       nextCost.crystal,
-      researchLabLevelForItem(state, nextItem),
+      effectiveResearchLabLevel(state, nextItem),
       state.settings.gameSpeed,
     );
     const now = Date.now();
@@ -502,7 +519,7 @@ export function processTick(state: GameState, now: number = Date.now()): void {
       const nextDuration = researchTime(
         nextCost.metal,
         nextCost.crystal,
-        researchLabLevelForItem(state, nextItem),
+        effectiveResearchLabLevel(state, nextItem),
         state.settings.gameSpeed,
       );
       nextItem.startedAt = now;
