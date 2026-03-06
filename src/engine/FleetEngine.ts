@@ -168,6 +168,7 @@ function pushFleetNotification(
   timestamp: number,
   targetName: string,
   loot: { metal: number; crystal: number; deuterium: number },
+  failureReason?: 'planet_missing' | 'storage_full',
 ): void {
   const alreadyNotified = state.fleetNotifications.some((entry) => entry.missionId === mission.id);
   if (alreadyNotified) {
@@ -182,6 +183,7 @@ function pushFleetNotification(
     targetCoordinates: { ...mission.targetCoordinates },
     targetName,
     loot: { ...loot },
+    failureReason,
     read: false,
   });
 }
@@ -383,6 +385,7 @@ function resolveTransportAtTarget(state: GameState, mission: FleetMission, now: 
       now,
       formatTargetLabel(mission.targetCoordinates),
       { metal: 0, crystal: 0, deuterium: 0 },
+      'planet_missing',
     );
     mission.returnTime = now + calcMissionReturnTravelMs(state, mission);
     mission.status = 'returning';
@@ -416,6 +419,9 @@ function resolveTransportAtTarget(state: GameState, mission: FleetMission, now: 
     deuterium: mission.cargo.deuterium - deliveredDeuterium,
   };
 
+  const deliveredNothing =
+    deliveredMetal === 0 && deliveredCrystal === 0 && deliveredDeuterium === 0;
+
   pushFleetNotification(
     state,
     mission,
@@ -426,6 +432,7 @@ function resolveTransportAtTarget(state: GameState, mission: FleetMission, now: 
       crystal: deliveredCrystal,
       deuterium: deliveredDeuterium,
     },
+    deliveredNothing ? 'storage_full' : undefined,
   );
   mission.returnTime = now + calcMissionReturnTravelMs(state, mission);
   mission.status = 'returning';

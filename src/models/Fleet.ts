@@ -58,5 +58,7 @@ export interface FleetNotification {
   targetCoordinates: Coordinates;
   targetName: string;
   loot: { metal: number; crystal: number; deuterium: number };
+  /** Reason why a transport delivered zero resources, if applicable. */
+  failureReason?: 'planet_missing' | 'storage_full';
   read: boolean;
 }

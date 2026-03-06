@@ -251,7 +251,9 @@ function FleetMessageRow({
         <p className="hint">
           {notification.missionType === 'harvest'
             ? 'No recoverable debris remained at arrival.'
-            : 'Destination planet could not accept the delivery.'}
+            : notification.failureReason === 'planet_missing'
+              ? 'Destination planet no longer exists.'
+              : 'Destination planet storage was full — nothing could be delivered.'}
         </p>
       ) : (
         <p>
