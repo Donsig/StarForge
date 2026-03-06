@@ -34,6 +34,33 @@ describe('GalaxyPanel', () => {
     expect(screen.getByLabelText('System')).toHaveValue(5);
   });
 
+  it('next button increments system and syncs the inline input', async () => {
+    const user = userEvent.setup();
+
+    renderWithGame(<GalaxyPanel />);
+
+    await user.click(screen.getByRole('button', { name: 'Next system' }));
+
+    expect(screen.getByLabelText('System')).toHaveValue(2);
+  });
+
+  it('prev button decrements system and syncs the inline input', async () => {
+    const user = userEvent.setup();
+
+    renderWithGame(<GalaxyPanel />);
+
+    // Navigate to system 3 first
+    const systemInput = screen.getByLabelText('System');
+    await user.clear(systemInput);
+    await user.type(systemInput, '3');
+    await user.tab(); // blur to commit
+
+    await user.click(screen.getByRole('button', { name: 'Previous system' }));
+
+    expect(screen.getByLabelText('System')).toHaveValue(2);
+  });
+
+
   it('shows Transport button on player-owned slots that are not the active planet', () => {
     renderWithGame(<GalaxyPanel />, { withMultiplePlanets: true });
     expect(screen.getByRole('button', { name: 'Transport' })).toBeInTheDocument();

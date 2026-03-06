@@ -1037,12 +1037,13 @@ NPC dynamic scaling, fleet cargo helper, queue UX, level-aware upgrade buttons, 
 
 ### 4.4 Player Score / Points Tracking (#23)
 
-**Goal:** Track score across four categories updated on every queue completion.
+**Goal:** Extend the existing `playerScores` field to track score across four build categories updated on every queue completion.
 
 - 1 point per 1,000 resources spent (buildings, research, ships, defences)
-- `score: { buildings: number, research: number, fleet: number, defence: number }` on `GameState`
+- Update `PlayerScores` (in `src/models/types.ts`) to add `buildings`, `fleet`, and `defence` number fields alongside the existing `military`, `economy`, `research`, and `total` fields
 - Score incremented in `BuildQueue.processTick()` on item completion
 - Score never decreases (ships destroyed still retain their original build score)
+- `total` is the sum of all four build-category scores
 - Displayed in Overview panel; full breakdown in Statistics panel (4.5)
 - State migration required
 
