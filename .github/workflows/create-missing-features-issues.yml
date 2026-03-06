@@ -30,9 +30,6 @@ jobs:
             else
               gh issue create --repo "$REPO" --title "$title" --body "$body"
               echo "Created: $title"
-              # Add to ALL_TITLES so the next check sees it (avoids race conditions on re-run)
-              ALL_TITLES="$ALL_TITLES
-$title"
               sleep 1
             fi
           }
