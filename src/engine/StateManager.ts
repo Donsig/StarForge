@@ -4,7 +4,7 @@ import { createNewGameState } from '../models/GameState.ts';
 import { GAME_CONSTANTS } from '../models/types.ts';
 import type { PlanetState } from '../models/Planet.ts';
 import { accumulateBulk } from './ResourceEngine.ts';
-import { getCompletionEvents } from './BuildQueue.ts';
+import { effectiveResearchLabLevel, getCompletionEvents } from './BuildQueue.ts';
 import type { BuildingId, DefenceId, ResearchId, ShipId } from '../models/types.ts';
 import { DEFENCES } from '../data/defences.ts';
 import { BUILDINGS } from '../data/buildings.ts';
@@ -481,10 +481,6 @@ export function processOfflineTime(state: GameState): { elapsedSeconds: number }
       }
       const nextResearch = state.researchQueue[0];
       if (nextResearch) {
-        const sourcePlanet =
-          state.planets[nextResearch.sourcePlanetIndex ?? state.activePlanetIndex] ??
-          state.planets[state.activePlanetIndex] ??
-          state.planets[0];
         const nextResearchId = nextResearch.id as ResearchId;
         const researchDef = RESEARCH[nextResearchId];
         const nextResearchCost = researchCostAtLevel(
@@ -492,12 +488,12 @@ export function processOfflineTime(state: GameState): { elapsedSeconds: number }
           researchDef.costMultiplier,
           nextResearch.targetLevel!,
         );
-        const nextResearchDuration = researchTime(
-          nextResearchCost.metal,
-          nextResearchCost.crystal,
-          sourcePlanet?.buildings.researchLab ?? 0,
-          state.settings.gameSpeed,
-        );
+      const nextResearchDuration = researchTime(
+        nextResearchCost.metal,
+        nextResearchCost.crystal,
+        effectiveResearchLabLevel(state, nextResearch),
+        state.settings.gameSpeed,
+      );
         nextResearch.startedAt = queueEvent.completesAt;
         nextResearch.completesAt = queueEvent.completesAt + nextResearchDuration * 1000;
       }

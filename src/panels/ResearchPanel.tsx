@@ -1,6 +1,6 @@
 import { BUILDINGS } from '../data/buildings.ts';
 import { RESEARCH, RESEARCH_ORDER } from '../data/research.ts';
-import { canAfford, prerequisitesMet } from '../engine/BuildQueue.ts';
+import { canAfford, effectiveResearchLabLevel, prerequisitesMet } from '../engine/BuildQueue.ts';
 import { researchCostAtLevel, researchTime } from '../engine/FormulasEngine.ts';
 import { useGame } from '../context/GameContext';
 import { CostDisplay } from '../components/CostDisplay';
@@ -76,7 +76,14 @@ export function ResearchPanel() {
           const timeSeconds = researchTime(
             cost.metal,
             cost.crystal,
-            planet.buildings.researchLab,
+            effectiveResearchLabLevel(gameState, {
+              type: 'research',
+              id: researchId,
+              targetLevel: nextLevel,
+              sourcePlanetIndex: gameState.activePlanetIndex,
+              startedAt: 0,
+              completesAt: 0,
+            }),
             gameState.settings.gameSpeed,
           );
           const affordable = canAfford(cost, gameState);

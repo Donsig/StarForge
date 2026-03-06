@@ -25,6 +25,7 @@ import {
   cancelBuildingAtIndex,
   cancelResearchAtIndex,
   cancelShipyardAtIndex,
+  effectiveResearchLabLevel,
   processTick as processQueueTick,
   rescaleQueueTimes,
   startBuildingUpgrade,
@@ -1012,12 +1013,6 @@ export function useGameEngine(): GameEngineState {
 
     const nextItem = stateRef.current.researchQueue[0];
     if (nextItem && nextItem.targetLevel !== undefined) {
-      const sourcePlanet =
-        stateRef.current.planets[
-          nextItem.sourcePlanetIndex ?? stateRef.current.activePlanetIndex
-        ] ??
-        stateRef.current.planets[stateRef.current.activePlanetIndex] ??
-        stateRef.current.planets[0];
       const definition = RESEARCH[nextItem.id as ResearchId];
       const nextCost = researchCostAtLevel(
         definition.baseCost,
@@ -1027,7 +1022,7 @@ export function useGameEngine(): GameEngineState {
       const nextDuration = researchTime(
         nextCost.metal,
         nextCost.crystal,
-        sourcePlanet?.buildings.researchLab ?? 0,
+        effectiveResearchLabLevel(stateRef.current, nextItem),
         stateRef.current.settings.gameSpeed,
       );
       nextItem.startedAt = now;
