@@ -1,5 +1,6 @@
 import { computePlayerScores } from '../ScoreEngine';
 import { createNewGameState } from '../../models/GameState';
+import { loadState } from '../StateManager';
 
 describe('computePlayerScores', () => {
   it('returns all zeros for a fresh game', () => {
@@ -54,5 +55,13 @@ describe('computePlayerScores', () => {
     const scores = computePlayerScores(state);
     // total = military*2 + economy*5 + research*3
     expect(scores.total).toBe(550 * 2 + 5 * 5 + 1 * 3);
+  });
+
+  it('migration v12→v13 adds playerScores with zeros', () => {
+    const base = createNewGameState();
+    const raw = JSON.stringify({ ...base, version: 12, playerScores: undefined });
+    localStorage.setItem('starforge_save', raw);
+    const loaded = loadState();
+    expect(loaded?.playerScores).toEqual({ military: 0, economy: 0, research: 0, total: 0 });
   });
 });

@@ -349,6 +349,18 @@ function migrate(state: GameState): GameState {
     legacyState.research.intergalacticResearchNetwork = 0;
     state.version = 12;
   }
+
+  if (state.version < 13) {
+    if ((legacyState as Record<string, unknown>).playerScores === undefined) {
+      (legacyState as Record<string, unknown>).playerScores = {
+        military: 0,
+        economy: 0,
+        research: 0,
+        total: 0,
+      };
+    }
+    state.version = 13;
+  }
   return state;
 }
 
