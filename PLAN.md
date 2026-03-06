@@ -1006,6 +1006,228 @@ Apply during colonization. Homeworld (slot 8) keeps current balanced values.
 
 ---
 
+## Phase 4: QoL, Fleet Expansion & Economy
+
+> Issues: #22, #23, #24, #27, #20
+
+### 4.1 Bugfixes & Balance (current — `phase/bugfix-balance`)
+
+NPC dynamic scaling, fleet cargo helper, queue UX, level-aware upgrade buttons, Max build button, OGame-style galaxy nav, resource hover panels, player score engine. See `docs/plans/2026-03-06-bugfix-balance-implementation.md` and `docs/plans/2026-03-06-ui-improvements.md`.
+
+### 4.2 Save Export / Import (#27)
+
+**Goal:** Let players back up and restore saves across browsers/devices.
+
+- **Export:** `JSON.stringify(gameState)` → Blob download from Settings panel
+- **Import:** `<input type="file">` → `FileReader` → parse → `StateManager.migrate()` → load
+- Confirmation dialog before import (overwrites current save)
+- Validate structure before loading (check `version` field exists)
+- No new state fields required
+
+### 4.3 Colonise Mission via Fleet Dispatch (#22)
+
+**Goal:** Add `colonise` as a proper fleet mission type dispatched from the Fleet panel.
+
+- `'colonise'` added to `MissionType` union
+- Fleet must include ≥ 1 Colony Ship; Colony Ship consumed on arrival
+- Other ships in fleet return home after mission completes
+- Fails silently (ships return) if max colonies already reached (Astrophysics gate)
+- 'Colony Established' notification in Messages panel on success
+- Galaxy panel instant-colonise shortcut remains as a convenience alias
+
+### 4.4 Player Score / Points Tracking (#23)
+
+**Goal:** Extend the existing `playerScores` field to track score across four build categories updated on every queue completion.
+
+- 1 point per 1,000 resources spent (buildings, research, ships, defences)
+- Update `PlayerScores` (in `src/models/types.ts`) to add `buildings`, `fleet`, and `defence` number fields alongside the existing `military`, `economy`, `research`, and `total` fields
+- Score incremented in `BuildQueue.processTick()` on item completion
+- Score never decreases (ships destroyed still retain their original build score)
+- `total` is the sum of all four build-category scores
+- Displayed in Overview panel; full breakdown in Statistics panel (4.5)
+- State migration required
+
+### 4.5 Statistics Panel (#24)
+
+**Goal:** Single panel showing progression metrics and lifetime counters.
+
+- **Score breakdown:** buildings / research / fleet / defence points (from 4.4)
+- **Resource stats:** lifetime metal / crystal / deuterium mined
+- **Combat stats:** battles fought, won, lost, drawn; total loot; ships lost
+- **Fleet stats:** missions sent per type; total distance travelled
+- **Production stats:** current production rates
+- **Milestones:** notable firsts shown as unlocked badges (first colony, first battle won, etc.)
+- `statistics: { ... }` object added to `GameState`, persisted, never reset
+- Incremented in `ResourceEngine`, `CombatEngine`, `FleetEngine` at completion points
+- New `StatisticsPanel.tsx`
+
+### 4.6 Deploy Fleet Mission (#20)
+
+**Goal:** Move a fleet permanently to another of the player's planets.
+
+- `'deploy'` added to `MissionType`
+- On arrival: ships merged into `targetPlanet.ships`, cargo deposited (capped by storage; excess lost)
+- No return trip — mission ends at `at_target` → `completed`
+- Selectable in Fleet panel alongside attack/transport/espionage
+- Destination: any of the player's own planets
+
+---
+
+## Phase 5: Combat Depth & Exploration
+
+> Issues: #12, #13, #14, #21, #28
+
+### 5.1 Missile System (#12, #13, #14)
+
+**Missile Silo building (#12):**
+- Stores up to `level × 10` total missiles (IPM + ABM combined)
+- Base cost: 20,000M / 20,000C / 1,000D (×2 per level)
+- Prerequisites: Shipyard 1, Impulse Drive 4
+- `missileSilo` added to `BuildingId`
+
+**Interplanetary Missiles — IPM (#13):**
+- Launched from Missile Silo; targets a specific defence structure on an NPC planet
+- Range: Impulse Drive level × systems
+- Bypasses 70% defence rebuild — destroyed structures do NOT auto-rebuild
+- 1 IPM consumed per launch; deuterium fuel cost
+- ABMs on target planet intercept (1 ABM : 1 IPM)
+- UI: new section in Fleet panel or dedicated Missiles panel
+
+**Anti-Ballistic Missiles — ABM (#14):**
+- Stored in Missile Silo alongside IPMs
+- Auto-intercept incoming IPMs (1 ABM destroys 1 IPM)
+- Consumed on use (one-shot)
+- Built via Shipyard queue (8,000M / 2,000C)
+- Count shown in Defence panel
+
+### 5.2 Expedition Mission (#21)
+
+**Goal:** Deep-space exploration with random outcomes.
+
+- Fleet sent to slot 16 of any system (`[galaxy:system:16]`)
+- On arrival, seeded RNG (from mission ID) rolls outcome:
+  - **Resources found** — up to cargo capacity in metal/crystal/deut
+  - **Abandoned ships** — random ship types added to source planet
+  - **Nothing** — fleet returns empty
+  - **Delayed** — extended return time
+  - **Combat** — fleet fights pirates/aliens, may take losses
+  - **Fleet lost** — rare; entire fleet destroyed
+- Slot 16 shown as "Deep Space" in Galaxy panel
+- Result delivered as a Message
+- Requires: Astrophysics level 1; simultaneous expeditions = `floor(sqrt(astrophysicsLevel))`
+
+### 5.3 New Ships: Pathfinder, Crawler, Reaper (#28)
+
+**Pathfinder:**
+- Doubles max resource reward on expeditions; counts as discovery ship
+- Prerequisites: Hyperspace Technology 8, Combustion Drive 4, Shielding Technology 4
+
+**Crawler:**
+- Stationed on a planet to boost mine production (small % per crawler, energy cost per unit)
+- Capped per planet based on combined mine + energy levels
+- Speed: 0 — cannot be dispatched in fleet
+- Prerequisites: Combustion Drive 4, Armour Technology 4, Laser Technology 4
+
+**Reaper:**
+- Powerful combat ship; collects 20% of debris field during combat (built-in collection)
+- Prerequisites: Hyperspace Technology 10, Hyperspace Drive 7, Shielding Technology 7
+
+---
+
+## Phase 6: Moon System & Late-Game Buildings
+
+> Issues: #11, #15, #16, #17, #18, #19, #29
+
+### 6.1 Moon System (#15)
+
+**Goal:** After large battles, chance of moon forming from debris.
+
+- Moon creation chance: `min(20%, debris_metal_crystal / 100,000 * 100%)`
+- Moon is a separate body at the same coordinates as the planet
+- Starts with 1 field; expanded via Lunar Base
+- No resource mines or Research Lab on moons
+- Moons can have: Robotics Factory, Shipyard, Storages, Defences, Lunar Base, Sensor Phalanx, Jump Gate
+- Death Stars can attempt moon destruction (low success chance, risks destroying the Death Stars)
+- `moon?: MoonState` added to `PlanetState`; `MoonState` has own `fields`, `buildings`, `ships`, `defences`
+- Galaxy panel shows moon indicator on occupied slots
+
+### 6.2 Moon Buildings (#16, #17, #18)
+
+**Lunar Base (#16):** Foundational moon building. Each level adds 3 net fields. Base cost: 20,000M / 40,000C / 20,000D. Required for all moon-exclusive buildings.
+
+**Sensor Phalanx (#17):** Scan any coordinates within range to see all fleet movements.
+- Range: `level² - 1` systems
+- Cost: 5,000 deuterium per scan (stored on moon)
+- Cannot scan moons; reveals mission type, ships, ETA
+- Prerequisites: Lunar Base 1, Energy Technology 6, Espionage Technology 4
+
+**Jump Gate (#18):** Instant fleet teleport between two moons that both have Jump Gates.
+- No deuterium cost; 1 hour cooldown (reduced at higher levels)
+- Transports ships only, not resources
+- Prerequisites: Lunar Base 1, Hyperspace Technology 7
+
+### 6.3 Graviton Technology (#19)
+
+- Energy-only research cost: 300,000 EU (requires surplus energy, checked against current production)
+- Research time is near-instant once energy requirement met
+- Level 1 unlocks Death Stars
+- Prerequisites: Energy Technology 12
+
+### 6.4 Alliance Depot (#29)
+
+**Single-player adaptation:** Depot resupplies player's own deployed fleets with deuterium.
+- Each level increases depot storage capacity
+- Deployed fleets consume deuterium passively per hour from depot supply
+- Without depot, deployed fleets run out of fuel and auto-return
+- Prerequisites: Shipyard 1
+
+### 6.5 Terraformer (#11)
+
+- Each level permanently adds 5 building fields (`+4` net after cost)
+- Expands `planet.maxFields` on build completion
+- Prerequisites: Nanite Factory 1, Energy Technology 12
+- Base cost: 0M / 50,000C / 100,000D
+
+---
+
+## Phase 7: Universe Scale
+
+> Issues: #25, #28 (partial)
+
+### 7.1 Multiple Galaxies (#25)
+
+**Goal:** Expand from 1 galaxy to 3–5, with progressive difficulty and travel costs.
+
+- `MAX_GALAXIES` increased (currently 1 in `src/data/galaxy.ts`)
+- Inter-galaxy travel significantly more expensive (fuel + time)
+- NPC colonies in outer galaxies are higher tier (harder, better loot)
+- Colonisation of outer galaxies requires high Astrophysics + fuel investment
+- Galaxy coord input in Galaxy panel already supports `galaxy` field (groundwork laid)
+
+---
+
+## Infrastructure Track
+
+> Issues: #2, #3 — separate from game feature phases
+
+### Docker Support (#2)
+
+Containerise the Vite + static build for easy self-hosting.
+- `Dockerfile` with `node:alpine` build stage + `nginx:alpine` serve stage
+- `docker-compose.yml` for single-command launch
+- Nginx serves `dist/` on port 80
+
+### Multi-User + Persistent Sessions (#3)
+
+Major architectural change — requires a backend.
+- Move `localStorage` save to server-side storage (PostgreSQL or Redis)
+- Add login system (username + password or OAuth)
+- REST or WebSocket API for save load/store
+- Prerequisite for Docker support to be meaningful in a multi-user context
+- **Scope:** This is a full rewrite of the persistence layer; plan as a separate milestone.
+
+---
+
 ## Key Architecture Notes
 
 - **Coordinate system:** `{ galaxy: number, system: number, slot: number }` — 1 galaxy, ~50 systems, 15 slots

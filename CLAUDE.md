@@ -5,7 +5,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Workflow
 
 - Use `AskUserQuestion` tool when clarifying questions are needed before proceeding with design or implementation decisions.
-- **Continuously save learnings to memory** (`C:\Users\ander\.claude\projects\C--dev-repos-StarForge\memory\`). Update immediately — not at end of session — whenever you discover: a Codex interaction pattern that worked or failed, a planning workflow step, a user collaboration preference, or a project gotcha. Keep `MEMORY.md` under 200 lines; use topic files for detail.
+- **Continuously save learnings to memory** (in this project's Claude memory directory, e.g. `.claude/projects/StarForge/memory/` under your user profile). Update immediately — not at end of session — whenever you discover: a Codex interaction pattern that worked or failed, a planning workflow step, a user collaboration preference, or a project gotcha. Keep `MEMORY.md` under 200 lines; use topic files for detail.
+
+## Implementation Rules
+
+- **Never write code without explicit user approval.** Claude's role is design, planning, review, and orchestration — not implementation.
+- **Codex handles all implementation.** Once a plan is approved, use the `codex-agent` skill to send it to Codex (gpt-5.4, `reasoning_effort: high` for complex tasks).
+- **Codex reviews the plan before implementation.** After a plan is written and user-approved, send it to Codex (`sandbox: "read-only"`) for a review pass. Surface any gaps or issues back to the user before dispatching for implementation.
+- **Codex only implements after user approval.** Present the plan or feature table first, get a "yes", then dispatch to Codex.
+- **Always use the `codex-agent` skill** before invoking any Codex MCP tool or Bash codex command. The skill defines the correct invocation patterns for this project.
 
 ## Purpose
 
@@ -128,3 +136,7 @@ Energy penalty: if consumption > production, all output scaled by `available / r
 - **HoverPortal** — use `src/components/HoverPortal.tsx` for any hover panels. Renders via React portal into `document.body` to avoid clipping inside `overflow-y: auto` containers. Accepts `onMouseEnter`/`onMouseLeave` for stay-open behaviour when cursor moves into the panel. **Known bug:** when anchor is near the left viewport edge, the right-aligned panel can overflow left. Fix: clamp so `panel.left >= 0` after positioning.
 - **Seeded PRNG** — `StateManager` uses `mulberry32` seeded PRNG for deterministic galaxy/NPC generation. All new engine code that needs randomness must accept an explicit seed and call the PRNG — never `Math.random()`.
 - **Research queue is global** — `state.researchQueue` lives on `GameState`, not per planet. Each `QueueItem` carries `sourcePlanetIndex` to track which planet pays the cost. Don't move it to `PlanetState`.
+- **`renderWithGame` partial overrides** — only `planet.buildings`, `planet.ships`, and `planet.resources` accept partial objects. `planet.defences` is a full `DefenceCounts` — omit it entirely rather than passing partial. `espionageReports` is part of `GameState` — pass under `gameState.espionageReports`. `fleetTarget` is a context field (not `GameState`) — needs a dedicated `fleetTarget` option in `renderWithGame`; check `src/test/test-utils.tsx` before adding.
+- **`formatDuration(seconds)`** returns compact strings (`'2h'`, `'2h 5m'`, `'30s'`) — never zero-padded. Test assertions must match exactly.
+- **`EspionageReport` required fields**: `id`, `timestamp`, `targetCoordinates`, `targetName`, `sourcePlanetIndex`, `probesSent`, `probesLost`, `detected`, `detectionChance`, `read`. `resources` is optional.
+- **Ship/defence prerequisites in tests** — Small Cargo requires `shipyard: 2` + `combustionDrive: 2`. Small Shield Dome requires `shieldingTechnology: 2`. Always check `src/data/ships.ts` / `src/data/defences.ts` prereqs before writing test fixtures.

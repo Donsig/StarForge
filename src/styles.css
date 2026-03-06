@@ -122,7 +122,8 @@ body {
   color: #ffa500;
 }
 
-.energy-hover-panel {
+.energy-hover-panel,
+.resource-hover-panel {
   min-width: 240px;
   border: 1px solid var(--border);
   border-radius: 0.5rem;
@@ -741,25 +742,44 @@ body {
   padding: 0.6rem 0;
 }
 
-.galaxy-system-label {
+.galaxy-coord-group {
   display: flex;
-  align-items: baseline;
-  gap: 0.4rem;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  justify-content: center;
 }
 
-.galaxy-system-prefix {
+.galaxy-coord-label {
   color: var(--text-dim);
   font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
-.galaxy-system-number {
-  font-size: 1.1rem;
+.galaxy-coord-input {
+  width: 3.5rem;
+  text-align: center;
+  padding: 0.2rem 0.3rem;
+  font-size: 1rem;
+  font-family: var(--font-mono, monospace);
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
   color: var(--text);
+  border-radius: 4px;
 }
 
-.galaxy-system-total {
+.galaxy-coord-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.galaxy-coord-input:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.galaxy-coord-total {
   font-size: 0.85rem;
   color: var(--text-dim);
 }

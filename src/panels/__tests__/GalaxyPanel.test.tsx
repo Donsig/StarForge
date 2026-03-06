@@ -12,8 +12,8 @@ describe('GalaxyPanel', () => {
 
   it('renders galaxy panel with system navigation', () => {
     renderWithGame(<GalaxyPanel />);
-    expect(screen.getByText('Galaxy')).toBeInTheDocument();
-    expect(screen.getByText(/System 1/)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Galaxy' })).toBeInTheDocument();
+    expect(screen.getByLabelText('System')).toHaveValue(1);
   });
 
   it('shows player homeworld in correct slot', () => {
@@ -26,11 +26,40 @@ describe('GalaxyPanel', () => {
 
     renderWithGame(<GalaxyPanel />);
 
-    await user.type(screen.getByLabelText(/jump to/i), '5');
-    await user.click(screen.getByRole('button', { name: 'Go' }));
+    const systemInput = screen.getByLabelText('System');
+    await user.clear(systemInput);
+    await user.type(systemInput, '5');
+    await user.keyboard('{Enter}');
 
-    expect(screen.getByText(/System 5/)).toBeInTheDocument();
+    expect(screen.getByLabelText('System')).toHaveValue(5);
   });
+
+  it('next button increments system and syncs the inline input', async () => {
+    const user = userEvent.setup();
+
+    renderWithGame(<GalaxyPanel />);
+
+    await user.click(screen.getByRole('button', { name: 'Next system' }));
+
+    expect(screen.getByLabelText('System')).toHaveValue(2);
+  });
+
+  it('prev button decrements system and syncs the inline input', async () => {
+    const user = userEvent.setup();
+
+    renderWithGame(<GalaxyPanel />);
+
+    // Navigate to system 3 first
+    const systemInput = screen.getByLabelText('System');
+    await user.clear(systemInput);
+    await user.type(systemInput, '3');
+    await user.tab(); // blur to commit
+
+    await user.click(screen.getByRole('button', { name: 'Previous system' }));
+
+    expect(screen.getByLabelText('System')).toHaveValue(2);
+  });
+
 
   it('shows Transport button on player-owned slots that are not the active planet', () => {
     renderWithGame(<GalaxyPanel />, { withMultiplePlanets: true });
