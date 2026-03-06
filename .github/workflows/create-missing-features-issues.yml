@@ -1,0 +1,500 @@
+name: Create Missing OGame Features Issues
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'copilot/compare-starforge-ogame-features'
+    paths:
+      - '.github/workflows/create-missing-features-issues.yml'
+
+jobs:
+  create-issues:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Create missing OGame feature issues
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          create_if_not_exists() {
+            local title="$1"
+            local body="$2"
+            if gh issue list --repo "$REPO" --search "in:title $title" --state all --json title --jq '.[].title' 2>/dev/null | grep -qF "$title"; then
+              echo "Already exists: $title"
+            else
+              gh issue create --repo "$REPO" --title "$title" --body "$body"
+              echo "Created: $title"
+              sleep 1
+            fi
+          }
+
+          # ─── Bug fixes (from PLAN.md) ───────────────────────────────────────────
+          create_if_not_exists \
+            "Bug: HoverPortal left-edge viewport clipping" \
+            "## Description
+          When the anchor element (e.g. the Spy button in the Galaxy panel) is near the left edge of the viewport, the right-aligned hover panel overflows the left side of the screen and gets clipped.
+
+          ## Root Cause
+          The panel's \`right\` position is calculated from the anchor's right edge, but no check is made to ensure the panel's left edge stays \`>= 0\`.
+
+          ## Fix
+          After positioning the panel, clamp so the panel never overflows the left edge of the viewport:
+          \`\`\`
+          const panelLeft = anchorRight - panelWidth;
+          const clampedLeft = Math.max(0, panelLeft);
+          \`\`\`
+
+          ## Affected Component
+          \`src/components/HoverPortal.tsx\`"
+
+          # ─── Phase 3.3 (Messages Panel) ─────────────────────────────────────────
+          create_if_not_exists \
+            "Feature: Messages Panel (Inbox)" \
+            "## Overview
+          Implement an in-game messages / inbox panel, similar to OGame's message system.
+
+          ## Requirements
+          - Dedicated **Messages** tab in the navigation sidebar
+          - Unread message badge counter on the nav icon
+          - Message list view with sender, subject, and timestamp
+          - Mark-as-read / mark-all-read functionality
+          - Auto-prune messages older than 7 days
+          - Message categories: combat reports, espionage reports, transport confirmations, system notifications
+
+          ## Message Types
+          | Type | Trigger |
+          |------|---------|
+          | Combat Report | Fleet attack mission completes |
+          | Espionage Report | Espionage mission completes |
+          | Transport Confirmation | Transport mission completes |
+          | Colony Established | Colony ship lands successfully |
+          | Expedition Result | Expedition mission returns |
+
+          ## OGame Reference
+          OGame has a full message inbox with tabbed categories (combat, espionage, merchant, etc.) and supports forwarding reports to alliance members (not needed for single-player)."
+
+          create_if_not_exists \
+            "Feature: Combat Reports with round-by-round detail view" \
+            "## Overview
+          When a fleet attack mission completes, generate a detailed combat report that the player can read in the Messages panel.
+
+          ## Requirements
+          - Report stored in game state (linked from fleet mission result)
+          - Round-by-round breakdown: each round shows ships remaining on both sides
+          - Summary header: outcome (won/lost/draw), loot gained, debris created
+          - Attacker and defender loss totals (resource cost of destroyed units)
+          - Rebuilt defences count (70% rebuild mechanic display)
+          - Link to open full report from fleet mission list
+
+          ## Data Model
+          The \`CombatResult\` type already captures round snapshots — the report UI just needs to display them.
+
+          ## OGame Reference
+          OGame's combat reports show a full battle simulator replay with attacker/defender unit counts per round, plus a summary of all losses and loot."
+
+          # ─── Phase 3.4 (UI Polish) ───────────────────────────────────────────────
+          create_if_not_exists \
+            "Feature: Planet rename UI" \
+            "## Overview
+          Allow the player to rename their own planets (colonies and homeworld) from a name chosen during colonisation to any custom name.
+
+          ## Requirements
+          - Click-to-edit planet name in the planet switcher / overview header
+          - Inline text input with confirm (Enter) and cancel (Escape) handling
+          - Name persisted in \`PlanetState.name\`
+          - Max length: 20 characters; no special characters except hyphens and spaces
+
+          ## OGame Reference
+          OGame allows renaming planets at any time via the planet overview. The rename updates instantly across all panels that display the planet name."
+
+          create_if_not_exists \
+            "Feature: Intergalactic Research Network (IRN) research technology" \
+            "## Overview
+          Add the **Intergalactic Research Network** technology, which allows the player to combine research lab levels across all colonies to speed up research.
+
+          ## Game Mechanic
+          - Reduces research build time by combining the top \`N\` lab levels (where \`N = IRN level + 1\`)
+          - Formula: effective lab level = sum of top N lab levels across all planets
+          - Prerequisites: Hyperspace Technology 8, Computer Technology 8, Astrophysics 4
+          - Base cost: 240,000 metal, 400,000 crystal, 160,000 deuterium
+
+          ## Implementation Notes
+          - Add \`intergalacticResearchNetwork\` to \`ResearchId\` union and \`research.ts\` data file
+          - Modify \`FormulasEngine.researchTime()\` to accept the combined lab level when IRN > 0
+          - Add state migration to save version
+
+          ## OGame Reference
+          IRN is one of the most strategically important late-game technologies for multi-colony empires."
+
+          create_if_not_exists \
+            "Feature: Fleet slots counter in Fleet panel header" \
+            "## Overview
+          Display the current fleet slot usage in the Fleet panel so players can see at a glance how many missions are active versus their cap.
+
+          ## Requirements
+          - Show \`[active missions] / [max slots]\` in the Fleet panel header or subheading
+          - Max slots = \`1 + computerTechnology level\`
+          - Update reactively as missions complete or are dispatched
+          - Visually highlight when all slots are used (red / warning colour)
+
+          ## OGame Reference
+          OGame shows fleet slot usage prominently in the fleet dispatch screen to prevent players from accidentally running out of slots."
+
+          # ─── Missing Buildings ───────────────────────────────────────────────────
+          create_if_not_exists \
+            "Feature: Terraformer building" \
+            "## Overview
+          Add the **Terraformer** building, which permanently expands the number of available building fields on a planet.
+
+          ## Game Mechanic
+          - Each Terraformer level adds **5 extra fields** to the planet (net +4 after counting the Terraformer itself)
+          - High energy cost to construct (requires Solar Satellites or Fusion Reactor)
+          - Prerequisites: Nanite Factory level 1, Energy Technology level 12
+          - Base cost: 0 metal, 50,000 crystal, 100,000 deuterium (uses energy during construction only)
+
+          ## Implementation Notes
+          - Add \`terraformer\` to \`BuildingId\` union and \`buildings.ts\` data file
+          - On build completion, increase \`planet.maxFields\` by 5 per level
+          - Update \`FormulasEngine\` to calculate Terraformer's effective field expansion
+          - Add state migration
+
+          ## Why It Matters
+          Without the Terraformer, planets eventually run out of build slots and can no longer be developed. This creates an important long-term investment decision.
+
+          ## OGame Reference
+          The Terraformer is a key late-game building in OGame that allows high-level planets to keep growing beyond their natural field limit."
+
+          create_if_not_exists \
+            "Feature: Missile Silo building" \
+            "## Overview
+          Add the **Missile Silo** building, which allows construction and storage of Interplanetary Missiles (IPM) and Anti-Ballistic Missiles (ABM).
+
+          ## Game Mechanic
+          - Each silo level stores up to **10 IPMs** and **10 ABMs** (or any combination summing to 10 × level)
+          - Prerequisites: Shipyard level 1, Impulse Drive level 4
+          - Base cost: 20,000 metal, 20,000 crystal, 1,000 deuterium (×2 per level)
+          - IPMs and ABMs are built through the Shipyard queue (like ships)
+
+          ## Implementation Notes
+          - Add \`missileSilo\` to \`BuildingId\` union and \`buildings.ts\`
+          - Add \`interplanetaryMissile\` and \`antiBallisticMissile\` to defense/ship data
+          - Enforce storage capacity: total missiles ≤ silo level × 10
+          - Required prerequisite for missile-type units
+
+          ## Related Issues
+          - Interplanetary Missiles (IPM) feature
+          - Anti-Ballistic Missiles (ABM) feature
+
+          ## OGame Reference
+          The Missile Silo is a required building for the missile warfare system in OGame."
+
+          # ─── Missing Defences / Weapons ─────────────────────────────────────────
+          create_if_not_exists \
+            "Feature: Interplanetary Missiles (IPM) — missile attack on NPC planets" \
+            "## Overview
+          Add **Interplanetary Missiles** as an offensive weapon that can destroy specific defensive structures on NPC planets without sending a fleet.
+
+          ## Game Mechanic
+          - Launched from a Missile Silo (requires silo level ≥ 1)
+          - Range: each IPM can reach planets within a certain number of systems (scales with Impulse Drive level)
+          - Targeting: player selects a target defence type on the NPC planet; IPM destroys the chosen structure(s)
+          - IPMs bypass the 70% defence rebuild mechanic — destroyed structures do NOT auto-rebuild
+          - One IPM is consumed per launch
+          - ABMs on the target planet can intercept IPMs (1 ABM intercepts 1 IPM)
+          - Deuterium fuel cost per launch
+
+          ## Implementation Notes
+          - Add \`Missile Attack\` as a new fleet/action type (not a true fleet mission — instant travel or very short travel time)
+          - UI: new section in Fleet panel or separate Missiles panel
+          - Requires \`missileSilo\` building and \`impulseDrive\` research
+
+          ## OGame Reference
+          IPMs add a strategic layer to OGame — they allow softening defences before a fleet attack, or punishing heavily-fortified NPCs that are otherwise costly to raid."
+
+          create_if_not_exists \
+            "Feature: Anti-Ballistic Missiles (ABM) — defend against IPM attacks" \
+            "## Overview
+          Add **Anti-Ballistic Missiles** as a defensive countermeasure that automatically intercepts incoming Interplanetary Missiles.
+
+          ## Game Mechanic
+          - Stored in the Missile Silo alongside IPMs
+          - When an IPM attack is launched against a player's planet, ABMs automatically launch to intercept
+          - Intercept ratio: 1 ABM per 1 IPM; remaining IPMs continue to target defences
+          - ABMs are consumed when used (one-time use, like IPMs)
+          - Built through the Shipyard queue (cheap: 8,000 metal, 2,000 crystal)
+
+          ## Implementation Notes
+          - Extend Missile Silo storage to track IPM/ABM counts separately
+          - ABM auto-intercept logic in the missile attack resolution engine
+          - Display ABM count in the Defence panel alongside other defences
+
+          ## OGame Reference
+          ABMs provide the defensive counterplay to IPM attacks, making the missile system a two-sided mini-game."
+
+          # ─── Moon System ─────────────────────────────────────────────────────────
+          create_if_not_exists \
+            "Feature: Moon system — moons created from large debris fields" \
+            "## Overview
+          Implement the **Moon** system: after a large enough battle, there is a chance that the debris field coalesces into a moon orbiting the planet.
+
+          ## Game Mechanic
+          - Moon creation chance: \`min(20%, total_debris_metal_crystal / 100,000) × 100%\`
+          - Moon is a separate body at the same coordinates as the planet, with its own building slots
+          - Moon starts with 1 field; expanded via Lunar Base
+          - Moon does NOT have resource mines or Research Lab
+          - Moon CAN have: Robotics Factory, Shipyard, Metal/Crystal/Deuterium Storage, Defence structures
+          - Moon-exclusive buildings: Lunar Base, Sensor Phalanx, Jump Gate
+          - Moons can be destroyed by Death Stars (low success chance; also risks destroying the Death Stars)
+
+          ## Implementation Notes
+          - Add \`moon\` property to \`PlanetState\` (optional sub-object)
+          - Extend \`CombatEngine\` to roll moon creation chance after battle
+          - Add moon-specific building restrictions to \`BuildQueue\`
+          - New \`MoonState\` model with \`fields\`, \`buildings\`, \`ships\`, \`defences\`
+          - Galaxy panel should show moon presence indicator at occupied slots
+
+          ## OGame Reference
+          Moons are one of OGame's most prized possessions due to the Sensor Phalanx and Jump Gate they enable. They're created by chance from battle debris."
+
+          create_if_not_exists \
+            "Feature: Lunar Base building (moon-exclusive)" \
+            "## Overview
+          Add the **Lunar Base** building, which is the foundational moon building that expands available field slots and is required for all other moon buildings.
+
+          ## Game Mechanic
+          - Moon-only building; cannot be built on planets
+          - Each level adds **3 net fields** (provides 4 fields, costs 1 field itself)
+          - Prerequisites for other moon buildings (Sensor Phalanx, Jump Gate)
+          - Base cost: 20,000 metal, 40,000 crystal, 20,000 deuterium
+
+          ## OGame Reference
+          The Lunar Base is the first building constructed on any moon in OGame."
+
+          create_if_not_exists \
+            "Feature: Sensor Phalanx building (moon-exclusive) — scan fleet movements" \
+            "## Overview
+          Add the **Sensor Phalanx** building (moon-only), which allows the player to scan any coordinate within range to see all fleet movements to/from that location.
+
+          ## Game Mechanic
+          - Moon-only building; requires Lunar Base level 1
+          - Range: \`(level² - 1)\` solar systems (level 1 = same system only; level 5 = 24 systems)
+          - Each scan costs **5,000 deuterium** (deuterium must be stored on the moon or transported there)
+          - Cannot scan moons (only planets)
+          - Reveals: all active fleet missions targeting or originating from the scanned coordinates, including mission type, ships, ETA
+          - Prerequisites: Lunar Base level 1, Energy Technology level 6, Espionage Technology level 4
+
+          ## Implementation Notes
+          - Add Sensor Phalanx scan action to the Galaxy panel (when player's moon is selected)
+          - Show scanned fleet movements in a popup/modal
+          - Deuterium deducted from moon's storage
+
+          ## OGame Reference
+          The Sensor Phalanx is extremely powerful — it allows seeing enemy (and NPC) fleets in transit, enabling strategic interceptions."
+
+          create_if_not_exists \
+            "Feature: Jump Gate building (moon-exclusive) — instant fleet teleport between moons" \
+            "## Overview
+          Add the **Jump Gate** building (moon-only), which allows instant fleet teleportation between two moons that both have Jump Gates.
+
+          ## Game Mechanic
+          - Moon-only building; requires Lunar Base level 1, Hyperspace Technology level 7
+          - Instantly transports a fleet (not resources) from one moon to another moon with a Jump Gate
+          - **Cooldown**: 1 hour between uses (reduced slightly at higher levels)
+          - **No deuterium cost** for the jump itself
+          - Fleet arrives instantly (no travel time)
+          - Cannot transport resources (ships only)
+
+          ## Implementation Notes
+          - Add \`Jump\` as a new fleet mission type (or extend Deploy mission for moon-to-moon)
+          - UI: Jump Gate action shown in Fleet panel when dispatching from a moon
+          - Destination must have an active Jump Gate; cooldown enforced per-gate
+          - Add cooldown timer display in the moon's building list
+
+          ## OGame Reference
+          The Jump Gate is the ultimate strategic tool in OGame for rapid fleet repositioning. It allows fleets to bypass travel time entirely between moons."
+
+          # ─── Missing Research ────────────────────────────────────────────────────
+          create_if_not_exists \
+            "Feature: Graviton Technology research" \
+            "## Overview
+          Add **Graviton Technology** as a research technology required to construct Death Stars (Graviton Cannons in some versions).
+
+          ## Game Mechanic
+          - Unique research: costs **300,000 energy** (no metal/crystal/deuterium) — requires generating a large temporary energy surplus via Solar Satellites
+          - Research time is effectively instant once the energy requirement is met
+          - Level 1 is sufficient to unlock Death Stars
+          - Higher levels have diminishing returns but count toward player score
+          - Prerequisites: Energy Technology level 12
+
+          ## Implementation Notes
+          - Add \`gravitonTechnology\` to \`ResearchId\` and \`research.ts\`
+          - Special cost model: energy-only cost, checked against current energy production capacity (not stored resources)
+          - Add as prerequisite for \`deathstar\` in \`ships.ts\`
+          - Add state migration
+
+          ## OGame Reference
+          Graviton Technology is an endgame milestone in OGame. Building 5,000–10,000 Solar Satellites on a hot planet to generate the required energy is a classic OGame rite of passage."
+
+          # ─── Missing Fleet Missions ──────────────────────────────────────────────
+          create_if_not_exists \
+            "Feature: Deploy fleet mission — station fleet at another planet" \
+            "## Overview
+          Add the **Deploy** mission type, which moves a fleet from the source planet to a destination planet (or moon) and stations it there permanently (no return trip).
+
+          ## Game Mechanic
+          - Fleet travels to destination using normal travel time formula
+          - On arrival, ships are added to the destination planet's fleet count
+          - Cargo resources are deposited at the destination (up to storage capacity; excess is lost)
+          - No return trip — the fleet stays at the destination
+          - Can deploy to any of the player's own planets or moons
+
+          ## Use Cases
+          - **Fleetsaving**: deploy fleet to a far-away planet temporarily to protect it from incoming attacks
+          - **Consolidation**: gather fleet from multiple colonies onto one
+          - **Colony building**: move production ships to a new colony
+
+          ## Implementation Notes
+          - Add \`deploy\` to the \`FleetMissionType\` union
+          - On completion: merge arriving ships into \`targetPlanet.ships\`, deposit cargo into resources
+          - No \`returning\` phase — mission ends at \`at_target\`
+          - Destination: any of the player's own planets/moons
+          - Fleet panel dispatch form: add Deploy as a selectable mission type
+
+          ## OGame Reference
+          Deploy (called 'Deployment' in OGame) is essential for fleet management and fleet-saving strategies."
+
+          create_if_not_exists \
+            "Feature: Expedition mission — deep space exploration for random rewards" \
+            "## Overview
+          Add the **Expedition** mission type, which sends a fleet to slot 16 of any solar system on an exploration mission with random outcomes.
+
+          ## Game Mechanic
+          - Fleet travels to coordinates [galaxy:system:16] (a special deep-space slot)
+          - After arrival, a random event occurs and the fleet returns home
+          - Possible outcomes (weighted probability):
+            - **Resources found**: random metal, crystal, or deuterium up to cargo capacity
+            - **Abandoned ships found**: receive a number of random ship types for free
+            - **Nothing**: fleet returns empty
+            - **Delayed**: fleet takes longer to return
+            - **Combat encounter**: fleet fights pirates or aliens and may take losses
+            - **Fleet lost**: rare black-hole event destroys the entire expedition fleet
+          - Requires: Astrophysics research level 1; each 2 Astrophysics levels unlocks 1 additional simultaneous expedition (capped at \`floor(sqrt(astrophysicsLevel))\`)
+
+          ## Implementation Notes
+          - Add \`expedition\` to \`FleetMissionType\` union
+          - Slot 16 coordinates displayed in Galaxy panel as a special \`deep space\` marker
+          - Outcome RNG seeded from mission ID for determinism
+          - Resource rewards scale with fleet cargo capacity
+          - Ship rewards from a predefined pool weighted by fleet composition
+          - Result delivered as a Message in the Messages panel
+
+          ## OGame Reference
+          Expeditions are a core single-player activity in OGame. They provide resources and ships passively, rewarding players who send regular expeditions."
+
+          create_if_not_exists \
+            "Feature: Colonise mission via fleet dispatch" \
+            "## Overview
+          Allow the player to colonise an empty galaxy slot by dispatching a fleet containing a Colony Ship via the Fleet panel, rather than (or in addition to) clicking the slot in the Galaxy panel.
+
+          ## Current Behaviour
+          Colonisation is only possible by clicking an empty slot in the Galaxy panel. There is no fleet mission of type 'colonise'.
+
+          ## Desired Behaviour
+          - Add \`colonise\` as a selectable mission type in the fleet dispatch form
+          - Destination: any empty slot in the galaxy
+          - Fleet must include at least 1 Colony Ship
+          - Colony Ship is consumed on arrival; other ships in the fleet return home with any remaining cargo
+          - If the player already has the maximum number of colonies (gated by Astrophysics), the mission fails and all ships return
+          - Generates a 'Colony Established' message in the Messages panel on success
+
+          ## OGame Reference
+          In OGame, colonisation is a standard fleet mission type dispatched from the fleet screen."
+
+          # ─── Player Progression & Statistics ────────────────────────────────────
+          create_if_not_exists \
+            "Feature: Player score / points tracking system" \
+            "## Overview
+          Implement a **points system** that tracks the player's total score based on resources invested in buildings, research, fleet, and defences.
+
+          ## Game Mechanic
+          - **1 point per 1,000 resources** spent on buildings, research, ships, and defences
+          - Score broken down into 4 categories: Buildings, Research, Fleet, Defence
+          - Score persisted in game state and updated on every build completion
+          - Displayed in the Overview panel (or a dedicated Statistics/Ranking panel)
+          - Score never decreases (even if ships are destroyed, the original build points remain)
+
+          ## Implementation Notes
+          - Add \`score\` object to \`GameState\`: \`{ buildings: number, research: number, fleet: number, defence: number }\`
+          - Increment score on queue completion events in \`BuildQueue.processTick()\`
+          - Total score = sum of all four categories
+
+          ## OGame Reference
+          OGame's score system is the basis for the universe ranking board. For a single-player game, it provides a meaningful progression metric and a sense of achievement."
+
+          create_if_not_exists \
+            "Feature: Statistics panel (progression, highscore, achievements)" \
+            "## Overview
+          Add a **Statistics** panel that shows the player's overall progress, score breakdown, milestones reached, and key game statistics.
+
+          ## Requirements
+          - **Score breakdown**: buildings / research / fleet / defence points (depends on points tracking feature)
+          - **Resource statistics**: total metal/crystal/deuterium mined since game start
+          - **Combat statistics**: total battles fought, won, lost, drawn; total loot plundered; total ships lost
+          - **Fleet statistics**: total missions sent per type; total distance travelled
+          - **Production statistics**: current production rates per resource
+          - **Milestones/Achievements**: notable firsts (first colony, first battle won, first Death Star built, etc.) displayed as unlocked badges
+
+          ## Implementation Notes
+          - Add \`statistics\` object to \`GameState\` with lifetime counters
+          - Increment statistics in relevant engine modules (ResourceEngine, CombatEngine, FleetEngine)
+          - New \`StatisticsPanel.tsx\` component in \`src/panels/\`
+          - Persist statistics across saves (never reset)
+
+          ## OGame Reference
+          OGame has a detailed statistics page showing empire-wide data and a universe high-score ranking. For single-player, the statistics panel replaces the ranking board as a measure of progress."
+
+          # ─── Galaxy & Multi-galaxy expansion ────────────────────────────────────
+          create_if_not_exists \
+            "Feature: Expand galaxy to multiple galaxies" \
+            "## Overview
+          Increase the universe size from 1 galaxy to multiple galaxies (up to 9 in OGame), unlocking more territory and more NPC planets to raid.
+
+          ## Current State
+          \`MAX_GALAXIES = 1\` in \`src/data/galaxy.ts\`. The coordinate system supports multiple galaxies (\`[galaxy, system, slot]\`) but only galaxy 1 is used.
+
+          ## Desired Behaviour
+          - Increase \`MAX_GALAXIES\` to at least 3–5
+          - New galaxies are progressively further away (higher travel time / fuel cost)
+          - NPC colonies in outer galaxies are stronger (higher tier)
+          - Colonisation of outer galaxies is possible but expensive in fuel
+          - Galaxy panel extended with galaxy selector (1–N)
+
+          ## OGame Reference
+          OGame universes typically have 5–9 galaxies. Inter-galaxy travel is significantly more expensive than intra-galaxy travel, making outer galaxies a high-risk, high-reward frontier."
+
+          create_if_not_exists \
+            "Feature: Increase systems per galaxy (50 → 499)" \
+            "## Overview
+          Expand the number of solar systems per galaxy from 50 to 499 (the OGame standard) to create a larger, more varied game world.
+
+          ## Current State
+          \`MAX_SYSTEMS = 50\` in \`src/data/galaxy.ts\`. OGame uses 499 systems per galaxy.
+
+          ## Rationale
+          - More systems = more NPC colonies to raid = longer mid/late-game content
+          - Creates more distance variation for travel time mechanics
+          - Enables more interesting colony placement strategy
+          - Aligns with the OGame universe scale
+
+          ## Considerations
+          - NPC generation algorithm must scale efficiently (seeded PRNG already handles this)
+          - Galaxy panel needs pagination or a search/jump-to-system feature for navigation
+          - Performance: only render visible rows, not all 499 systems at once
+
+          ## OGame Reference
+          Standard OGame universes have 499 systems × 15 slots = 7,485 possible planet positions per galaxy."
+
+          echo "All issues processed."
