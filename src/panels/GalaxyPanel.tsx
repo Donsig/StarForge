@@ -7,18 +7,45 @@ import { BUILDINGS } from '../data/buildings.ts';
 import { DEFENCES } from '../data/defences.ts';
 import { SHIPS } from '../data/ships.ts';
 import { calcDistance, calcFuelCost, calcMaxFleetSlots } from '../engine/FleetEngine.ts';
-import { getSystemSlots, canColonize, type SystemSlot } from '../engine/GalaxyEngine.ts';
-import type { Coordinates, DebrisField } from '../models/Galaxy.ts';
+import {
+  canColonize,
+  getNPCCurrentForce,
+  getSystemSlots,
+  type SystemSlot,
+} from '../engine/GalaxyEngine.ts';
+import type { Coordinates, DebrisField, NPCColony } from '../models/Galaxy.ts';
 import type { ActivePanel } from '../models/types.ts';
 import { formatNumber } from '../utils/format.ts';
 
 const HOVER_CLOSE_DELAY_MS = 120;
 
-function npcStrengthLabel(tier: number): string {
-  if (tier <= 3) return 'Weak';
-  if (tier <= 6) return 'Medium';
-  if (tier <= 8) return 'Strong';
-  return 'Massive';
+export function npcRelativeStrengthLabel(npcPower: number, playerMilitary: number): string {
+  if (playerMilitary <= 0) return 'Easy';
+  const ratio = npcPower / playerMilitary;
+  if (ratio < 0.3) return 'Easy';
+  if (ratio < 0.7) return 'Fair';
+  if (ratio < 1.3) return 'Even';
+  if (ratio < 2.5) return 'Hard';
+  return 'Dangerous';
+}
+
+function calcNPCPower(colony: NPCColony, now: number): number {
+  const force = getNPCCurrentForce(colony, now);
+  let power = 0;
+
+  for (const [id, count] of Object.entries(force.ships)) {
+    if (count > 0) {
+      power += (SHIPS[id as keyof typeof SHIPS]?.weaponPower ?? 0) * count;
+    }
+  }
+
+  for (const [id, count] of Object.entries(force.defences)) {
+    if (count > 0) {
+      power += (DEFENCES[id as keyof typeof DEFENCES]?.weaponPower ?? 0) * count;
+    }
+  }
+
+  return power;
 }
 
 function formatSpecialtyLabel(specialty: string): string {
@@ -533,6 +560,7 @@ export function GalaxyPanel({ onNavigate }: GalaxyPanelProps = {}) {
                   canSpy={availableProbes > 0}
                   onHoverNpc={openNpcHover}
                   onLeaveNpcHover={scheduleNpcHoverClose}
+                  playerMilitary={gameState.playerScores.military}
                   now={now}
                 />
               );
@@ -580,6 +608,7 @@ function GalaxySlotRow({
   canSpy,
   onHoverNpc,
   onLeaveNpcHover,
+  playerMilitary,
   now,
 }: {
   slot: SystemSlot;
@@ -601,6 +630,7 @@ function GalaxySlotRow({
   canSpy: boolean;
   onHoverNpc: (key: string, anchorEl: HTMLElement) => void;
   onLeaveNpcHover: () => void;
+  playerMilitary: number;
   now: number;
 }) {
   const isRebuilding =
@@ -655,7 +685,10 @@ function GalaxySlotRow({
       <td>
         {slot.type === 'npc' && !isAbandoning && (
           <span className={`galaxy-strength number ${isRebuilding ? 'galaxy-strength-dim' : ''}`}>
-            Strength {npcStrengthLabel(slot.npc?.tier ?? 1)}
+            Strength {npcRelativeStrengthLabel(
+              calcNPCPower(slot.npc, now),
+              playerMilitary,
+            )}
           </span>
         )}
         {isAbandoning && (
