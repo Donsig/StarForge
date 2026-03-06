@@ -2,6 +2,11 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this project.
 
+## Workflow
+
+- Use `AskUserQuestion` tool when clarifying questions are needed before proceeding with design or implementation decisions.
+- **Continuously save learnings to memory** (`C:\Users\ander\.claude\projects\C--dev-repos-StarForge\memory\`). Update immediately — not at end of session — whenever you discover: a Codex interaction pattern that worked or failed, a planning workflow step, a user collaboration preference, or a project gotcha. Keep `MEMORY.md` under 200 lines; use topic files for detail.
+
 ## Purpose
 
 Single-player OGame-inspired idle browser game called "Star Forge." Real-time resource production, building upgrades, research tree, ship construction, planetary defences, galaxy exploration, fleet combat, espionage, and transport missions. No backend — all state in localStorage. See `PLAN.md` for roadmap and current phase status.
