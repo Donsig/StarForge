@@ -12,6 +12,9 @@ import { createPortal } from 'react-dom';
 
 interface Pos {
   top: number;
+  left: number;
+  right: number;
+  width: number;
   ready: boolean;
 }
 
@@ -42,8 +45,12 @@ export function HoverPortal({
 
   useEffect(() => {
     if (!open || !anchorRef.current) {
-      setPos(null);
-      return;
+      const timeoutId = window.setTimeout(() => {
+        setPos(null);
+      }, 0);
+      return () => {
+        window.clearTimeout(timeoutId);
+      };
     }
 
     const updatePos = () => {
@@ -53,7 +60,13 @@ export function HoverPortal({
         return;
       }
       // Start hidden for measurement pass
-      setPos({ top: rect.bottom + ANCHOR_GAP, ready: false });
+      setPos({
+        top: rect.bottom + ANCHOR_GAP,
+        left: rect.left,
+        right: rect.right,
+        width: rect.width,
+        ready: false,
+      });
     };
 
     updatePos();
@@ -80,14 +93,19 @@ export function HoverPortal({
     if (belowOverflows && canFitAbove) {
       top = aboveTop;
     }
-    setPos({ top: Math.max(VIEWPORT_PADDING, top), ready: true });
+    setPos({
+      top: Math.max(VIEWPORT_PADDING, top),
+      left: anchorRect.left,
+      right: anchorRect.right,
+      width: anchorRect.width,
+      ready: true,
+    });
   }, [pos, anchorRef]);
 
-  if (!open || !pos || !anchorRef.current) {
+  if (!open || !pos) {
     return null;
   }
 
-  const rect = anchorRef.current.getBoundingClientRect();
   const style: CSSProperties = {
     position: 'fixed',
     top: pos.top,
@@ -96,11 +114,11 @@ export function HoverPortal({
   };
 
   if (align === 'below-right') {
-    style.right = window.innerWidth - rect.right;
+    style.right = window.innerWidth - pos.right;
   } else if (align === 'below-left') {
-    style.left = rect.left;
+    style.left = pos.left;
   } else {
-    style.left = rect.left + rect.width / 2;
+    style.left = pos.left + pos.width / 2;
     style.transform = 'translateX(-50%)';
   }
 

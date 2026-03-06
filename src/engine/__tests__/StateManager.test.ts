@@ -14,6 +14,10 @@ import {
   saveState,
 } from '../StateManager.ts';
 
+interface LegacyPlanetFreeState {
+  planet?: unknown;
+}
+
 describe('StateManager', () => {
   beforeEach(() => {
     localStorage.clear();
@@ -459,6 +463,6 @@ describe('StateManager migration', () => {
     expect(loaded!.galaxy.npcColonies.length).toBeGreaterThan(0);
     expect(loaded!.debrisFields).toEqual([]);
     expect(loaded!.settings.maxProbeCount).toBe(10);
-    expect((loaded as any).planet).toBeUndefined();
+    expect((loaded as LegacyPlanetFreeState).planet).toBeUndefined();
   });
 });

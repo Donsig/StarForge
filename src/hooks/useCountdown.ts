@@ -6,8 +6,12 @@ export function useCountdown(completesAt: number | null): string {
 
   useEffect(() => {
     if (completesAt === null) {
-      setCountdown('');
-      return;
+      const timeoutId = window.setTimeout(() => {
+        setCountdown('');
+      }, 0);
+      return () => {
+        window.clearTimeout(timeoutId);
+      };
     }
 
     let rafId = 0;

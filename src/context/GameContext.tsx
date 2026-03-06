@@ -134,6 +134,7 @@ export interface GameContextType {
   importSaveAction: (json: string) => boolean;
 }
 
+/* eslint-disable-next-line react-refresh/only-export-components -- shared app context and hook are intentionally colocated. */
 export const GameContext = createContext<GameContextType | null>(null);
 
 interface GameProviderProps {
@@ -145,6 +146,7 @@ export function GameProvider({ children }: GameProviderProps) {
   return <GameContext.Provider value={gameEngine}>{children}</GameContext.Provider>;
 }
 
+/* eslint-disable-next-line react-refresh/only-export-components -- shared app context hook is intentionally colocated with the provider. */
 export function useGame(): GameContextType {
   const context = useContext(GameContext);
   if (!context) {

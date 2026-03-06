@@ -1096,6 +1096,7 @@ export function useGameEngine(): GameEngineState {
 
         const buildingId = item.id as BuildingId;
         if (planet.buildings[buildingId] !== undefined) {
+          // eslint-disable-next-line react-hooks/immutability -- useGameEngine owns a mutable engine state object behind stateRef.
           planet.buildings[buildingId] = item.targetLevel;
         }
       }
@@ -1357,9 +1358,10 @@ export function useGameEngine(): GameEngineState {
   }, [syncReactState]);
 
   const markAllCombatRead = useCallback((): void => {
-    for (const entry of stateRef.current.combatLog) {
-      entry.read = true;
-    }
+    stateRef.current.combatLog = stateRef.current.combatLog.map((entry) => ({
+      ...entry,
+      read: true,
+    }));
     syncReactState();
     saveState(stateRef.current);
   }, [syncReactState]);
@@ -1376,9 +1378,10 @@ export function useGameEngine(): GameEngineState {
   }, [syncReactState]);
 
   const markAllEspionageRead = useCallback((): void => {
-    for (const report of stateRef.current.espionageReports) {
-      report.read = true;
-    }
+    stateRef.current.espionageReports = stateRef.current.espionageReports.map((report) => ({
+      ...report,
+      read: true,
+    }));
     syncReactState();
     saveState(stateRef.current);
   }, [syncReactState]);
@@ -1395,9 +1398,12 @@ export function useGameEngine(): GameEngineState {
   }, [syncReactState]);
 
   const markAllFleetRead = useCallback((): void => {
-    for (const notification of stateRef.current.fleetNotifications) {
-      notification.read = true;
-    }
+    stateRef.current.fleetNotifications = stateRef.current.fleetNotifications.map(
+      (notification) => ({
+        ...notification,
+        read: true,
+      }),
+    );
     syncReactState();
     saveState(stateRef.current);
   }, [syncReactState]);
