@@ -1366,10 +1366,9 @@ export function useGameEngine(): GameEngineState {
   }, [syncReactState]);
 
   const markAllCombatRead = useCallback((): void => {
-    stateRef.current.combatLog = stateRef.current.combatLog.map((entry) => ({
-      ...entry,
-      read: true,
-    }));
+    for (const entry of stateRef.current.combatLog) {
+      entry.read = true;
+    }
     syncReactState();
     saveState(stateRef.current);
   }, [syncReactState]);
@@ -1386,10 +1385,9 @@ export function useGameEngine(): GameEngineState {
   }, [syncReactState]);
 
   const markAllEspionageRead = useCallback((): void => {
-    stateRef.current.espionageReports = stateRef.current.espionageReports.map((report) => ({
-      ...report,
-      read: true,
-    }));
+    for (const report of stateRef.current.espionageReports) {
+      report.read = true;
+    }
     syncReactState();
     saveState(stateRef.current);
   }, [syncReactState]);
@@ -1406,12 +1404,9 @@ export function useGameEngine(): GameEngineState {
   }, [syncReactState]);
 
   const markAllFleetRead = useCallback((): void => {
-    stateRef.current.fleetNotifications = stateRef.current.fleetNotifications.map(
-      (notification) => ({
-        ...notification,
-        read: true,
-      }),
-    );
+    for (const notification of stateRef.current.fleetNotifications) {
+      notification.read = true;
+    }
     syncReactState();
     saveState(stateRef.current);
   }, [syncReactState]);
