@@ -421,7 +421,6 @@ function resolveTransportAtTarget(state: GameState, mission: FleetMission, now: 
 
   const deliveredNothing =
     deliveredMetal === 0 && deliveredCrystal === 0 && deliveredDeuterium === 0;
-
   pushFleetNotification(
     state,
     mission,
