@@ -45,6 +45,7 @@ const NPC_RESEARCH_LEVELS: GameState['research'] = {
   hyperspaceDrive: 0,
   hyperspaceTechnology: 0,
   astrophysicsTechnology: 0,
+  intergalacticResearchNetwork: 0,
 };
 
 /** Simple seedable PRNG (mulberry32). */

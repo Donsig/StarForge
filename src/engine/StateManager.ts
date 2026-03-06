@@ -340,6 +340,11 @@ function migrate(state: GameState): GameState {
     state.version = 11;
   }
 
+  if (state.version < 12) {
+    legacyState.research.intergalacticResearchNetwork = 0;
+    state.version = 12;
+  }
+
   return state;
 }
 
