@@ -62,6 +62,9 @@ function createColony(
     },
     lastRaidedAt: 0,
     resourcesAtLastRaid: { metal: 0, crystal: 0, deuterium: 0 },
+    targetTier: 6,
+    catchUpUpgradeIntervalMs: 2_500,
+    catchUpProgressTicks: 0,
     ...overrides,
     temperature: overrides.temperature ?? 20,
   };

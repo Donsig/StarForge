@@ -686,7 +686,7 @@ function GalaxySlotRow({
         {slot.type === 'npc' && !isAbandoning && (
           <span className={`galaxy-strength number ${isRebuilding ? 'galaxy-strength-dim' : ''}`}>
             Strength {npcRelativeStrengthLabel(
-              calcNPCPower(slot.npc, now),
+              calcNPCPower(slot.npc!, now),
               playerMilitary,
             )}
           </span>

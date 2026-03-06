@@ -351,8 +351,8 @@ function migrate(state: GameState): GameState {
   }
 
   if (state.version < 13) {
-    if ((legacyState as Record<string, unknown>).playerScores === undefined) {
-      (legacyState as Record<string, unknown>).playerScores = {
+    if ((legacyState as unknown as Record<string, unknown>).playerScores === undefined) {
+      (legacyState as unknown as Record<string, unknown>).playerScores = {
         military: 0,
         economy: 0,
         research: 0,
@@ -360,7 +360,7 @@ function migrate(state: GameState): GameState {
       };
     }
     for (const colony of legacyState.galaxy?.npcColonies ?? []) {
-      const c = colony as Record<string, unknown>;
+      const c = colony as unknown as Record<string, unknown>;
       if (c['targetTier'] === undefined) {
         c['targetTier'] = colony.tier;
       }
