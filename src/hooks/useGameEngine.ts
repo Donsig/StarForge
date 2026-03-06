@@ -764,6 +764,9 @@ export function useGameEngine(): GameEngineState {
       colony.maxTier = maxTier;
       colony.initialUpgradeIntervalMs = intervalMs;
       colony.currentUpgradeIntervalMs = intervalMs;
+      colony.targetTier = safeTier;
+      colony.catchUpUpgradeIntervalMs = intervalMs / 4;
+      colony.catchUpProgressTicks = 0;
       colony.buildings = buildNPCBuildingsForTier(safeTier);
       colony.baseDefences = { ...baseDefences };
       colony.baseShips = { ...baseShips };

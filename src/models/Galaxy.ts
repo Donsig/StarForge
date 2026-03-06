@@ -33,6 +33,9 @@ export interface NPCColony {
   maxTier: number;
   initialUpgradeIntervalMs: number;
   currentUpgradeIntervalMs: number;
+  targetTier: number;
+  catchUpUpgradeIntervalMs: number;
+  catchUpProgressTicks: number;
   lastUpgradeAt: number;
   upgradeTickCount: number;
   raidCount: number;

@@ -359,6 +359,18 @@ function migrate(state: GameState): GameState {
         total: 0,
       };
     }
+    for (const colony of legacyState.galaxy?.npcColonies ?? []) {
+      const c = colony as Record<string, unknown>;
+      if (c['targetTier'] === undefined) {
+        c['targetTier'] = colony.tier;
+      }
+      if (c['catchUpUpgradeIntervalMs'] === undefined) {
+        c['catchUpUpgradeIntervalMs'] = colony.initialUpgradeIntervalMs / 4;
+      }
+      if (c['catchUpProgressTicks'] === undefined) {
+        c['catchUpProgressTicks'] = 0;
+      }
+    }
     state.version = 13;
   }
   return state;
