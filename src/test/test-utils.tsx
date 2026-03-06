@@ -1,4 +1,5 @@
 /* eslint-disable react-refresh/only-export-components -- test utilities intentionally export render helpers and mock context builders. */
+/* eslint-disable react-refresh/only-export-components -- test utilities intentionally export render helpers and mock context builders. */
 import type { ReactElement, ReactNode } from 'react';
 import { render } from '@testing-library/react';
 import type { RenderOptions } from '@testing-library/react';
@@ -55,26 +56,20 @@ const defaultActions: GameActions = {
   fleetTarget: null,
   setFleetTarget: () => {},
   pendingMissionTarget: null,
-  setPendingMissionTarget: (_target) => {},
-  dispatchFleet: (
-    _sourcePlanetIndex,
-    _targetCoords,
-    _ships,
-    _missionType,
-    _cargo,
-  ) => null,
-  dispatchEspionage: (_sourcePlanetIndex, _targetCoords, _probeCount) => null,
-  dispatchHarvest: (_sourcePlanetIndex, _coords) => null,
-  recallFleet: (_missionId) => {},
-  markCombatRead: (_id) => {},
+  setPendingMissionTarget: () => {},
+  dispatchFleet: () => null,
+  dispatchEspionage: () => null,
+  dispatchHarvest: () => null,
+  recallFleet: () => {},
+  markCombatRead: () => {},
   markAllCombatRead: () => {},
-  markEspionageRead: (_id) => {},
+  markEspionageRead: () => {},
   markAllEspionageRead: () => {},
-  markFleetRead: (_id) => {},
+  markFleetRead: () => {},
   markAllFleetRead: () => {},
-  deleteCombatEntry: (_id) => {},
-  deleteEspionageReport: (_id) => {},
-  deleteFleetNotification: (_id) => {},
+  deleteCombatEntry: () => {},
+  deleteEspionageReport: () => {},
+  deleteFleetNotification: () => {},
   setGameSpeed: () => {},
   setMaxProbeCount: () => {},
   setGodMode: () => {},
