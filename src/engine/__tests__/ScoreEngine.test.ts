@@ -49,7 +49,7 @@ describe('computePlayerScores', () => {
 
   it('total is weighted composite', () => {
     const state = createNewGameState();
-    state.planets[0].ships.lightFighter = 10; // base military = 500
+    state.planets[0].ships.lightFighter = 10; // military = 550 (500 base × 1.1 weapons tech)
     state.planets[0].buildings.metalMine = 5; // economy = 5
     state.research.weaponsTechnology = 1; // research = 1
     const scores = computePlayerScores(state);
