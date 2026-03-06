@@ -2,6 +2,11 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this project.
 
+## Workflow
+
+- Use `AskUserQuestion` tool when clarifying questions are needed before proceeding with design or implementation decisions.
+- **Continuously save learnings to memory** (`C:\Users\ander\.claude\projects\C--dev-repos-StarForge\memory\`). Update immediately — not at end of session — whenever you discover: a Codex interaction pattern that worked or failed, a planning workflow step, a user collaboration preference, or a project gotcha. Keep `MEMORY.md` under 200 lines; use topic files for detail.
+
 ## Purpose
 
 Single-player OGame-inspired idle browser game called "Star Forge." Real-time resource production, building upgrades, research tree, ship construction, planetary defences, galaxy exploration, fleet combat, espionage, and transport missions. No backend — all state in localStorage. See `PLAN.md` for roadmap and current phase status.
@@ -40,7 +45,17 @@ npx vitest run src/engine/__tests__/FormulasEngine.test.ts  # run a single test 
 
 ### Directory Layout
 
-- `src/engine/` — Pure game logic, no React/DOM. GameEngine (rAF tick loop), ResourceEngine (production), BuildQueue (construction queues), FormulasEngine (all math), StateManager (localStorage).
+- `src/engine/` — Pure game logic, no React/DOM:
+  - `GameEngine` — rAF tick loop, wires all sub-engines together
+  - `ResourceEngine` — per-planet production accumulation
+  - `BuildQueue` — building/research/ship/defence queue processing
+  - `FormulasEngine` — all math, pure functions
+  - `StateManager` — localStorage save/load/migrate, offline catch-up
+  - `FleetEngine` — fleet mission dispatch, transit, arrival (raid, harvest, transport, espionage)
+  - `GalaxyEngine` — galaxy generation, colonization, NPC colony spawn, debris field management
+  - `CombatEngine` — pure deterministic combat simulation (`simulate(attacker, defender, seed)`)
+  - `EspionageEngine` — spy probe result generation
+  - `NPCUpgradeEngine` — background NPC colony upgrade simulation
 - `src/data/` — Static game definitions (buildings, research, ships, defences). The "design spreadsheet." To rebalance or add content, edit these files.
 - `src/models/` — TypeScript interfaces only. GameState, PlanetState, types. No logic.
 - `src/hooks/` — React hooks bridging engine to UI. `useGameEngine` owns the engine instance and pushes state into React.
@@ -110,4 +125,6 @@ Energy penalty: if consumption > production, all output scaled by `available / r
 - **Save after mutations** — queue-mutating actions save immediately to localStorage (plus `beforeunload` handler).
 - **`maxFields` vs `fieldCount`** — `planet.maxFields` is the building slot cap used everywhere in the engine and UI. `planet.fieldCount` is a display/legacy field. Always set both together; admin actions must update `maxFields` to affect the building cap.
 - **`solarSatellite` is a ship** — built via the shipyard queue (also exposed in the Buildings panel as a convenience). Energy contribution: `Math.floor(count * Math.max(0, Math.floor((maxTemperature + 140) / 6)))`. Guard with `Number.isFinite(maxTemperature)`.
-- **HoverPortal** — use `src/components/HoverPortal.tsx` for any hover panels. Renders via React portal into `document.body` to avoid clipping inside `overflow-y: auto` containers. Accepts `onMouseEnter`/`onMouseLeave` for stay-open behaviour when cursor moves into the panel.
+- **HoverPortal** — use `src/components/HoverPortal.tsx` for any hover panels. Renders via React portal into `document.body` to avoid clipping inside `overflow-y: auto` containers. Accepts `onMouseEnter`/`onMouseLeave` for stay-open behaviour when cursor moves into the panel. **Known bug:** when anchor is near the left viewport edge, the right-aligned panel can overflow left. Fix: clamp so `panel.left >= 0` after positioning.
+- **Seeded PRNG** — `StateManager` uses `mulberry32` seeded PRNG for deterministic galaxy/NPC generation. All new engine code that needs randomness must accept an explicit seed and call the PRNG — never `Math.random()`.
+- **Research queue is global** — `state.researchQueue` lives on `GameState`, not per planet. Each `QueueItem` carries `sourcePlanetIndex` to track which planet pays the cost. Don't move it to `PlanetState`.

@@ -246,7 +246,7 @@ export function GalaxyPanel({ onNavigate }: GalaxyPanelProps = {}) {
   const [hoveredNpcKey, setHoveredNpcKey] = useState<string | null>(null);
   const hoverAnchorRef = useRef<HTMLElement | null>(null);
   const hoverCloseTimerRef = useRef<number | null>(null);
-  const now = Date.now();
+  const [now, setNow] = useState(() => Date.now());
 
   const clearNpcHoverCloseTimer = () => {
     if (hoverCloseTimerRef.current !== null) {
@@ -279,6 +279,16 @@ export function GalaxyPanel({ onNavigate }: GalaxyPanelProps = {}) {
     },
     [],
   );
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setNow(Date.now());
+    }, 60_000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, []);
 
   const slots = getSystemSlots(gameState, 1, currentSystem);
   const debrisByCoord = useMemo(() => {

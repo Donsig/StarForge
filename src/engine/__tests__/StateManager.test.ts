@@ -14,6 +14,10 @@ import {
   saveState,
 } from '../StateManager.ts';
 
+interface LegacyPlanetFreeState {
+  planet?: unknown;
+}
+
 describe('StateManager', () => {
   beforeEach(() => {
     localStorage.clear();
@@ -338,6 +342,77 @@ describe('StateManager migration', () => {
     localStorage.clear();
   });
 
+  it('migrates v10 save to v11 by adding fleetNotifications array', async () => {
+    vi.resetModules();
+    const { loadState } = await import('../StateManager.ts');
+
+    const v10Save = {
+      version: 10,
+      lastSaveTimestamp: Date.now(),
+      tickCount: 0,
+      planets: [],
+      activePlanetIndex: 0,
+      galaxy: { seed: 42, npcColonies: [] },
+      debrisFields: [],
+      fleetMissions: [],
+      combatLog: [],
+      espionageReports: [],
+      research: {},
+      researchQueue: [],
+      settings: { gameSpeed: 1, godMode: false, maxProbeCount: 10 },
+    };
+    localStorage.setItem('starforge_save', JSON.stringify(v10Save));
+
+    const state = loadState();
+    expect(state).not.toBeNull();
+    expect(state!.version).toBe(12);
+    expect(state!.fleetNotifications).toEqual([]);
+    expect(state!.research.intergalacticResearchNetwork).toBe(0);
+  });
+
+  it('migrates v11 save to v12 by adding intergalacticResearchNetwork = 0', async () => {
+    vi.resetModules();
+    const { loadState } = await import('../StateManager.ts');
+
+    const v11Save = {
+      version: 11,
+      lastSaveTimestamp: Date.now(),
+      tickCount: 0,
+      planets: [],
+      activePlanetIndex: 0,
+      galaxy: { seed: 42, npcColonies: [] },
+      debrisFields: [],
+      fleetMissions: [],
+      combatLog: [],
+      espionageReports: [],
+      fleetNotifications: [],
+      research: {
+        energyTechnology: 2,
+        laserTechnology: 0,
+        ionTechnology: 0,
+        plasmaTechnology: 0,
+        espionageTechnology: 0,
+        computerTechnology: 0,
+        weaponsTechnology: 0,
+        shieldingTechnology: 0,
+        armourTechnology: 0,
+        combustionDrive: 0,
+        impulseDrive: 0,
+        hyperspaceDrive: 0,
+        hyperspaceTechnology: 0,
+        astrophysicsTechnology: 0,
+      },
+      researchQueue: [],
+      settings: { gameSpeed: 1, godMode: false, maxProbeCount: 10 },
+    };
+    localStorage.setItem('starforge_save', JSON.stringify(v11Save));
+
+    const state = loadState();
+    expect(state).not.toBeNull();
+    expect(state!.version).toBe(12);
+    expect(state!.research.intergalacticResearchNetwork).toBe(0);
+  });
+
   it('migrates v3 save to v5 with planets array + npc/debris fields', async () => {
     const { loadState } = await import('../StateManager.ts');
 
@@ -432,6 +507,6 @@ describe('StateManager migration', () => {
     expect(loaded!.galaxy.npcColonies.length).toBeGreaterThan(0);
     expect(loaded!.debrisFields).toEqual([]);
     expect(loaded!.settings.maxProbeCount).toBe(10);
-    expect((loaded as any).planet).toBeUndefined();
+    expect((loaded as LegacyPlanetFreeState).planet).toBeUndefined();
   });
 });

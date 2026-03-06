@@ -3,6 +3,7 @@
 import { createNewGameState } from '../../models/GameState.ts';
 import { createDefaultPlanet } from '../../models/Planet.ts';
 import type { FleetMission } from '../../models/Fleet.ts';
+import type { Coordinates } from '../../models/Galaxy.ts';
 import { getNPCResources } from '../GalaxyEngine.ts';
 import {
   calcDistance,
@@ -581,6 +582,148 @@ describe('FleetEngine', () => {
       expect(mission.cargo).toEqual({ metal: 0, crystal: 0, deuterium: 0 });
       expect(mission.returnTime).toBeGreaterThan(now);
     });
+
+    it('creates a FleetNotification with collected loot on successful harvest', () => {
+      const state = createNewGameState();
+      const now = 300_000;
+      state.debrisFields = [{ coordinates: { galaxy: 1, system: 2, slot: 8 }, metal: 10_000, crystal: 5_000 }];
+      const mission: FleetMission = {
+        id: 'harvest_notif_test',
+        type: 'harvest',
+        status: 'at_target',
+        sourcePlanetIndex: 0,
+        targetCoordinates: { galaxy: 1, system: 2, slot: 8 },
+        targetType: 'debris_field',
+        ships: { recycler: 1 },
+        cargo: { metal: 0, crystal: 0, deuterium: 0 },
+        fuelCost: 10,
+        departureTime: now - 60_000,
+        arrivalTime: now,
+        returnTime: 0,
+      };
+
+      resolveHarvestAtTarget(state, mission, now);
+
+      expect(state.fleetNotifications).toHaveLength(1);
+      expect(state.fleetNotifications[0].id).toBe('harvest_notif_test-notif');
+      expect(state.fleetNotifications[0].missionId).toBe('harvest_notif_test');
+      expect(state.fleetNotifications[0].missionType).toBe('harvest');
+      expect(state.fleetNotifications[0].loot).toEqual({ metal: 10_000, crystal: 5_000, deuterium: 0 });
+      expect(state.fleetNotifications[0].read).toBe(false);
+    });
+
+    it('creates a FleetNotification with zero loot when debris field is missing', () => {
+      const state = createNewGameState();
+      const now = 300_000;
+      const mission: FleetMission = {
+        id: 'harvest_missing_field',
+        type: 'harvest',
+        status: 'at_target',
+        sourcePlanetIndex: 0,
+        targetCoordinates: { galaxy: 1, system: 9, slot: 9 },
+        targetType: 'debris_field',
+        ships: { recycler: 1 },
+        cargo: { metal: 0, crystal: 0, deuterium: 0 },
+        fuelCost: 10,
+        departureTime: now - 60_000,
+        arrivalTime: now,
+        returnTime: 0,
+      };
+
+      resolveHarvestAtTarget(state, mission, now);
+
+      expect(state.fleetNotifications).toHaveLength(1);
+      expect(state.fleetNotifications[0].loot).toEqual({ metal: 0, crystal: 0, deuterium: 0 });
+    });
+
+    it('does not create duplicate notification if called twice for the same mission', () => {
+      const state = createNewGameState();
+      const now = 300_000;
+      state.debrisFields = [{ coordinates: { galaxy: 1, system: 2, slot: 8 }, metal: 1_000, crystal: 500 }];
+      const mission: FleetMission = {
+        id: 'harvest_idempotent',
+        type: 'harvest',
+        status: 'at_target',
+        sourcePlanetIndex: 0,
+        targetCoordinates: { galaxy: 1, system: 2, slot: 8 },
+        targetType: 'debris_field',
+        ships: { recycler: 1 },
+        cargo: { metal: 0, crystal: 0, deuterium: 0 },
+        fuelCost: 10,
+        departureTime: now - 60_000,
+        arrivalTime: now,
+        returnTime: 0,
+      };
+
+      resolveHarvestAtTarget(state, mission, now);
+      resolveHarvestAtTarget(state, mission, now);
+
+      expect(state.fleetNotifications).toHaveLength(1);
+    });
+  });
+
+  describe('transport FleetNotification', () => {
+    function makeTransportMission(
+      id: string,
+      targetCoords: Coordinates,
+      cargo: { metal: number; crystal: number; deuterium: number },
+    ): FleetMission {
+      return {
+        id,
+        type: 'transport',
+        status: 'at_target',
+        sourcePlanetIndex: 0,
+        targetCoordinates: targetCoords,
+        targetType: 'player_planet',
+        ships: { smallCargo: 1 },
+        cargo,
+        fuelCost: 5,
+        departureTime: Date.now() - 60_000,
+        arrivalTime: Date.now(),
+        returnTime: 0,
+      };
+    }
+
+    it('creates a FleetNotification with delivered amount when target planet exists', () => {
+      const state = createNewGameState();
+      const now = 400_000;
+      const colony = createDefaultPlanet();
+      colony.coordinates = { galaxy: 1, system: 1, slot: 5 };
+      colony.name = 'Colony Alpha';
+      state.planets.push(colony);
+
+      const mission = makeTransportMission(
+        'transport_notif_1',
+        { galaxy: 1, system: 1, slot: 5 },
+        { metal: 10_000, crystal: 5_000, deuterium: 0 },
+      );
+
+      state.fleetMissions.push({ ...mission, status: 'outbound', arrivalTime: now - 1 });
+      processTick(state, now);
+
+      const notif = state.fleetNotifications.find((entry) => entry.missionType === 'transport');
+      expect(notif).toBeDefined();
+      expect(notif!.targetName).toBe('Colony Alpha');
+      expect(notif!.loot.metal).toBe(10_000);
+      expect(notif!.loot.crystal).toBe(5_000);
+    });
+
+    it('creates a zero-loot FleetNotification when transport target planet is gone', () => {
+      const state = createNewGameState();
+      const now = 400_000;
+
+      const mission = makeTransportMission(
+        'transport_notif_missing',
+        { galaxy: 2, system: 5, slot: 3 },
+        { metal: 5_000, crystal: 0, deuterium: 0 },
+      );
+      state.fleetMissions.push({ ...mission, status: 'outbound', arrivalTime: now - 1 });
+      processTick(state, now);
+
+      const notif = state.fleetNotifications.find((entry) => entry.missionId === 'transport_notif_missing');
+      expect(notif).toBeDefined();
+      expect(notif!.loot).toEqual({ metal: 0, crystal: 0, deuterium: 0 });
+    });
   });
 
   describe('recallMission', () => {
@@ -730,6 +873,38 @@ describe('FleetEngine', () => {
         deuterium: Math.max(0, Math.floor(availableBefore.deuterium - loot.deuterium)),
       });
       expect(updatedColony.lastRaidedAt).toBe(now);
+    });
+
+    it('prunes old fleet notifications using history retention rules', () => {
+      const state = createNewGameState();
+      const now = 10_000_000;
+      state.fleetNotifications = [
+        {
+          id: 'old-notif',
+          missionId: 'old-mission',
+          timestamp: now - (31 * 24 * 3600 * 1000),
+          missionType: 'harvest',
+          targetCoordinates: { galaxy: 1, system: 1, slot: 1 },
+          targetName: 'Old Field',
+          loot: { metal: 1, crystal: 1, deuterium: 0 },
+          read: true,
+        },
+        {
+          id: 'recent-notif',
+          missionId: 'recent-mission',
+          timestamp: now - 1_000,
+          missionType: 'transport',
+          targetCoordinates: { galaxy: 1, system: 1, slot: 2 },
+          targetName: 'Recent Colony',
+          loot: { metal: 2, crystal: 2, deuterium: 0 },
+          read: false,
+        },
+      ];
+
+      processTick(state, now);
+
+      expect(state.fleetNotifications).toHaveLength(1);
+      expect(state.fleetNotifications[0].id).toBe('recent-notif');
     });
   });
 });

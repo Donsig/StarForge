@@ -153,6 +153,18 @@ export const RESEARCH: Record<ResearchId, ResearchDefinition> = {
       { type: 'research', id: 'impulseDrive', level: 3 },
     ],
   },
+  intergalacticResearchNetwork: {
+    id: 'intergalacticResearchNetwork',
+    name: 'Intergalactic Research Network',
+    description: 'Links research laboratories across colonies. Each level adds one more lab to the network, increasing effective research speed.',
+    baseCost: { metal: 240_000, crystal: 400_000, deuterium: 160_000 },
+    costMultiplier: 2.0,
+    requires: [
+      { type: 'research', id: 'astrophysicsTechnology', level: 4 },
+      { type: 'research', id: 'hyperspaceTechnology', level: 5 },
+      { type: 'research', id: 'computerTechnology', level: 8 },
+    ],
+  },
 };
 
 export const RESEARCH_ORDER: ResearchId[] = [
@@ -170,4 +182,5 @@ export const RESEARCH_ORDER: ResearchId[] = [
   'hyperspaceTechnology',
   'hyperspaceDrive',
   'astrophysicsTechnology',
+  'intergalacticResearchNetwork',
 ];

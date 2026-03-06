@@ -275,10 +275,27 @@ export function FleetPanel() {
     crystal: 0,
     deuterium: 0,
   });
+  const [currentTime, setCurrentTime] = useState(() => Date.now());
 
   useEffect(() => {
-    setSelectedShips({});
-    setTransportCargo({ metal: 0, crystal: 0, deuterium: 0 });
+    const intervalId = window.setInterval(() => {
+      setCurrentTime(Date.now());
+    }, 1000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, []);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setSelectedShips({});
+      setTransportCargo({ metal: 0, crystal: 0, deuterium: 0 });
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
   }, [
     sourcePlanetIndex,
     fleetTarget?.galaxy,
@@ -287,10 +304,18 @@ export function FleetPanel() {
   ]);
 
   useEffect(() => {
-    if (missionType === 'espionage' && sourcePlanet.ships.espionageProbe <= 0) {
+    if (missionType !== 'espionage' || sourcePlanet.ships.espionageProbe > 0) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
       setMissionType('attack');
       setSelectedShips({});
-    }
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
   }, [missionType, sourcePlanet.ships.espionageProbe]);
 
   const transportTargets = gameState.planets
@@ -302,28 +327,34 @@ export function FleetPanel() {
       return;
     }
 
-    setSelectedShips({});
-    setTransportCargo({ metal: 0, crystal: 0, deuterium: 0 });
+    const timeoutId = window.setTimeout(() => {
+      setSelectedShips({});
+      setTransportCargo({ metal: 0, crystal: 0, deuterium: 0 });
 
-    if (pendingMissionTarget.type === 'transport') {
-      setMissionType('transport');
-      setFleetTarget(null);
-      const targetIndex = gameState.planets.findIndex(
-        (planet, index) =>
-          index !== sourcePlanetIndex &&
-          planet.coordinates.galaxy === pendingMissionTarget.coords.galaxy &&
-          planet.coordinates.system === pendingMissionTarget.coords.system &&
-          planet.coordinates.slot === pendingMissionTarget.coords.slot,
-      );
-      if (targetIndex >= 0) {
-        setTransportTargetIndex(targetIndex);
+      if (pendingMissionTarget.type === 'transport') {
+        setMissionType('transport');
+        setFleetTarget(null);
+        const targetIndex = gameState.planets.findIndex(
+          (planet, index) =>
+            index !== sourcePlanetIndex &&
+            planet.coordinates.galaxy === pendingMissionTarget.coords.galaxy &&
+            planet.coordinates.system === pendingMissionTarget.coords.system &&
+            planet.coordinates.slot === pendingMissionTarget.coords.slot,
+        );
+        if (targetIndex >= 0) {
+          setTransportTargetIndex(targetIndex);
+        }
+      } else {
+        setMissionType(pendingMissionTarget.type === 'espionage' ? 'espionage' : 'attack');
+        setFleetTarget(pendingMissionTarget.coords);
       }
-    } else {
-      setMissionType(pendingMissionTarget.type === 'espionage' ? 'espionage' : 'attack');
-      setFleetTarget(pendingMissionTarget.coords);
-    }
 
-    setPendingMissionTarget(null);
+      setPendingMissionTarget(null);
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
   }, [
     gameState.planets,
     pendingMissionTarget,
@@ -338,13 +369,22 @@ export function FleetPanel() {
     }
 
     if (transportTargets.length === 0) {
-      setTransportTargetIndex(-1);
-      return;
+      const timeoutId = window.setTimeout(() => {
+        setTransportTargetIndex(-1);
+      }, 0);
+      return () => {
+        window.clearTimeout(timeoutId);
+      };
     }
 
     const hasSelected = transportTargets.some(({ index }) => index === transportTargetIndex);
     if (!hasSelected) {
-      setTransportTargetIndex(transportTargets[0].index);
+      const timeoutId = window.setTimeout(() => {
+        setTransportTargetIndex(transportTargets[0].index);
+      }, 0);
+      return () => {
+        window.clearTimeout(timeoutId);
+      };
     }
   }, [missionType, sourcePlanetIndex, transportTargetIndex, transportTargets]);
 
@@ -415,17 +455,16 @@ export function FleetPanel() {
     const fuelCost = missionType === 'espionage'
       ? ESPIONAGE_MIN_FUEL_COST
       : calcFuelCost(selectedShips, distance);
-    const now = Date.now();
-
     return {
       distance,
       speed,
       travelSeconds,
       fuelCost,
-      arrivalTime: now + travelSeconds * 1000,
-      returnTime: now + travelSeconds * 2000,
+      arrivalTime: currentTime + travelSeconds * 1000,
+      returnTime: currentTime + travelSeconds * 2000,
     };
   }, [
+    currentTime,
     missionTarget,
     gameState.research,
     gameState.settings.gameSpeed,

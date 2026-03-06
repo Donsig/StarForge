@@ -1,6 +1,11 @@
 import { createContext, useContext, type ReactNode } from 'react';
 import type { GameState } from '../models/GameState.ts';
-import type { EspionageReport, FleetMission, MissionType } from '../models/Fleet.ts';
+import type {
+  EspionageReport,
+  FleetMission,
+  FleetNotification,
+  MissionType,
+} from '../models/Fleet.ts';
 import type { CombatResult } from '../models/Combat.ts';
 import type { Coordinates, NPCColony, NPCSpecialty } from '../models/Galaxy.ts';
 import type { PlanetState } from '../models/Planet.ts';
@@ -11,6 +16,7 @@ import { useGameEngine } from '../hooks/useGameEngine';
 export interface GameContextType {
   gameState: GameState;
   espionageReports: EspionageReport[];
+  fleetNotifications: FleetNotification[];
   productionRates: ProductionRates;
   storageCaps: { metal: number; crystal: number; deuterium: number };
   upgradeBuilding: (id: BuildingId) => boolean;
@@ -23,6 +29,7 @@ export interface GameContextType {
   cancelShipyard: (index: number) => void;
   resetGameAction: () => void;
   setActivePlanet: (index: number) => void;
+  renamePlanet: (planetIndex: number, name: string) => void;
   fleetTarget: Coordinates | null;
   setFleetTarget: (coords: Coordinates | null) => void;
   pendingMissionTarget: { type: MissionType; coords: Coordinates } | null;
@@ -46,7 +53,15 @@ export interface GameContextType {
     coords: Coordinates,
   ) => FleetMission | null;
   recallFleet: (missionId: string) => void;
-  markReportRead: (reportId: string) => void;
+  markCombatRead: (id: string) => void;
+  markAllCombatRead: () => void;
+  markEspionageRead: (id: string) => void;
+  markAllEspionageRead: () => void;
+  markFleetRead: (id: string) => void;
+  markAllFleetRead: () => void;
+  deleteCombatEntry: (id: string) => void;
+  deleteEspionageReport: (id: string) => void;
+  deleteFleetNotification: (id: string) => void;
   setGameSpeed: (n: number) => void;
   setMaxProbeCount: (n: number) => void;
   setGodMode: (enabled: boolean) => void;
@@ -116,11 +131,11 @@ export interface GameContextType {
   adminClearCombatLog: () => void;
   adminClearEspionageReports: () => void;
   adminClearDebrisFields: () => void;
-  adminMarkAllRead: () => void;
   exportSaveAction: () => string;
   importSaveAction: (json: string) => boolean;
 }
 
+/* eslint-disable-next-line react-refresh/only-export-components -- shared app context and hook are intentionally colocated. */
 export const GameContext = createContext<GameContextType | null>(null);
 
 interface GameProviderProps {
@@ -132,6 +147,7 @@ export function GameProvider({ children }: GameProviderProps) {
   return <GameContext.Provider value={gameEngine}>{children}</GameContext.Provider>;
 }
 
+/* eslint-disable-next-line react-refresh/only-export-components -- shared app context hook is intentionally colocated with the provider. */
 export function useGame(): GameContextType {
   const context = useContext(GameContext);
   if (!context) {

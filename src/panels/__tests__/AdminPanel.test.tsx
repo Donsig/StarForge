@@ -7,7 +7,6 @@ import { createNewGameState } from '../../models/GameState.ts';
 import { createDefaultPlanet, type PlanetState } from '../../models/Planet.ts';
 import { calculateProduction, getStorageCaps } from '../../engine/ResourceEngine.ts';
 import type { Coordinates } from '../../models/Galaxy.ts';
-import type { BuildingId, DefenceId, ResearchId, ShipId } from '../../models/types.ts';
 import { AdminPanel } from '../AdminPanel';
 
 function withPlanetMutation(
@@ -32,6 +31,7 @@ function Harness({ children }: { children?: ReactNode }) {
   const contextValue = useMemo<GameContextType>(() => ({
     gameState,
     espionageReports: gameState.espionageReports,
+    fleetNotifications: gameState.fleetNotifications,
     productionRates: calculateProduction(gameState),
     storageCaps: getStorageCaps(gameState),
     upgradeBuilding: () => false,
@@ -44,6 +44,7 @@ function Harness({ children }: { children?: ReactNode }) {
     cancelShipyard: () => {},
     resetGameAction: () => {},
     setActivePlanet: () => {},
+    renamePlanet: () => {},
     fleetTarget: null,
     setFleetTarget: () => {},
     pendingMissionTarget: null,
@@ -52,7 +53,15 @@ function Harness({ children }: { children?: ReactNode }) {
     dispatchEspionage: () => null,
     dispatchHarvest: () => null,
     recallFleet: () => {},
-    markReportRead: () => {},
+    markCombatRead: () => {},
+    markAllCombatRead: () => {},
+    markEspionageRead: () => {},
+    markAllEspionageRead: () => {},
+    markFleetRead: () => {},
+    markAllFleetRead: () => {},
+    deleteCombatEntry: () => {},
+    deleteEspionageReport: () => {},
+    deleteFleetNotification: () => {},
     setGameSpeed: (n: number) => {
       setGameState((current) => ({
         ...current,
@@ -108,7 +117,7 @@ function Harness({ children }: { children?: ReactNode }) {
     adminSetBuildings: () => {},
     adminSetShips: () => {},
     adminSetDefences: () => {},
-    adminSetResearch: (_research: Partial<Record<ResearchId, number>>) => {},
+    adminSetResearch: () => {},
     adminForceColonize: (coords: Coordinates): PlanetState | null => {
       let created: PlanetState | null = null;
       setGameState((current) => {
@@ -137,17 +146,9 @@ function Harness({ children }: { children?: ReactNode }) {
     adminAddNPC: () => null,
     adminSetNPCTier: () => {},
     adminSetNPCSpecialty: () => {},
-    adminSetNPCBuildings: (_coords: Coordinates, _buildings: Partial<Record<BuildingId, number>>) => {},
-    adminSetNPCCurrentFleet: (
-      _coords: Coordinates,
-      _ships: Partial<Record<ShipId, number>>,
-      _applyToBase?: boolean,
-    ) => {},
-    adminSetNPCCurrentDefences: (
-      _coords: Coordinates,
-      _defences: Partial<Record<DefenceId, number>>,
-      _applyToBase?: boolean,
-    ) => {},
+    adminSetNPCBuildings: () => {},
+    adminSetNPCCurrentFleet: () => {},
+    adminSetNPCCurrentDefences: () => {},
     adminResetNPC: () => {},
     adminWipeNPC: () => {},
     adminNPCTriggerUpgrade: () => {},
@@ -170,7 +171,6 @@ function Harness({ children }: { children?: ReactNode }) {
     adminClearCombatLog: () => {},
     adminClearEspionageReports: () => {},
     adminClearDebrisFields: () => {},
-    adminMarkAllRead: () => {},
     exportSaveAction: () => '',
     importSaveAction: () => false,
   }), [gameState]);

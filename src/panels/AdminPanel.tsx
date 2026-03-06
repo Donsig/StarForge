@@ -151,7 +151,9 @@ export function AdminPanel() {
     adminClearCombatLog,
     adminClearEspionageReports,
     adminClearDebrisFields,
-    adminMarkAllRead,
+    markAllCombatRead,
+    markAllEspionageRead,
+    markAllFleetRead,
   } = useGame();
 
   const [activeTab, setActiveTab] = useState<AdminTab>('resources');
@@ -215,27 +217,54 @@ export function AdminPanel() {
   const activePlanet = gameState.planets[gameState.activePlanetIndex];
 
   useEffect(() => {
-    if (selectedPlanetIndex >= gameState.planets.length) {
-      setSelectedPlanetIndex(0);
+    if (selectedPlanetIndex < gameState.planets.length) {
+      return;
     }
+
+    const timeoutId = window.setTimeout(() => {
+      setSelectedPlanetIndex(0);
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
   }, [gameState.planets.length, selectedPlanetIndex]);
 
   useEffect(() => {
-    if (selectedPlanetFieldCount !== undefined) {
-      setFieldCountDraft(String(selectedPlanetFieldCount));
+    if (selectedPlanetFieldCount === undefined) {
+      return;
     }
+
+    const timeoutId = window.setTimeout(() => {
+      setFieldCountDraft(String(selectedPlanetFieldCount));
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
   }, [selectedPlanetFieldCount, selectedPlanetIndex]);
 
   useEffect(() => {
     if (npcColonies.length === 0) {
-      setRemoveNpcKey('');
-      setEditorNpcKey('');
-      setCombatNpcKey('');
-      return;
+      const timeoutId = window.setTimeout(() => {
+        setRemoveNpcKey('');
+        setEditorNpcKey('');
+        setCombatNpcKey('');
+      }, 0);
+      return () => {
+        window.clearTimeout(timeoutId);
+      };
     }
-    if (!removeNpcKey) setRemoveNpcKey(coordsToKey(npcColonies[0].coordinates));
-    if (!editorNpcKey) setEditorNpcKey(coordsToKey(npcColonies[0].coordinates));
-    if (!combatNpcKey) setCombatNpcKey(coordsToKey(npcColonies[0].coordinates));
+
+    const timeoutId = window.setTimeout(() => {
+      if (!removeNpcKey) setRemoveNpcKey(coordsToKey(npcColonies[0].coordinates));
+      if (!editorNpcKey) setEditorNpcKey(coordsToKey(npcColonies[0].coordinates));
+      if (!combatNpcKey) setCombatNpcKey(coordsToKey(npcColonies[0].coordinates));
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
   }, [combatNpcKey, editorNpcKey, npcColonies, removeNpcKey]);
 
   const editorNPC = useMemo(
@@ -250,42 +279,56 @@ export function AdminPanel() {
 
   useEffect(() => {
     if (!editorNPC) return;
-    setEditorTier(editorNPC.tier);
-    setEditorSpecialty(editorNPC.specialty);
-    setEditorBuildings(
-      BUILDING_ORDER.reduce((acc, buildingId) => {
-        acc[buildingId] = String(editorNPC.buildings[buildingId] ?? 0);
-        return acc;
-      }, {} as Record<BuildingId, string>),
-    );
-    setEditorFleet(
-      SHIP_ORDER.reduce((acc, shipId) => {
-        acc[shipId] = String(editorNPC.currentShips[shipId] ?? 0);
-        return acc;
-      }, {} as Record<ShipId, string>),
-    );
-    setEditorDefences(
-      DEFENCE_ORDER.reduce((acc, defenceId) => {
-        acc[defenceId] = String(editorNPC.currentDefences[defenceId] ?? 0);
-        return acc;
-      }, {} as Record<DefenceId, string>),
-    );
+
+    const timeoutId = window.setTimeout(() => {
+      setEditorTier(editorNPC.tier);
+      setEditorSpecialty(editorNPC.specialty);
+      setEditorBuildings(
+        BUILDING_ORDER.reduce((acc, buildingId) => {
+          acc[buildingId] = String(editorNPC.buildings[buildingId] ?? 0);
+          return acc;
+        }, {} as Record<BuildingId, string>),
+      );
+      setEditorFleet(
+        SHIP_ORDER.reduce((acc, shipId) => {
+          acc[shipId] = String(editorNPC.currentShips[shipId] ?? 0);
+          return acc;
+        }, {} as Record<ShipId, string>),
+      );
+      setEditorDefences(
+        DEFENCE_ORDER.reduce((acc, defenceId) => {
+          acc[defenceId] = String(editorNPC.currentDefences[defenceId] ?? 0);
+          return acc;
+        }, {} as Record<DefenceId, string>),
+      );
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
   }, [editorNPC]);
 
   useEffect(() => {
     if (!activePlanet) return;
-    setCombatChecked(
-      SHIP_ORDER.reduce((acc, shipId) => {
-        acc[shipId] = COMBAT_SHIPS.includes(shipId);
-        return acc;
-      }, {} as Record<ShipId, boolean>),
-    );
-    setCombatShipCounts(
-      SHIP_ORDER.reduce((acc, shipId) => {
-        acc[shipId] = String(activePlanet.ships[shipId] ?? 0);
-        return acc;
-      }, {} as Record<ShipId, string>),
-    );
+
+    const timeoutId = window.setTimeout(() => {
+      setCombatChecked(
+        SHIP_ORDER.reduce((acc, shipId) => {
+          acc[shipId] = COMBAT_SHIPS.includes(shipId);
+          return acc;
+        }, {} as Record<ShipId, boolean>),
+      );
+      setCombatShipCounts(
+        SHIP_ORDER.reduce((acc, shipId) => {
+          acc[shipId] = String(activePlanet.ships[shipId] ?? 0);
+          return acc;
+        }, {} as Record<ShipId, string>),
+      );
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
   }, [activePlanet]);
 
   const combatHasSelectedShips = useMemo(() => {
@@ -1329,7 +1372,9 @@ export function AdminPanel() {
               type="button"
               className="btn"
               onClick={() => {
-                adminMarkAllRead();
+                markAllCombatRead();
+                markAllEspionageRead();
+                markAllFleetRead();
                 setStatus('All reports marked as read.');
               }}
             >

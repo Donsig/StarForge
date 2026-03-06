@@ -2,8 +2,9 @@ import type { GameState } from '../models/GameState.ts';
 import type { NPCSpecialty } from '../models/Galaxy.ts';
 import { createNewGameState } from '../models/GameState.ts';
 import { GAME_CONSTANTS } from '../models/types.ts';
+import type { PlanetState } from '../models/Planet.ts';
 import { accumulateBulk } from './ResourceEngine.ts';
-import { getCompletionEvents } from './BuildQueue.ts';
+import { effectiveResearchLabLevel, getCompletionEvents } from './BuildQueue.ts';
 import type { BuildingId, DefenceId, ResearchId, ShipId } from '../models/types.ts';
 import { DEFENCES } from '../data/defences.ts';
 import { BUILDINGS } from '../data/buildings.ts';
@@ -29,6 +30,63 @@ const NPC_SPECIALTIES: NPCSpecialty[] = [
   'raider',
   'researcher',
 ];
+
+type LegacyQueue<T> = T[] | T | null | undefined;
+
+interface LegacyPlanetState {
+  name: string;
+  coordinates?: PlanetState['coordinates'];
+  maxTemperature?: number;
+  maxFields?: number;
+  fieldCount?: number;
+  buildings: PlanetState['buildings'];
+  defences?: Partial<Record<DefenceId, number>>;
+  ships: Partial<Record<ShipId, number>>;
+  resources: PlanetState['resources'];
+  buildingQueue?: LegacyQueue<GameState['researchQueue'][number]>;
+  shipyardQueue: PlanetState['shipyardQueue'];
+}
+
+interface LegacyNPCColony extends Omit<GameState['galaxy']['npcColonies'][number], 'temperature'> {
+  temperature?: number;
+}
+
+interface LegacyGameState
+  extends Omit<
+    GameState,
+    | 'planets'
+    | 'activePlanetIndex'
+    | 'galaxy'
+    | 'fleetMissions'
+    | 'combatLog'
+    | 'espionageReports'
+    | 'fleetNotifications'
+    | 'research'
+    | 'researchQueue'
+    | 'settings'
+  > {
+  planet?: LegacyPlanetState;
+  planets?: PlanetState[];
+  activePlanetIndex?: number;
+  galaxy?: {
+    seed: number;
+    npcColonies: LegacyNPCColony[];
+  };
+  fleetMissions?: GameState['fleetMissions'];
+  combatLog?: GameState['combatLog'];
+  espionageReports?: GameState['espionageReports'];
+  fleetNotifications?: GameState['fleetNotifications'];
+  research: Partial<Record<ResearchId, number>>;
+  researchQueue?: LegacyQueue<GameState['researchQueue'][number]>;
+  settings?: Partial<GameState['settings']>;
+}
+
+function normalizeLegacyQueue<T>(queue: LegacyQueue<T>): T[] {
+  if (queue === null || queue === undefined) {
+    return [];
+  }
+  return Array.isArray(queue) ? queue : [queue];
+}
 
 /** Simple seedable PRNG (mulberry32). */
 function mulberry32(seed: number): () => number {
@@ -111,11 +169,14 @@ export function importSave(json: string): GameState | null {
 }
 
 function migrate(state: GameState): GameState {
+  const legacyState = state as LegacyGameState;
+
   if (state.version < 2) {
-    const existingDefences = (state as any).planet.defences as
-      | Partial<Record<DefenceId, number>>
-      | undefined;
-    (state as any).planet.defences = {
+    const existingDefences = legacyState.planet?.defences;
+    if (!legacyState.planet) {
+      return state;
+    }
+    legacyState.planet.defences = {
       rocketLauncher: 0,
       lightLaser: 0,
       heavyLaser: 0,
@@ -131,34 +192,25 @@ function migrate(state: GameState): GameState {
 
   if (state.version < 3) {
     // Convert single-item queues to arrays
-    if (
-      (state as any).planet.buildingQueue === null ||
-      (state as any).planet.buildingQueue === undefined
-    ) {
-      (state as any).planet.buildingQueue = [];
-    } else if (!Array.isArray((state as any).planet.buildingQueue)) {
-      (state as any).planet.buildingQueue = [(state as any).planet.buildingQueue];
+    if (legacyState.planet) {
+      legacyState.planet.buildingQueue = normalizeLegacyQueue(legacyState.planet.buildingQueue);
     }
-    if ((state as any).researchQueue === null || (state as any).researchQueue === undefined) {
-      (state as any).researchQueue = [];
-    } else if (!Array.isArray((state as any).researchQueue)) {
-      (state as any).researchQueue = [(state as any).researchQueue];
-    }
+    legacyState.researchQueue = normalizeLegacyQueue(legacyState.researchQueue);
     state.version = 3;
   }
 
   if (state.version < 4) {
-    const oldPlanet = (state as any).planet;
+    const oldPlanet = legacyState.planet;
     if (oldPlanet) {
       if (!oldPlanet.coordinates) {
         oldPlanet.coordinates = { galaxy: 1, system: 1, slot: 4 };
       }
-      (state as any).planets = [oldPlanet];
-      delete (state as any).planet;
+      legacyState.planets = [oldPlanet as PlanetState];
+      delete legacyState.planet;
     }
-    (state as any).activePlanetIndex = (state as any).activePlanetIndex ?? 0;
-    (state as any).galaxy =
-      (state as any).galaxy ??
+    legacyState.activePlanetIndex = legacyState.activePlanetIndex ?? 0;
+    legacyState.galaxy =
+      legacyState.galaxy ??
       { seed: Math.floor(Date.now() % 1_000_000), npcColonies: [] };
     state.version = 4;
   }
@@ -170,24 +222,24 @@ function migrate(state: GameState): GameState {
   }
 
   if (state.version < 6) {
-    (state as any).fleetMissions = [];
-    (state as any).combatLog = [];
+    legacyState.fleetMissions = [];
+    legacyState.combatLog = [];
     state.version = 6;
   }
 
   if (state.version < 7) {
-    (state as any).espionageReports = [];
+    legacyState.espionageReports = [];
     state.version = 7;
   }
 
   if (state.version < 8) {
-    (state as any).settings = (state as any).settings ?? { gameSpeed: 1 };
-    (state as any).settings.godMode = false;
+    legacyState.settings = legacyState.settings ?? { gameSpeed: 1 };
+    legacyState.settings.godMode = false;
     state.version = 8;
   }
 
   if (state.version < 9) {
-    (state as any).settings = (state as any).settings ?? { gameSpeed: 1, godMode: false };
+    legacyState.settings = legacyState.settings ?? { gameSpeed: 1, godMode: false };
     if (typeof state.settings.godMode !== 'boolean') {
       state.settings.godMode = false;
     }
@@ -252,8 +304,8 @@ function migrate(state: GameState): GameState {
 
   if (state.version < 10) {
     // Add astrophysicsTechnology to research
-    if (typeof (state.research as any).astrophysicsTechnology !== 'number') {
-      (state.research as any).astrophysicsTechnology = 0;
+    if (typeof legacyState.research.astrophysicsTechnology !== 'number') {
+      legacyState.research.astrophysicsTechnology = 0;
     }
 
     // Retroactively assign slot-based temperature and fields to all existing planets
@@ -272,20 +324,30 @@ function migrate(state: GameState): GameState {
         planet.fieldCount = stats.maxFields;
       }
       // Ensure solarSatellite exists in ships record (new ship type in v10)
-      if (typeof (planet.ships as any).solarSatellite !== 'number') {
-        (planet.ships as any).solarSatellite = 0;
+      if (typeof planet.ships.solarSatellite !== 'number') {
+        planet.ships.solarSatellite = 0;
       }
     }
 
     // Add temperature to all NPC colonies
     for (const colony of state.galaxy.npcColonies) {
-      if (typeof (colony as any).temperature !== 'number') {
+      if (typeof colony.temperature !== 'number') {
         const stats = planetStatsForSlot(state.galaxy.seed, colony.coordinates);
-        (colony as any).temperature = stats.maxTemperature;
+        (colony as LegacyNPCColony).temperature = stats.maxTemperature;
       }
     }
 
     state.version = 10;
+  }
+
+  if (state.version < 11) {
+    legacyState.fleetNotifications = [];
+    state.version = 11;
+  }
+
+  if (state.version < 12) {
+    legacyState.research.intergalacticResearchNetwork = 0;
+    state.version = 12;
   }
 
   return state;
@@ -424,10 +486,6 @@ export function processOfflineTime(state: GameState): { elapsedSeconds: number }
       }
       const nextResearch = state.researchQueue[0];
       if (nextResearch) {
-        const sourcePlanet =
-          state.planets[nextResearch.sourcePlanetIndex ?? state.activePlanetIndex] ??
-          state.planets[state.activePlanetIndex] ??
-          state.planets[0];
         const nextResearchId = nextResearch.id as ResearchId;
         const researchDef = RESEARCH[nextResearchId];
         const nextResearchCost = researchCostAtLevel(
@@ -435,12 +493,12 @@ export function processOfflineTime(state: GameState): { elapsedSeconds: number }
           researchDef.costMultiplier,
           nextResearch.targetLevel!,
         );
-        const nextResearchDuration = researchTime(
-          nextResearchCost.metal,
-          nextResearchCost.crystal,
-          sourcePlanet?.buildings.researchLab ?? 0,
-          state.settings.gameSpeed,
-        );
+      const nextResearchDuration = researchTime(
+        nextResearchCost.metal,
+        nextResearchCost.crystal,
+        effectiveResearchLabLevel(state, nextResearch),
+        state.settings.gameSpeed,
+      );
         nextResearch.startedAt = queueEvent.completesAt;
         nextResearch.completesAt = queueEvent.completesAt + nextResearchDuration * 1000;
       }
