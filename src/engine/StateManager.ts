@@ -33,13 +33,18 @@ const NPC_SPECIALTIES: NPCSpecialty[] = [
 
 type LegacyQueue<T> = T[] | T | null | undefined;
 
-interface LegacyPlanetState extends Omit<PlanetState, 'coordinates' | 'fieldCount' | 'maxTemperature'> {
+interface LegacyPlanetState {
+  name: string;
   coordinates?: PlanetState['coordinates'];
   maxTemperature?: number;
+  maxFields?: number;
   fieldCount?: number;
+  buildings: PlanetState['buildings'];
   defences?: Partial<Record<DefenceId, number>>;
   ships: Partial<Record<ShipId, number>>;
+  resources: PlanetState['resources'];
   buildingQueue?: LegacyQueue<GameState['researchQueue'][number]>;
+  shipyardQueue: PlanetState['shipyardQueue'];
 }
 
 interface LegacyNPCColony extends Omit<GameState['galaxy']['npcColonies'][number], 'temperature'> {

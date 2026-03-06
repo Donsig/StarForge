@@ -196,7 +196,6 @@ export function startResearch(
   state: GameState,
   researchId: ResearchId,
 ): boolean {
-  const planet = activePlanet(state);
   const def = RESEARCH[researchId];
   const currentLevel = state.research[researchId];
   const queuedLevels = state.researchQueue.filter(
