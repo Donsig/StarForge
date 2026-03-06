@@ -3,6 +3,103 @@ import { FleetPanel } from '../FleetPanel';
 import { fireEvent, renderWithGame, screen } from '../../test/test-utils';
 
 describe('FleetPanel', () => {
+  it('shows fleet slots counter in panel header', () => {
+    renderWithGame(<FleetPanel />, {
+      gameState: {
+        research: { computerTechnology: 2 },
+      },
+    });
+
+    // max slots = 1 + 2 = 3; no missions active
+    expect(screen.getByText('0 / 3 slots')).toBeInTheDocument();
+  });
+
+  it('fleet slots counter reflects active mission count', () => {
+    renderWithGame(<FleetPanel />, {
+      gameState: {
+        research: { computerTechnology: 1 },
+        fleetMissions: [
+          {
+            id: 'mission_slotcount1',
+            type: 'attack',
+            status: 'outbound',
+            sourcePlanetIndex: 0,
+            targetCoordinates: { galaxy: 1, system: 2, slot: 5 },
+            targetType: 'npc_colony',
+            ships: { smallCargo: 1 },
+            cargo: { metal: 0, crystal: 0, deuterium: 0 },
+            fuelCost: 5,
+            departureTime: Date.now(),
+            arrivalTime: Date.now() + 10000,
+            returnTime: 0,
+          },
+        ],
+      },
+    });
+
+    // max slots = 1 + 1 = 2; 1 mission active
+    expect(screen.getByText('1 / 2 slots')).toBeInTheDocument();
+  });
+
+  it('fleet slots counter header has full-warning class when all slots used', () => {
+    renderWithGame(<FleetPanel />, {
+      gameState: {
+        research: { computerTechnology: 0 },
+        fleetMissions: [
+          {
+            id: 'mission_slotfull1',
+            type: 'attack',
+            status: 'outbound',
+            sourcePlanetIndex: 0,
+            targetCoordinates: { galaxy: 1, system: 2, slot: 5 },
+            targetType: 'npc_colony',
+            ships: { smallCargo: 1 },
+            cargo: { metal: 0, crystal: 0, deuterium: 0 },
+            fuelCost: 5,
+            departureTime: Date.now(),
+            arrivalTime: Date.now() + 10000,
+            returnTime: 0,
+          },
+        ],
+      },
+    });
+
+    // max slots = 1 + 0 = 1; 1 mission active → slots full
+    const counter = screen.getByText('1 / 1 slots');
+    expect(counter).toHaveClass('fleet-slots-counter--full');
+  });
+
+  it('dispatch footer missions label has danger class when slots full', () => {
+    renderWithGame(<FleetPanel />, {
+      gameState: {
+        research: { computerTechnology: 0 },
+        fleetMissions: [
+          {
+            id: 'mission_footerfull',
+            type: 'attack',
+            status: 'outbound',
+            sourcePlanetIndex: 0,
+            targetCoordinates: { galaxy: 1, system: 3, slot: 7 },
+            targetType: 'npc_colony',
+            ships: { smallCargo: 1 },
+            cargo: { metal: 0, crystal: 0, deuterium: 0 },
+            fuelCost: 5,
+            departureTime: Date.now(),
+            arrivalTime: Date.now() + 10000,
+            returnTime: 0,
+          },
+        ],
+      },
+    });
+
+    // The footer "Missions: X / Y" spans should have the danger class when full
+    const missionLabels = screen.getAllByText(/Missions: 1 \/ 1/);
+    expect(missionLabels.length).toBeGreaterThan(0);
+    missionLabels.forEach((label) => {
+      expect(label).toHaveClass('danger');
+    });
+  });
+
   it('shows Send To dropdown when transport is selected with no pre-filled target', async () => {
     const user = userEvent.setup();
     renderWithGame(<FleetPanel />, { withMultiplePlanets: true });

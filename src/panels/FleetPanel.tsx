@@ -526,7 +526,12 @@ export function FleetPanel() {
 
   return (
     <section className="panel">
-      <h1 className="panel-title">Fleet Command</h1>
+      <div className="fleet-panel-header">
+        <h1 className="panel-title">Fleet Command</h1>
+        <span className={`fleet-slots-counter${slotsFull ? ' fleet-slots-counter--full' : ''}`}>
+          {activeMissions.length} / {maxSlots} slots
+        </span>
+      </div>
       <p className="panel-subtitle">Dispatch attacks against NPC colonies and track active missions.</p>
 
       <div className="panel-card fleet-dispatch-card">
@@ -754,7 +759,7 @@ export function FleetPanel() {
           )}
 
           <div className="fleet-dispatch-footer">
-            <span className="label">
+            <span className={`label${slotsFull ? ' danger' : ''}`}>
               Missions: {activeMissions.length} / {maxSlots}
             </span>
             <button
@@ -797,7 +802,7 @@ export function FleetPanel() {
         <div className="fleet-active-header">
           <h2 className="section-title">Active Missions</h2>
           <div className="admin-inline-row">
-            <span className="label">
+            <span className={`label${slotsFull ? ' danger' : ''}`}>
               Missions: {activeMissions.length} / {maxSlots}
             </span>
             {gameState.settings.godMode && activeMissions.length > 0 && (

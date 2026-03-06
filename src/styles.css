@@ -335,6 +335,10 @@ body {
   font-size: 0.82rem;
 }
 
+.label.danger {
+  color: var(--danger);
+}
+
 .cost-display {
   display: flex;
   gap: 0.45rem;
@@ -496,6 +500,24 @@ body {
 .fleet-table {
   width: 100%;
   border-collapse: collapse;
+}
+
+.fleet-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+}
+
+.fleet-slots-counter {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.fleet-slots-counter--full {
+  color: var(--danger);
+  font-weight: 600;
 }
 
 .fleet-table th,
