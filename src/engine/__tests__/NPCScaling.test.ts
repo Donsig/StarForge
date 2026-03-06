@@ -87,7 +87,7 @@ describe('computeEffectiveMinTier', () => {
     expect(computeEffectiveMinTier(0)).toBe(1);
   });
 
-  it('returns 2 at threshold', () => {
+  it('returns tier equal to floor(playerTotal / 500)', () => {
     expect(computeEffectiveMinTier(500)).toBe(1); // floor(500/500) = 1, then clamp min 1
     expect(computeEffectiveMinTier(1000)).toBe(2);
   });
