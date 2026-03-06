@@ -29,6 +29,7 @@ export interface GameContextType {
   cancelShipyard: (index: number) => void;
   resetGameAction: () => void;
   setActivePlanet: (index: number) => void;
+  renamePlanet: (planetIndex: number, name: string) => void;
   fleetTarget: Coordinates | null;
   setFleetTarget: (coords: Coordinates | null) => void;
   pendingMissionTarget: { type: MissionType; coords: Coordinates } | null;

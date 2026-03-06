@@ -51,6 +51,7 @@ const defaultActions: GameActions = {
   cancelShipyard: () => {},
   resetGameAction: () => {},
   setActivePlanet: () => {},
+  renamePlanet: () => {},
   fleetTarget: null,
   setFleetTarget: () => {},
   pendingMissionTarget: null,

@@ -44,6 +44,7 @@ function Harness({ children }: { children?: ReactNode }) {
     cancelShipyard: () => {},
     resetGameAction: () => {},
     setActivePlanet: () => {},
+    renamePlanet: () => {},
     fleetTarget: null,
     setFleetTarget: () => {},
     pendingMissionTarget: null,

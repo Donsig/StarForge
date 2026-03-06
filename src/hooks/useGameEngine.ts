@@ -94,6 +94,7 @@ export interface GameEngineState {
   cancelShipyard: (index: number) => void;
   resetGameAction: () => void;
   setActivePlanet: (index: number) => void;
+  renamePlanet: (planetIndex: number, name: string) => void;
   fleetTarget: Coordinates | null;
   setFleetTarget: (coords: Coordinates | null) => void;
   pendingMissionTarget: { type: MissionType; coords: Coordinates } | null;
@@ -482,6 +483,18 @@ export function useGameEngine(): GameEngineState {
       syncReactState();
       saveState(stateRef.current);
     }
+  }, [syncReactState]);
+
+  const renamePlanet = useCallback((planetIndex: number, name: string): void => {
+    const trimmed = name.trim().slice(0, 30);
+    if (!trimmed) return;
+
+    const planet = stateRef.current.planets[planetIndex];
+    if (!planet) return;
+
+    planet.name = trimmed;
+    syncReactState();
+    saveState(stateRef.current);
   }, [syncReactState]);
 
   const setGameSpeed = useCallback(
@@ -1563,6 +1576,7 @@ export function useGameEngine(): GameEngineState {
     cancelShipyard: cancelShipyardAction,
     resetGameAction,
     setActivePlanet: setActivePlanetAction,
+    renamePlanet,
     fleetTarget,
     setFleetTarget,
     pendingMissionTarget,
