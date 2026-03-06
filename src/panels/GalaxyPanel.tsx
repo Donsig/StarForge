@@ -272,8 +272,9 @@ export function GalaxyPanel({ onNavigate }: GalaxyPanelProps = {}) {
   const [currentSystem, setCurrentSystem] = useState(
     gameState.planets[activePlanetIndex].coordinates.system,
   );
-  const [jumpInput, setJumpInput] = useState('');
-  const [jumpError, setJumpError] = useState('');
+  const [systemDraft, setSystemDraft] = useState(
+    String(gameState.planets[activePlanetIndex].coordinates.system),
+  );
   const [hoveredNpcKey, setHoveredNpcKey] = useState<string | null>(null);
   const hoverAnchorRef = useRef<HTMLElement | null>(null);
   const hoverCloseTimerRef = useRef<number | null>(null);
@@ -307,29 +308,19 @@ export function GalaxyPanel({ onNavigate }: GalaxyPanelProps = {}) {
     hoverAnchorRef.current = null;
   };
 
-  function handleJump() {
-    const trimmed = jumpInput.trim();
-    const parts = trimmed.split(':').map(Number);
-    const system = parts.length >= 2 ? parts[1] : parts[0];
-
-    if (
-      !system ||
-      !Number.isInteger(system) ||
-      system < 1 ||
-      system > GALAXY_CONSTANTS.MAX_SYSTEMS
-    ) {
-      setJumpError(`System must be 1-${GALAXY_CONSTANTS.MAX_SYSTEMS}`);
-      window.setTimeout(() => {
-        setJumpError('');
-      }, 2000);
-      return;
-    }
-
-    setCurrentSystem(system);
-    setJumpInput('');
-    setJumpError('');
+  function commitSystem(value: string) {
+    const n = parseInt(value, 10);
+    const clamped = Number.isInteger(n)
+      ? Math.min(GALAXY_CONSTANTS.MAX_SYSTEMS, Math.max(1, n))
+      : currentSystem;
+    setCurrentSystem(clamped);
+    setSystemDraft(String(clamped));
     clearHoveredNpc();
   }
+
+  useEffect(() => {
+    setSystemDraft(String(currentSystem));
+  }, [currentSystem]);
 
   useEffect(
     () => () => {
@@ -427,17 +418,41 @@ export function GalaxyPanel({ onNavigate }: GalaxyPanelProps = {}) {
             clearHoveredNpc();
           }}
         >
-          Prev
+          &lt;
         </button>
-        <span className="galaxy-system-label">
-          <span className="galaxy-system-prefix">Galaxy 1</span>
-          <span className="galaxy-system-number number">
-            System {currentSystem}
-          </span>
-          <span className="galaxy-system-total number">
-            / {GALAXY_CONSTANTS.MAX_SYSTEMS}
-          </span>
-        </span>
+        <div className="galaxy-coord-group">
+          <label className="galaxy-coord-label" htmlFor="galaxy-coord-galaxy">
+            Galaxy
+          </label>
+          <input
+            id="galaxy-coord-galaxy"
+            type="number"
+            className="galaxy-coord-input"
+            value={1}
+            disabled
+            readOnly
+          />
+          <label className="galaxy-coord-label" htmlFor="galaxy-coord-system">
+            System
+          </label>
+          <input
+            id="galaxy-coord-system"
+            type="number"
+            className="galaxy-coord-input"
+            min={1}
+            max={GALAXY_CONSTANTS.MAX_SYSTEMS}
+            value={systemDraft}
+            onChange={(e) => setSystemDraft(e.target.value)}
+            onBlur={(e) => commitSystem(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                commitSystem((e.target as HTMLInputElement).value);
+                (e.target as HTMLInputElement).blur();
+              }
+            }}
+          />
+          <span className="galaxy-coord-total">/ {GALAXY_CONSTANTS.MAX_SYSTEMS}</span>
+        </div>
         <button
           type="button"
           className="btn btn-primary"
@@ -447,29 +462,8 @@ export function GalaxyPanel({ onNavigate }: GalaxyPanelProps = {}) {
             clearHoveredNpc();
           }}
         >
-          Next
+          &gt;
         </button>
-      </div>
-
-      <div className="galaxy-jump-input">
-        <label htmlFor="galaxy-jump">Jump to:</label>
-        <input
-          id="galaxy-jump"
-          type="text"
-          className="input"
-          placeholder={`System 1-${GALAXY_CONSTANTS.MAX_SYSTEMS}`}
-          value={jumpInput}
-          onChange={(event) => setJumpInput(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter') {
-              handleJump();
-            }
-          }}
-        />
-        <button type="button" className="btn btn-primary" onClick={handleJump}>
-          Go
-        </button>
-        {jumpError && <span className="galaxy-jump-error">{jumpError}</span>}
       </div>
 
       <div className="table-wrap">
