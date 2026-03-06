@@ -3,6 +3,7 @@ import { DEFENCES } from '../data/defences.ts';
 import { SHIPS } from '../data/ships.ts';
 import { useGame } from '../context/GameContext';
 import type { CombatLogEntry, EspionageReport, FleetNotification } from '../models/Fleet.ts';
+import type { ActivePanel } from '../models/types.ts';
 import { formatNumber } from '../utils/format.ts';
 
 type MessageTab = 'combat' | 'espionage' | 'fleet';
@@ -54,6 +55,7 @@ interface RowFrameProps {
   icon: string;
   title: string;
   meta: string[];
+  coordsNode?: React.ReactNode;
   read: boolean;
   onToggle: () => void;
   onDelete: () => void;
@@ -65,6 +67,7 @@ function RowFrame({
   icon,
   title,
   meta,
+  coordsNode,
   read,
   onToggle,
   onDelete,
@@ -88,6 +91,7 @@ function RowFrame({
             </span>
           </div>
         </button>
+        {coordsNode}
         <button type="button" className="btn btn-sm message-delete-btn" onClick={onDelete}>
           Delete
         </button>
@@ -97,14 +101,40 @@ function RowFrame({
   );
 }
 
+function CoordLink({
+  coords,
+  setActivePanel,
+}: {
+  coords: { galaxy: number; system: number; slot: number };
+  setActivePanel: (panel: ActivePanel) => void;
+}) {
+  const { setGalaxyJumpTarget } = useGame();
+
+  return (
+    <button
+      type="button"
+      className="coord-link btn btn-sm"
+      title="View in galaxy map"
+      onClick={() => {
+        setGalaxyJumpTarget(coords);
+        setActivePanel('galaxy');
+      }}
+    >
+      [{formatCoords(coords)}]
+    </button>
+  );
+}
+
 function CombatMessageRow({
   entry,
   onRead,
   onDelete,
+  setActivePanel,
 }: {
   entry: CombatLogEntry;
   onRead: (id: string) => void;
   onDelete: (id: string) => void;
+  setActivePanel: (panel: ActivePanel) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const outcome =
@@ -124,12 +154,15 @@ function CombatMessageRow({
   return (
     <RowFrame
       icon="CMB"
-      title={`${outcome} at [${formatCoords(entry.targetCoordinates)}]`}
+      title={outcome}
       meta={[
         `${entry.result.rounds} rounds`,
         `Loot M ${formatNumber(entry.result.loot.metal)} C ${formatNumber(entry.result.loot.crystal)} D ${formatNumber(entry.result.loot.deuterium)}`,
         formatDate(entry.timestamp),
       ]}
+      coordsNode={
+        <CoordLink coords={entry.targetCoordinates} setActivePanel={setActivePanel} />
+      }
       read={entry.read}
       onToggle={handleToggle}
       onDelete={() => onDelete(entry.id)}
@@ -150,10 +183,12 @@ function EspionageMessageRow({
   report,
   onRead,
   onDelete,
+  setActivePanel,
 }: {
   report: EspionageReport;
   onRead: (id: string) => void;
   onDelete: (id: string) => void;
+  setActivePanel: (panel: ActivePanel) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -171,12 +206,15 @@ function EspionageMessageRow({
   return (
     <RowFrame
       icon="ESP"
-      title={`${report.targetName} [${formatCoords(report.targetCoordinates)}]`}
+      title={report.targetName}
       meta={[
         report.detected ? 'Detected' : resourceSummary,
         `Counter chance ${(report.detectionChance * 100).toFixed(1)}%`,
         formatDate(report.timestamp),
       ]}
+      coordsNode={
+        <CoordLink coords={report.targetCoordinates} setActivePanel={setActivePanel} />
+      }
       read={report.read}
       onToggle={handleToggle}
       onDelete={() => onDelete(report.id)}
@@ -210,10 +248,12 @@ function FleetMessageRow({
   notification,
   onRead,
   onDelete,
+  setActivePanel,
 }: {
   notification: FleetNotification;
   onRead: (id: string) => void;
   onDelete: (id: string) => void;
+  setActivePanel: (panel: ActivePanel) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const isEmpty =
@@ -237,10 +277,15 @@ function FleetMessageRow({
           : `Harvest at ${notification.targetName}`
       }
       meta={[
-        `[${formatCoords(notification.targetCoordinates)}]`,
         `M ${formatNumber(notification.loot.metal)} C ${formatNumber(notification.loot.crystal)} D ${formatNumber(notification.loot.deuterium)}`,
         formatDate(notification.timestamp),
       ]}
+      coordsNode={
+        <CoordLink
+          coords={notification.targetCoordinates}
+          setActivePanel={setActivePanel}
+        />
+      }
       read={notification.read}
       onToggle={handleToggle}
       onDelete={() => onDelete(notification.id)}
@@ -264,7 +309,11 @@ function FleetMessageRow({
   );
 }
 
-export function MessagesPanel() {
+export function MessagesPanel({
+  setActivePanel,
+}: {
+  setActivePanel: (panel: ActivePanel) => void;
+}) {
   const {
     gameState,
     fleetNotifications,
@@ -338,6 +387,7 @@ export function MessagesPanel() {
                     entry={entry}
                     onRead={markCombatRead}
                     onDelete={deleteCombatEntry}
+                    setActivePanel={setActivePanel}
                   />
                 ))}
               </div>
@@ -363,6 +413,7 @@ export function MessagesPanel() {
                     report={report}
                     onRead={markEspionageRead}
                     onDelete={deleteEspionageReport}
+                    setActivePanel={setActivePanel}
                   />
                 ))}
               </div>
@@ -388,6 +439,7 @@ export function MessagesPanel() {
                     notification={notification}
                     onRead={markFleetRead}
                     onDelete={deleteFleetNotification}
+                    setActivePanel={setActivePanel}
                   />
                 ))}
               </div>

@@ -7,18 +7,45 @@ import { BUILDINGS } from '../data/buildings.ts';
 import { DEFENCES } from '../data/defences.ts';
 import { SHIPS } from '../data/ships.ts';
 import { calcDistance, calcFuelCost, calcMaxFleetSlots } from '../engine/FleetEngine.ts';
-import { getSystemSlots, canColonize, type SystemSlot } from '../engine/GalaxyEngine.ts';
-import type { Coordinates, DebrisField } from '../models/Galaxy.ts';
+import {
+  canColonize,
+  getNPCCurrentForce,
+  getSystemSlots,
+  type SystemSlot,
+} from '../engine/GalaxyEngine.ts';
+import type { Coordinates, DebrisField, NPCColony } from '../models/Galaxy.ts';
 import type { ActivePanel } from '../models/types.ts';
 import { formatNumber } from '../utils/format.ts';
 
 const HOVER_CLOSE_DELAY_MS = 120;
 
-function npcStrengthLabel(tier: number): string {
-  if (tier <= 3) return 'Weak';
-  if (tier <= 6) return 'Medium';
-  if (tier <= 8) return 'Strong';
-  return 'Massive';
+export function npcRelativeStrengthLabel(npcPower: number, playerMilitary: number): string {
+  if (playerMilitary <= 0) return 'Easy';
+  const ratio = npcPower / playerMilitary;
+  if (ratio < 0.3) return 'Easy';
+  if (ratio < 0.7) return 'Fair';
+  if (ratio < 1.3) return 'Even';
+  if (ratio < 2.5) return 'Hard';
+  return 'Dangerous';
+}
+
+function calcNPCPower(colony: NPCColony, now: number): number {
+  const force = getNPCCurrentForce(colony, now);
+  let power = 0;
+
+  for (const [id, count] of Object.entries(force.ships)) {
+    if (count > 0) {
+      power += (SHIPS[id as keyof typeof SHIPS]?.weaponPower ?? 0) * count;
+    }
+  }
+
+  for (const [id, count] of Object.entries(force.defences)) {
+    if (count > 0) {
+      power += (DEFENCES[id as keyof typeof DEFENCES]?.weaponPower ?? 0) * count;
+    }
+  }
+
+  return power;
 }
 
 function formatSpecialtyLabel(specialty: string): string {
@@ -232,6 +259,8 @@ export function GalaxyPanel({ onNavigate }: GalaxyPanelProps = {}) {
     espionageReports,
     colonizeAction,
     setFleetTarget,
+    galaxyJumpTarget,
+    setGalaxyJumpTarget,
     setPendingMissionTarget,
     dispatchEspionage,
     dispatchHarvest,
@@ -243,9 +272,12 @@ export function GalaxyPanel({ onNavigate }: GalaxyPanelProps = {}) {
   const [currentSystem, setCurrentSystem] = useState(
     gameState.planets[activePlanetIndex].coordinates.system,
   );
+  const [jumpInput, setJumpInput] = useState('');
+  const [jumpError, setJumpError] = useState('');
   const [hoveredNpcKey, setHoveredNpcKey] = useState<string | null>(null);
   const hoverAnchorRef = useRef<HTMLElement | null>(null);
   const hoverCloseTimerRef = useRef<number | null>(null);
+  const jumpErrorTimerRef = useRef<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
 
   const clearNpcHoverCloseTimer = () => {
@@ -270,11 +302,49 @@ export function GalaxyPanel({ onNavigate }: GalaxyPanelProps = {}) {
     setHoveredNpcKey(key);
   };
 
+  const clearHoveredNpc = () => {
+    clearNpcHoverCloseTimer();
+    setHoveredNpcKey(null);
+    hoverAnchorRef.current = null;
+  };
+
+  function handleJump() {
+    const trimmed = jumpInput.trim();
+    const parts = trimmed.split(':').map(Number);
+    const system = parts.length >= 2 ? parts[1] : parts[0];
+
+    if (
+      !system ||
+      !Number.isInteger(system) ||
+      system < 1 ||
+      system > GALAXY_CONSTANTS.MAX_SYSTEMS
+    ) {
+      setJumpError(`System must be 1-${GALAXY_CONSTANTS.MAX_SYSTEMS}`);
+      if (jumpErrorTimerRef.current !== null) {
+        window.clearTimeout(jumpErrorTimerRef.current);
+      }
+      jumpErrorTimerRef.current = window.setTimeout(() => {
+        setJumpError('');
+        jumpErrorTimerRef.current = null;
+      }, 2000);
+      return;
+    }
+
+    setCurrentSystem(system);
+    setJumpInput('');
+    setJumpError('');
+    clearHoveredNpc();
+  }
+
   useEffect(
     () => () => {
       if (hoverCloseTimerRef.current !== null) {
         window.clearTimeout(hoverCloseTimerRef.current);
         hoverCloseTimerRef.current = null;
+      }
+      if (jumpErrorTimerRef.current !== null) {
+        window.clearTimeout(jumpErrorTimerRef.current);
+        jumpErrorTimerRef.current = null;
       }
     },
     [],
@@ -289,6 +359,16 @@ export function GalaxyPanel({ onNavigate }: GalaxyPanelProps = {}) {
       window.clearInterval(intervalId);
     };
   }, []);
+
+  useEffect(() => {
+    if (!galaxyJumpTarget) {
+      return;
+    }
+
+    setCurrentSystem(galaxyJumpTarget.system);
+    setGalaxyJumpTarget(null);
+    clearHoveredNpc();
+  }, [galaxyJumpTarget, setGalaxyJumpTarget]);
 
   const slots = getSystemSlots(gameState, 1, currentSystem);
   const debrisByCoord = useMemo(() => {
@@ -353,9 +433,7 @@ export function GalaxyPanel({ onNavigate }: GalaxyPanelProps = {}) {
           disabled={currentSystem <= 1}
           onClick={() => {
             setCurrentSystem((s) => Math.max(1, s - 1));
-            clearNpcHoverCloseTimer();
-            setHoveredNpcKey(null);
-            hoverAnchorRef.current = null;
+            clearHoveredNpc();
           }}
         >
           Prev
@@ -375,13 +453,32 @@ export function GalaxyPanel({ onNavigate }: GalaxyPanelProps = {}) {
           disabled={currentSystem >= GALAXY_CONSTANTS.MAX_SYSTEMS}
           onClick={() => {
             setCurrentSystem((s) => Math.min(GALAXY_CONSTANTS.MAX_SYSTEMS, s + 1));
-            clearNpcHoverCloseTimer();
-            setHoveredNpcKey(null);
-            hoverAnchorRef.current = null;
+            clearHoveredNpc();
           }}
         >
           Next
         </button>
+      </div>
+
+      <div className="galaxy-jump-input">
+        <label htmlFor="galaxy-jump">Jump to:</label>
+        <input
+          id="galaxy-jump"
+          type="text"
+          className="input"
+          placeholder={`System 1-${GALAXY_CONSTANTS.MAX_SYSTEMS}`}
+          value={jumpInput}
+          onChange={(event) => setJumpInput(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              handleJump();
+            }
+          }}
+        />
+        <button type="button" className="btn btn-primary" onClick={handleJump}>
+          Go
+        </button>
+        {jumpError && <span className="galaxy-jump-error">{jumpError}</span>}
       </div>
 
       <div className="table-wrap">
@@ -472,6 +569,7 @@ export function GalaxyPanel({ onNavigate }: GalaxyPanelProps = {}) {
                   canSpy={availableProbes > 0}
                   onHoverNpc={openNpcHover}
                   onLeaveNpcHover={scheduleNpcHoverClose}
+                  playerMilitary={gameState.playerScores.military}
                   now={now}
                 />
               );
@@ -519,6 +617,7 @@ function GalaxySlotRow({
   canSpy,
   onHoverNpc,
   onLeaveNpcHover,
+  playerMilitary,
   now,
 }: {
   slot: SystemSlot;
@@ -540,6 +639,7 @@ function GalaxySlotRow({
   canSpy: boolean;
   onHoverNpc: (key: string, anchorEl: HTMLElement) => void;
   onLeaveNpcHover: () => void;
+  playerMilitary: number;
   now: number;
 }) {
   const isRebuilding =
@@ -594,7 +694,10 @@ function GalaxySlotRow({
       <td>
         {slot.type === 'npc' && !isAbandoning && (
           <span className={`galaxy-strength number ${isRebuilding ? 'galaxy-strength-dim' : ''}`}>
-            Strength {npcStrengthLabel(slot.npc?.tier ?? 1)}
+            Strength {npcRelativeStrengthLabel(
+              calcNPCPower(slot.npc!, now),
+              playerMilitary,
+            )}
           </span>
         )}
         {isAbandoning && (

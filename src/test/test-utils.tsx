@@ -54,6 +54,8 @@ const defaultActions: GameActions = {
   renamePlanet: () => {},
   fleetTarget: null,
   setFleetTarget: () => {},
+  galaxyJumpTarget: null,
+  setGalaxyJumpTarget: () => {},
   pendingMissionTarget: null,
   setPendingMissionTarget: () => {},
   dispatchFleet: () => null,

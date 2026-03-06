@@ -350,6 +350,29 @@ function migrate(state: GameState): GameState {
     state.version = 12;
   }
 
+  if (state.version < 13) {
+    if ((legacyState as unknown as Record<string, unknown>).playerScores === undefined) {
+      (legacyState as unknown as Record<string, unknown>).playerScores = {
+        military: 0,
+        economy: 0,
+        research: 0,
+        total: 0,
+      };
+    }
+    for (const colony of legacyState.galaxy?.npcColonies ?? []) {
+      const c = colony as unknown as Record<string, unknown>;
+      if (c['targetTier'] === undefined) {
+        c['targetTier'] = colony.tier;
+      }
+      if (c['catchUpUpgradeIntervalMs'] === undefined) {
+        c['catchUpUpgradeIntervalMs'] = colony.initialUpgradeIntervalMs / 4;
+      }
+      if (c['catchUpProgressTicks'] === undefined) {
+        c['catchUpProgressTicks'] = 0;
+      }
+    }
+    state.version = 13;
+  }
   return state;
 }
 
@@ -551,7 +574,7 @@ export function processOfflineTime(state: GameState): { elapsedSeconds: number }
     accumulateBulk(state, remainingSeconds * state.settings.gameSpeed);
   }
 
-  processNPCUpgrades(state, endTime);
+  processNPCUpgrades(state, endTime, state.playerScores?.total ?? 0);
 
   state.lastSaveTimestamp = now;
   return { elapsedSeconds };

@@ -12,10 +12,44 @@ import { formatNumber, formatRate } from '../utils/format.ts';
 
 const HOVER_CLOSE_DELAY_MS = 120;
 
-export function ResourceBar() {
+function useHoverTimer(delayMs: number) {
   const [hovered, setHovered] = useState(false);
+  const timerRef = useRef<number | null>(null);
+
+  const clear = () => {
+    if (timerRef.current !== null) {
+      window.clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  };
+
+  const open = () => {
+    clear();
+    setHovered(true);
+  };
+
+  const close = () => {
+    clear();
+    timerRef.current = window.setTimeout(() => {
+      setHovered(false);
+      timerRef.current = null;
+    }, delayMs);
+  };
+
+  useEffect(() => () => clear(), []);
+
+  return { hovered, open, close };
+}
+
+export function ResourceBar() {
+  const energyHover = useHoverTimer(HOVER_CLOSE_DELAY_MS);
+  const metalHover = useHoverTimer(HOVER_CLOSE_DELAY_MS);
+  const crystalHover = useHoverTimer(HOVER_CLOSE_DELAY_MS);
+  const deuteriumHover = useHoverTimer(HOVER_CLOSE_DELAY_MS);
+  const metalRef = useRef<HTMLDivElement>(null);
+  const crystalRef = useRef<HTMLDivElement>(null);
+  const deuteriumRef = useRef<HTMLDivElement>(null);
   const energyRef = useRef<HTMLDivElement>(null);
-  const hoverCloseTimerRef = useRef<number | null>(null);
   const { gameState, productionRates, storageCaps } = useGame();
   const planet = gameState.planets[gameState.activePlanetIndex];
   const { resources, buildings } = planet;
@@ -52,40 +86,32 @@ export function ResourceBar() {
     productionRows.reduce((sum, row) => sum + row.value, 0) + satelliteEnergy;
   const totalConsumption = consumptionRows.reduce((sum, row) => sum + row.value, 0);
   const netBalance = totalProduction - totalConsumption;
-
-  const clearHoverCloseTimer = () => {
-    if (hoverCloseTimerRef.current !== null) {
-      window.clearTimeout(hoverCloseTimerRef.current);
-      hoverCloseTimerRef.current = null;
-    }
-  };
-
-  const openHover = () => {
-    clearHoverCloseTimer();
-    setHovered(true);
-  };
-
-  const scheduleHoverClose = () => {
-    clearHoverCloseTimer();
-    hoverCloseTimerRef.current = window.setTimeout(() => {
-      setHovered(false);
-      hoverCloseTimerRef.current = null;
-    }, HOVER_CLOSE_DELAY_MS);
-  };
-
-  useEffect(
-    () => () => {
-      if (hoverCloseTimerRef.current !== null) {
-        window.clearTimeout(hoverCloseTimerRef.current);
-        hoverCloseTimerRef.current = null;
-      }
-    },
-    [],
-  );
+  const energyPenalised =
+    productionRates.energyConsumption > 0 &&
+    productionRates.energyProduction < productionRates.energyConsumption;
+  const efficiencyPct = energyPenalised
+    ? Math.min(
+        100,
+        Math.round(
+          (productionRates.energyProduction / productionRates.energyConsumption) * 100,
+        ),
+      )
+    : 100;
+  const metalMineLevel = buildings.metalMine ?? 0;
+  const crystalMineLevel = buildings.crystalMine ?? 0;
+  const deutMineLevel = buildings.deuteriumSynthesizer ?? 0;
+  const tempModifierPct = Number.isFinite(planet.maxTemperature)
+    ? Math.round((-0.002 * planet.maxTemperature + 1.28) * 100) - 100
+    : 28;
 
   return (
     <header className="resource-bar">
-      <div className="resource-entry">
+      <div
+        ref={metalRef}
+        className="resource-entry resource-entry--metal"
+        onMouseEnter={metalHover.open}
+        onMouseLeave={metalHover.close}
+      >
         <span className="resource-dot dot-metal" />
         <div>
           <div className="resource-label">Metal</div>
@@ -100,9 +126,42 @@ export function ResourceBar() {
           </div>
           <div className="resource-rate number">{formatRate(productionRates.metalPerHour * speed)}</div>
         </div>
+        <HoverPortal
+          anchorRef={metalRef}
+          open={metalHover.hovered}
+          align="below-right"
+          className="resource-hover-panel"
+          onMouseEnter={metalHover.open}
+          onMouseLeave={metalHover.close}
+        >
+          <div className="resource-label">Metal Mine (Lv {metalMineLevel})</div>
+          <div className="energy-hover-row">
+            <span>Production</span>
+            <span className="number">{formatRate(productionRates.metalPerHour * speed)}</span>
+          </div>
+          {energyPenalised && (
+            <div className="energy-hover-row">
+              <span>Energy efficiency</span>
+              <span className="number" style={{ color: 'var(--danger)' }}>
+                {efficiencyPct}%
+              </span>
+            </div>
+          )}
+          <div className="energy-hover-row">
+            <span>Storage</span>
+            <span className="number">
+              {formatNumber(resources.metal)} / {formatNumber(storageCaps.metal)}
+            </span>
+          </div>
+        </HoverPortal>
       </div>
 
-      <div className="resource-entry">
+      <div
+        ref={crystalRef}
+        className="resource-entry resource-entry--crystal"
+        onMouseEnter={crystalHover.open}
+        onMouseLeave={crystalHover.close}
+      >
         <span className="resource-dot dot-crystal" />
         <div>
           <div className="resource-label">Crystal</div>
@@ -117,9 +176,42 @@ export function ResourceBar() {
           </div>
           <div className="resource-rate number">{formatRate(productionRates.crystalPerHour * speed)}</div>
         </div>
+        <HoverPortal
+          anchorRef={crystalRef}
+          open={crystalHover.hovered}
+          align="below-right"
+          className="resource-hover-panel"
+          onMouseEnter={crystalHover.open}
+          onMouseLeave={crystalHover.close}
+        >
+          <div className="resource-label">Crystal Mine (Lv {crystalMineLevel})</div>
+          <div className="energy-hover-row">
+            <span>Production</span>
+            <span className="number">{formatRate(productionRates.crystalPerHour * speed)}</span>
+          </div>
+          {energyPenalised && (
+            <div className="energy-hover-row">
+              <span>Energy efficiency</span>
+              <span className="number" style={{ color: 'var(--danger)' }}>
+                {efficiencyPct}%
+              </span>
+            </div>
+          )}
+          <div className="energy-hover-row">
+            <span>Storage</span>
+            <span className="number">
+              {formatNumber(resources.crystal)} / {formatNumber(storageCaps.crystal)}
+            </span>
+          </div>
+        </HoverPortal>
       </div>
 
-      <div className="resource-entry">
+      <div
+        ref={deuteriumRef}
+        className="resource-entry resource-entry--deuterium"
+        onMouseEnter={deuteriumHover.open}
+        onMouseLeave={deuteriumHover.close}
+      >
         <span className="resource-dot dot-deuterium" />
         <div>
           <div className="resource-label">Deuterium</div>
@@ -134,13 +226,51 @@ export function ResourceBar() {
           </div>
           <div className="resource-rate number">{formatRate(productionRates.deuteriumPerHour * speed)}</div>
         </div>
+        <HoverPortal
+          anchorRef={deuteriumRef}
+          open={deuteriumHover.hovered}
+          align="below-right"
+          className="resource-hover-panel"
+          onMouseEnter={deuteriumHover.open}
+          onMouseLeave={deuteriumHover.close}
+        >
+          <div className="resource-label">Deuterium Synthesizer (Lv {deutMineLevel})</div>
+          <div className="energy-hover-row">
+            <span>Production</span>
+            <span className="number">{formatRate(productionRates.deuteriumPerHour * speed)}</span>
+          </div>
+          {energyPenalised && (
+            <div className="energy-hover-row">
+              <span>Energy efficiency</span>
+              <span className="number" style={{ color: 'var(--danger)' }}>
+                {efficiencyPct}%
+              </span>
+            </div>
+          )}
+          <div className="energy-hover-row">
+            <span>Temp modifier</span>
+            <span
+              className="number"
+              style={{ color: tempModifierPct >= 0 ? 'var(--success)' : 'var(--danger)' }}
+            >
+              {tempModifierPct >= 0 ? '+' : ''}
+              {tempModifierPct}%
+            </span>
+          </div>
+          <div className="energy-hover-row">
+            <span>Storage</span>
+            <span className="number">
+              {formatNumber(resources.deuterium)} / {formatNumber(storageCaps.deuterium)}
+            </span>
+          </div>
+        </HoverPortal>
       </div>
 
       <div
         ref={energyRef}
         className="resource-entry"
-        onMouseEnter={openHover}
-        onMouseLeave={scheduleHoverClose}
+        onMouseEnter={energyHover.open}
+        onMouseLeave={energyHover.close}
       >
         <span className="resource-dot dot-energy" />
         <div>
@@ -153,11 +283,11 @@ export function ResourceBar() {
         </div>
         <HoverPortal
           anchorRef={energyRef}
-          open={hovered}
+          open={energyHover.hovered}
           align="below-right"
           className="energy-hover-panel"
-          onMouseEnter={openHover}
-          onMouseLeave={scheduleHoverClose}
+          onMouseEnter={energyHover.open}
+          onMouseLeave={energyHover.close}
         >
             <div className="resource-label">Production</div>
             {productionRows.map((row) => (

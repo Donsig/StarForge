@@ -3,7 +3,7 @@ import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MessagesPanel } from '../MessagesPanel';
 import { renderWithGame } from '../../test/test-utils';
-import type { FleetNotification } from '../../models/Fleet';
+import type { CombatLogEntry, FleetNotification } from '../../models/Fleet';
 
 const baseFleetNotification: FleetNotification = {
   id: 'n1',
@@ -18,19 +18,19 @@ const baseFleetNotification: FleetNotification = {
 
 describe('MessagesPanel', () => {
   it('renders three tab buttons', () => {
-    renderWithGame(<MessagesPanel />);
+    renderWithGame(<MessagesPanel setActivePanel={() => {}} />);
     expect(screen.getByRole('button', { name: /combat/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /espionage/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /fleet/i })).toBeInTheDocument();
   });
 
   it('shows empty state when combat log is empty', () => {
-    renderWithGame(<MessagesPanel />, { gameState: { combatLog: [] } });
+    renderWithGame(<MessagesPanel setActivePanel={() => {}} />, { gameState: { combatLog: [] } });
     expect(screen.getByText(/no combat messages/i)).toBeInTheDocument();
   });
 
   it('shows unread indicator on combat log entry', () => {
-    renderWithGame(<MessagesPanel />, {
+    renderWithGame(<MessagesPanel setActivePanel={() => {}} />, {
       gameState: {
         combatLog: [{
           id: 'c1',
@@ -60,29 +60,60 @@ describe('MessagesPanel', () => {
   it('calls markAllCombatRead when Mark All Read is clicked', async () => {
     const user = userEvent.setup();
     const markAllCombatRead = vi.fn();
-    renderWithGame(<MessagesPanel />, { actions: { markAllCombatRead } });
+    renderWithGame(<MessagesPanel setActivePanel={() => {}} />, { actions: { markAllCombatRead } });
     await user.click(screen.getByRole('button', { name: /mark all read/i }));
     expect(markAllCombatRead).toHaveBeenCalledOnce();
   });
 
   it('switches to Espionage tab on click', async () => {
     const user = userEvent.setup();
-    renderWithGame(<MessagesPanel />, { gameState: { espionageReports: [] } });
+    renderWithGame(<MessagesPanel setActivePanel={() => {}} />, { gameState: { espionageReports: [] } });
     await user.click(screen.getByRole('button', { name: /espionage/i }));
     expect(screen.getByText(/no espionage messages/i)).toBeInTheDocument();
   });
 
   it('switches to Fleet tab on click', async () => {
     const user = userEvent.setup();
-    renderWithGame(<MessagesPanel />, { gameState: { fleetNotifications: [] } });
+    renderWithGame(<MessagesPanel setActivePanel={() => {}} />, { gameState: { fleetNotifications: [] } });
     await user.click(screen.getByRole('button', { name: /fleet/i }));
     expect(screen.getByText(/no fleet messages/i)).toBeInTheDocument();
+  });
+
+  it('renders coord-link buttons for combat report coordinates', () => {
+    const fakeEntry: CombatLogEntry = {
+      id: 'test-1',
+      timestamp: Date.now(),
+      targetCoordinates: { galaxy: 1, system: 5, slot: 3 },
+      read: false,
+      result: {
+        seed: 0,
+        outcome: 'attacker_wins',
+        rounds: 2,
+        attackerStart: { ships: {} },
+        attackerEnd: { ships: {} },
+        defenderStart: { ships: {}, defences: {} },
+        defenderEnd: { ships: {}, defences: {} },
+        attackerLosses: { ships: {} },
+        defenderLosses: { ships: {}, defences: {} },
+        defencesRebuilt: {},
+        debrisCreated: { metal: 0, crystal: 0 },
+        loot: { metal: 0, crystal: 0, deuterium: 0 },
+      },
+    };
+
+    const { container } = renderWithGame(
+      <MessagesPanel setActivePanel={() => {}} />,
+      { gameState: { combatLog: [fakeEntry] } },
+    );
+
+    const coordLinks = container.querySelectorAll('.coord-link');
+    expect(coordLinks.length).toBeGreaterThan(0);
   });
 
   describe('fleet notification failure reasons', () => {
     async function renderFleetTab(notification: FleetNotification) {
       const user = userEvent.setup();
-      renderWithGame(<MessagesPanel />, {
+      renderWithGame(<MessagesPanel setActivePanel={() => {}} />, {
         gameState: { fleetNotifications: [notification] },
       });
       await user.click(screen.getByRole('button', { name: /fleet/i }));

@@ -290,6 +290,9 @@ describe('StateManager', () => {
         maxTier: 5,
         initialUpgradeIntervalMs: 21_600_000,
         currentUpgradeIntervalMs: 21_600_000,
+        targetTier: 1,
+        catchUpUpgradeIntervalMs: 21_600_000 / 4,
+        catchUpProgressTicks: 0,
         lastUpgradeAt: 0,
         upgradeTickCount: 0,
         raidCount: 0,
@@ -365,7 +368,7 @@ describe('StateManager migration', () => {
 
     const state = loadState();
     expect(state).not.toBeNull();
-    expect(state!.version).toBe(12);
+    expect(state!.version).toBe(13);
     expect(state!.fleetNotifications).toEqual([]);
     expect(state!.research.intergalacticResearchNetwork).toBe(0);
   });
@@ -409,7 +412,7 @@ describe('StateManager migration', () => {
 
     const state = loadState();
     expect(state).not.toBeNull();
-    expect(state!.version).toBe(12);
+    expect(state!.version).toBe(13);
     expect(state!.research.intergalacticResearchNetwork).toBe(0);
   });
 

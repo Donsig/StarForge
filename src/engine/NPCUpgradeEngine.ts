@@ -10,9 +10,15 @@ const RAID_WINDOW_MS = 24 * 3600 * 1000;
 const SAFE_RETURN_MS = 30_000;
 const MAX_CATCHUP_REAL_MS = 7 * 24 * 3600 * 1000;
 const MAX_UPGRADE_ITERATIONS = 500;
+const TIER_POWER_THRESHOLD = 500;
+const CATCH_UP_TICKS_PER_TIER = 5;
 
 export const NPC_ABANDONMENT_RAID_THRESHOLD = 3;
 export const NPC_ABANDONMENT_WINDOW_GAME_HOURS = 24;
+
+export function computeEffectiveMinTier(playerTotal: number): number {
+  return Math.max(1, Math.min(10, Math.floor(playerTotal / TIER_POWER_THRESHOLD)));
+}
 
 /** Simple seedable PRNG (mulberry32). */
 function mulberry32(seed: number): () => number {
@@ -294,8 +300,15 @@ export function calcAbandonmentProximity(
   };
 }
 
-export function processUpgrades(state: GameState, now: number): void {
+export function processUpgrades(state: GameState, now: number, playerTotal: number): void {
   const safeGameSpeed = Math.max(0, state.settings.gameSpeed);
+  const effectiveMin = computeEffectiveMinTier(playerTotal);
+
+  for (const colony of state.galaxy.npcColonies) {
+    if (effectiveMin > colony.targetTier && colony.targetTier < colony.maxTier) {
+      colony.targetTier = Math.min(colony.maxTier, effectiveMin);
+    }
+  }
 
   for (let index = 0; index < state.galaxy.npcColonies.length; ) {
     const colony = state.galaxy.npcColonies[index];
@@ -330,17 +343,34 @@ export function processUpgrades(state: GameState, now: number): void {
     while (
       colony.abandonedAt === undefined &&
       safeGameSpeed > 0 &&
-      (now - colony.lastUpgradeAt) * safeGameSpeed >= colony.currentUpgradeIntervalMs &&
       upgradeIterations < MAX_UPGRADE_ITERATIONS
     ) {
+      const isCatchingUp = colony.tier < colony.targetTier;
+      const activeInterval = isCatchingUp
+        ? colony.catchUpUpgradeIntervalMs
+        : colony.currentUpgradeIntervalMs;
+
+      if ((now - colony.lastUpgradeAt) * safeGameSpeed < activeInterval) {
+        break;
+      }
+
       const rng = mulberry32(
         state.galaxy.seed ^
           (colony.coordinates.system * 100 + colony.coordinates.slot) ^
           colony.upgradeTickCount,
       );
       applyUpgradeIncrement(colony, rng);
-      colony.lastUpgradeAt += colony.currentUpgradeIntervalMs / safeGameSpeed;
+      colony.lastUpgradeAt += activeInterval / safeGameSpeed;
       colony.upgradeTickCount += 1;
+      if (isCatchingUp) {
+        colony.catchUpProgressTicks += 1;
+        if (colony.catchUpProgressTicks % CATCH_UP_TICKS_PER_TIER === 0) {
+          colony.tier = Math.min(colony.targetTier, colony.tier + 1);
+          if (colony.tier >= colony.targetTier) {
+            colony.catchUpProgressTicks = 0;
+          }
+        }
+      }
       upgradeIterations += 1;
     }
 

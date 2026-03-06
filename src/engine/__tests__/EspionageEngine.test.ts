@@ -58,6 +58,9 @@ function createColony(overrides: Partial<NPCColony> = {}): NPCColony {
     },
     lastRaidedAt: 0,
     resourcesAtLastRaid: { metal: 0, crystal: 0, deuterium: 0 },
+    targetTier: 10,
+    catchUpUpgradeIntervalMs: 5_400_000 / 4,
+    catchUpProgressTicks: 0,
     ...overrides,
     temperature: overrides.temperature ?? 35,
   };

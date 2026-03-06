@@ -50,6 +50,7 @@ import {
   processUpgrades as processNPCUpgrades,
   recordRaid,
 } from '../engine/NPCUpgradeEngine.ts';
+import { computePlayerScores } from '../engine/ScoreEngine.ts';
 import { simulate as simulateCombat } from '../engine/CombatEngine.ts';
 import {
   buildingCostAtLevel,
@@ -97,6 +98,8 @@ export interface GameEngineState {
   renamePlanet: (planetIndex: number, name: string) => void;
   fleetTarget: Coordinates | null;
   setFleetTarget: (coords: Coordinates | null) => void;
+  galaxyJumpTarget: Coordinates | null;
+  setGalaxyJumpTarget: (coords: Coordinates | null) => void;
   pendingMissionTarget: { type: MissionType; coords: Coordinates } | null;
   setPendingMissionTarget: (
     target: { type: MissionType; coords: Coordinates } | null,
@@ -308,6 +311,7 @@ function initializeState(): GameState {
 export function useGameEngine(): GameEngineState {
   const [gameState, setGameState] = useState<GameState>(() => initializeState());
   const [fleetTarget, setFleetTarget] = useState<Coordinates | null>(null);
+  const [galaxyJumpTarget, setGalaxyJumpTarget] = useState<Coordinates | null>(null);
   const [pendingMissionTarget, setPendingMissionTarget] = useState<{
     type: MissionType;
     coords: Coordinates;
@@ -351,7 +355,9 @@ export function useGameEngine(): GameEngineState {
         processResourceTick(currentState);
         processQueueTick(currentState, now);
         processFleetTick(currentState, now);
-        processNPCUpgrades(currentState, now);
+        const scores = computePlayerScores(currentState);
+        currentState.playerScores = scores;
+        processNPCUpgrades(currentState, now, scores.total);
         currentState.tickCount += 1;
 
         if (currentState.tickCount % GAME_CONSTANTS.AUTO_SAVE_TICKS === 0) {
@@ -471,6 +477,7 @@ export function useGameEngine(): GameEngineState {
     stateRef.current = resetState;
     refreshArrayReferences(resetState);
     setFleetTarget(null);
+    setGalaxyJumpTarget(null);
     setPendingMissionTarget(null);
     setGameState({ ...resetState });
     setProductionRates(calculateProduction(resetState));
@@ -760,6 +767,9 @@ export function useGameEngine(): GameEngineState {
       colony.maxTier = maxTier;
       colony.initialUpgradeIntervalMs = intervalMs;
       colony.currentUpgradeIntervalMs = intervalMs;
+      colony.targetTier = safeTier;
+      colony.catchUpUpgradeIntervalMs = intervalMs / 4;
+      colony.catchUpProgressTicks = 0;
       colony.buildings = buildNPCBuildingsForTier(safeTier);
       colony.baseDefences = { ...baseDefences };
       colony.baseShips = { ...baseShips };
@@ -1552,6 +1562,7 @@ export function useGameEngine(): GameEngineState {
     stateRef.current = importedState;
     refreshArrayReferences(importedState);
     setFleetTarget(null);
+    setGalaxyJumpTarget(null);
     setPendingMissionTarget(null);
     setGameState({ ...importedState });
     setProductionRates(calculateProduction(importedState));
@@ -1579,6 +1590,8 @@ export function useGameEngine(): GameEngineState {
     renamePlanet,
     fleetTarget,
     setFleetTarget,
+    galaxyJumpTarget,
+    setGalaxyJumpTarget,
     pendingMissionTarget,
     setPendingMissionTarget,
     dispatchFleet,

@@ -24,7 +24,6 @@ export function OverviewPanel() {
       setDraft('');
     }
   }
-
   const totalResearchLevels = Object.values(gameState.research).reduce(
     (sum, level) => sum + level,
     0,

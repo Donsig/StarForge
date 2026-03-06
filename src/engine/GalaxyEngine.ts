@@ -8,6 +8,7 @@ import { activePlanet } from './helpers.ts';
 
 const NPC_RECOVERY_MS = 48 * 3600 * 1000;
 const NPC_RESOURCE_CAP_HOURS = 48;
+const NPC_BASE_POOL = { metal: 50_000, crystal: 30_000, deuterium: 10_000 };
 
 const NPC_NAME_PREFIXES = [
   'Zorgon',
@@ -261,6 +262,9 @@ export function createNPCColonyForTier(
     maxTier: maxTierForNPC(safeTier),
     initialUpgradeIntervalMs: intervalMs,
     currentUpgradeIntervalMs: intervalMs,
+    targetTier: safeTier,
+    catchUpUpgradeIntervalMs: intervalMs / 4,
+    catchUpProgressTicks: 0,
     lastUpgradeAt: 0,
     upgradeTickCount: 0,
     raidCount: 0,
@@ -405,6 +409,9 @@ export function generateNPCColonies(seed: number): NPCColony[] {
         maxTier: maxTierForNPC(tier),
         initialUpgradeIntervalMs: intervalMs,
         currentUpgradeIntervalMs: intervalMs,
+        targetTier: tier,
+        catchUpUpgradeIntervalMs: intervalMs / 4,
+        catchUpProgressTicks: 0,
         lastUpgradeAt: 0,
         upgradeTickCount: 0,
         raidCount: 0,
@@ -449,32 +456,42 @@ export function getNPCResources(
     crystal: 0,
     deuterium: 0,
   };
+  const tierFloor = colony.tier * colony.tier;
 
   return {
     metal: Math.max(
-      0,
-      Math.floor(
-        Math.min(
-          stockpileCap.metal,
-          baseline.metal + production.metalPerHour * elapsedHours,
+      NPC_BASE_POOL.metal * tierFloor,
+      Math.max(
+        0,
+        Math.floor(
+          Math.min(
+            stockpileCap.metal,
+            baseline.metal + production.metalPerHour * elapsedHours,
+          ),
         ),
       ),
     ),
     crystal: Math.max(
-      0,
-      Math.floor(
-        Math.min(
-          stockpileCap.crystal,
-          baseline.crystal + production.crystalPerHour * elapsedHours,
+      NPC_BASE_POOL.crystal * tierFloor,
+      Math.max(
+        0,
+        Math.floor(
+          Math.min(
+            stockpileCap.crystal,
+            baseline.crystal + production.crystalPerHour * elapsedHours,
+          ),
         ),
       ),
     ),
     deuterium: Math.max(
-      0,
-      Math.floor(
-        Math.min(
-          stockpileCap.deuterium,
-          baseline.deuterium + production.deuteriumPerHour * elapsedHours,
+      NPC_BASE_POOL.deuterium * tierFloor,
+      Math.max(
+        0,
+        Math.floor(
+          Math.min(
+            stockpileCap.deuterium,
+            baseline.deuterium + production.deuteriumPerHour * elapsedHours,
+          ),
         ),
       ),
     ),

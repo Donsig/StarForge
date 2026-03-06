@@ -39,7 +39,7 @@ function ActivePanelContent({
     case 'fleet':
       return <FleetPanel />;
     case 'messages':
-      return <MessagesPanel />;
+      return <MessagesPanel setActivePanel={onNavigate} />;
     case 'settings':
       return <SettingsPanel />;
     case 'admin':

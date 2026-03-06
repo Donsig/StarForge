@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event';
-import { GalaxyPanel } from '../GalaxyPanel';
+import { GalaxyPanel, npcRelativeStrengthLabel } from '../GalaxyPanel';
 import { renderWithGame, screen } from '../../test/test-utils';
 import { dispatchHarvest as dispatchHarvestMission } from '../../engine/FleetEngine.ts';
 import type { GameState } from '../../models/GameState.ts';
@@ -21,6 +21,17 @@ describe('GalaxyPanel', () => {
     expect(screen.getByText('Homeworld')).toBeInTheDocument();
   });
 
+  it('jumps to a manually entered system', async () => {
+    const user = userEvent.setup();
+
+    renderWithGame(<GalaxyPanel />);
+
+    await user.type(screen.getByLabelText(/jump to/i), '5');
+    await user.click(screen.getByRole('button', { name: 'Go' }));
+
+    expect(screen.getByText(/System 5/)).toBeInTheDocument();
+  });
+
   it('shows Transport button on player-owned slots that are not the active planet', () => {
     renderWithGame(<GalaxyPanel />, { withMultiplePlanets: true });
     expect(screen.getByRole('button', { name: 'Transport' })).toBeInTheDocument();
@@ -36,6 +47,7 @@ describe('GalaxyPanel', () => {
 
     renderWithGame(<GalaxyPanel />, {
       gameState: {
+        playerScores: { military: 1000, economy: 0, research: 0, total: 0 },
         galaxy: {
           seed: 1,
           npcColonies: [
@@ -48,6 +60,9 @@ describe('GalaxyPanel', () => {
               maxTier: 10,
               initialUpgradeIntervalMs: 5_400_000,
               currentUpgradeIntervalMs: 5_400_000,
+              targetTier: 8,
+              catchUpUpgradeIntervalMs: 5_400_000 / 4,
+              catchUpProgressTicks: 0,
               lastUpgradeAt: 0,
               upgradeTickCount: 0,
               raidCount: 0,
@@ -55,9 +70,9 @@ describe('GalaxyPanel', () => {
               abandonedAt: undefined,
               buildings: {},
               baseDefences: {},
-              baseShips: {},
+              baseShips: { lightFighter: 10 },
               currentDefences: {},
-              currentShips: {},
+              currentShips: { lightFighter: 10 },
               lastRaidedAt: 150_000,
               resourcesAtLastRaid: { metal: 0, crystal: 0, deuterium: 0 },
             },
@@ -67,7 +82,7 @@ describe('GalaxyPanel', () => {
       },
     });
 
-    expect(screen.getByText('Strength Strong')).toBeInTheDocument();
+    expect(screen.getByText('Strength Fair')).toBeInTheDocument();
     expect(screen.getByText('Rebuilding')).toBeInTheDocument();
     expect(screen.getByText('Debris Field M 12,345 | C 6,789')).toBeInTheDocument();
   });
@@ -91,6 +106,9 @@ describe('GalaxyPanel', () => {
               maxTier: 8,
               initialUpgradeIntervalMs: 10_800_000,
               currentUpgradeIntervalMs: 10_800_000,
+              targetTier: 5,
+              catchUpUpgradeIntervalMs: 10_800_000 / 4,
+              catchUpProgressTicks: 0,
               lastUpgradeAt: 0,
               upgradeTickCount: 0,
               raidCount: 0,
@@ -187,5 +205,31 @@ describe('GalaxyPanel', () => {
 
     expect(screen.getByRole('button', { name: 'Harvest' })).toBeDisabled();
     expect(screen.getByText('No recyclers on active planet')).toBeInTheDocument();
+  });
+});
+
+describe('npcRelativeStrengthLabel', () => {
+  it('returns Easy when playerMilitary is 0', () => {
+    expect(npcRelativeStrengthLabel(500, 0)).toBe('Easy');
+  });
+
+  it('returns Easy when npc power < 30% of player', () => {
+    expect(npcRelativeStrengthLabel(10, 100)).toBe('Easy');
+  });
+
+  it('returns Fair for 0.3–0.7', () => {
+    expect(npcRelativeStrengthLabel(50, 100)).toBe('Fair');
+  });
+
+  it('returns Even for 0.7–1.3', () => {
+    expect(npcRelativeStrengthLabel(100, 100)).toBe('Even');
+  });
+
+  it('returns Hard for 1.3–2.5', () => {
+    expect(npcRelativeStrengthLabel(200, 100)).toBe('Hard');
+  });
+
+  it('returns Dangerous above 2.5', () => {
+    expect(npcRelativeStrengthLabel(300, 100)).toBe('Dangerous');
   });
 });
