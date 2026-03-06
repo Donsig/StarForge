@@ -116,3 +116,10 @@ export const GAME_CONSTANTS = {
   STORAGE_KEY: 'starforge_save',
   STATE_VERSION: 12,
 } as const;
+
+export interface PlayerScores {
+  military: number;
+  economy: number;
+  research: number;
+  total: number;
+}
