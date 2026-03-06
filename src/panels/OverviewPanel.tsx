@@ -1,14 +1,20 @@
+import { useRef, useState } from 'react';
 import { SHIP_ORDER, SHIPS } from '../data/ships.ts';
 import { usedFields } from '../engine/BuildQueue.ts';
 import { useGame } from '../context/GameContext';
 import { formatNumber, formatRate } from '../utils/format.ts';
 
 export function OverviewPanel() {
-  const { gameState, productionRates } = useGame();
-  const planet = gameState.planets[gameState.activePlanetIndex];
+  const { gameState, productionRates, renamePlanet } = useGame();
+  const activePlanetIndex = gameState.activePlanetIndex;
+  const planet = gameState.planets[activePlanetIndex];
   const speed = gameState.settings.gameSpeed;
+  const [editingPlanetIndex, setEditingPlanetIndex] = useState<number | null>(null);
+  const [draft, setDraft] = useState('');
+  const committedRef = useRef(false);
 
   const fieldsUsed = usedFields(gameState);
+  const editing = editingPlanetIndex === activePlanetIndex;
   const totalResearchLevels = Object.values(gameState.research).reduce(
     (sum, level) => sum + level,
     0,
@@ -26,6 +32,29 @@ export function OverviewPanel() {
     totalFleetPower += count * SHIPS[shipId].weaponPower;
   }
 
+  const startEditing = () => {
+    committedRef.current = false;
+    setDraft(planet.name);
+    setEditingPlanetIndex(activePlanetIndex);
+  };
+
+  const commit = () => {
+    if (committedRef.current || editingPlanetIndex !== activePlanetIndex) {
+      return;
+    }
+
+    committedRef.current = true;
+    renamePlanet(activePlanetIndex, draft);
+    setEditingPlanetIndex(null);
+    setDraft('');
+  };
+
+  const cancel = () => {
+    committedRef.current = false;
+    setEditingPlanetIndex(null);
+    setDraft('');
+  };
+
   return (
     <section className="panel">
       <h1 className="panel-title">Planet Overview</h1>
@@ -35,7 +64,40 @@ export function OverviewPanel() {
           <h2 className="section-title">Colony Status</h2>
           <p className="stat-line">
             <span className="label">Name</span>
-            <span>{planet.name}</span>
+            {editing ? (
+              <input
+                type="text"
+                className="input planet-rename-input"
+                value={draft}
+                maxLength={30}
+                autoFocus
+                onChange={(event) => setDraft(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault();
+                    commit();
+                  }
+                  if (event.key === 'Escape') {
+                    event.preventDefault();
+                    cancel();
+                  }
+                }}
+                onBlur={commit}
+                aria-label="Planet name"
+              />
+            ) : (
+              <>
+                <span>{planet.name}</span>
+                <button
+                  type="button"
+                  className="btn btn-sm planet-rename-btn"
+                  aria-label="Rename planet"
+                  onClick={startEditing}
+                >
+                  ✏
+                </button>
+              </>
+            )}
           </p>
           <p className="stat-line">
             <span className="label">Temperature</span>
