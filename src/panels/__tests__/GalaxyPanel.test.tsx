@@ -21,6 +21,17 @@ describe('GalaxyPanel', () => {
     expect(screen.getByText('Homeworld')).toBeInTheDocument();
   });
 
+  it('jumps to a manually entered system', async () => {
+    const user = userEvent.setup();
+
+    renderWithGame(<GalaxyPanel />);
+
+    await user.type(screen.getByLabelText(/jump to/i), '5');
+    await user.click(screen.getByRole('button', { name: 'Go' }));
+
+    expect(screen.getByText(/System 5/)).toBeInTheDocument();
+  });
+
   it('shows Transport button on player-owned slots that are not the active planet', () => {
     renderWithGame(<GalaxyPanel />, { withMultiplePlanets: true });
     expect(screen.getByRole('button', { name: 'Transport' })).toBeInTheDocument();

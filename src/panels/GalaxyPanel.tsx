@@ -232,6 +232,8 @@ export function GalaxyPanel({ onNavigate }: GalaxyPanelProps = {}) {
     espionageReports,
     colonizeAction,
     setFleetTarget,
+    galaxyJumpTarget,
+    setGalaxyJumpTarget,
     setPendingMissionTarget,
     dispatchEspionage,
     dispatchHarvest,
@@ -243,6 +245,8 @@ export function GalaxyPanel({ onNavigate }: GalaxyPanelProps = {}) {
   const [currentSystem, setCurrentSystem] = useState(
     gameState.planets[activePlanetIndex].coordinates.system,
   );
+  const [jumpInput, setJumpInput] = useState('');
+  const [jumpError, setJumpError] = useState('');
   const [hoveredNpcKey, setHoveredNpcKey] = useState<string | null>(null);
   const hoverAnchorRef = useRef<HTMLElement | null>(null);
   const hoverCloseTimerRef = useRef<number | null>(null);
@@ -270,6 +274,36 @@ export function GalaxyPanel({ onNavigate }: GalaxyPanelProps = {}) {
     setHoveredNpcKey(key);
   };
 
+  const clearHoveredNpc = () => {
+    clearNpcHoverCloseTimer();
+    setHoveredNpcKey(null);
+    hoverAnchorRef.current = null;
+  };
+
+  function handleJump() {
+    const trimmed = jumpInput.trim();
+    const parts = trimmed.split(':').map(Number);
+    const system = parts.length >= 2 ? parts[1] : parts[0];
+
+    if (
+      !system ||
+      !Number.isInteger(system) ||
+      system < 1 ||
+      system > GALAXY_CONSTANTS.MAX_SYSTEMS
+    ) {
+      setJumpError(`System must be 1-${GALAXY_CONSTANTS.MAX_SYSTEMS}`);
+      window.setTimeout(() => {
+        setJumpError('');
+      }, 2000);
+      return;
+    }
+
+    setCurrentSystem(system);
+    setJumpInput('');
+    setJumpError('');
+    clearHoveredNpc();
+  }
+
   useEffect(
     () => () => {
       if (hoverCloseTimerRef.current !== null) {
@@ -289,6 +323,16 @@ export function GalaxyPanel({ onNavigate }: GalaxyPanelProps = {}) {
       window.clearInterval(intervalId);
     };
   }, []);
+
+  useEffect(() => {
+    if (!galaxyJumpTarget) {
+      return;
+    }
+
+    setCurrentSystem(galaxyJumpTarget.system);
+    setGalaxyJumpTarget(null);
+    clearHoveredNpc();
+  }, [galaxyJumpTarget, setGalaxyJumpTarget]);
 
   const slots = getSystemSlots(gameState, 1, currentSystem);
   const debrisByCoord = useMemo(() => {
@@ -353,9 +397,7 @@ export function GalaxyPanel({ onNavigate }: GalaxyPanelProps = {}) {
           disabled={currentSystem <= 1}
           onClick={() => {
             setCurrentSystem((s) => Math.max(1, s - 1));
-            clearNpcHoverCloseTimer();
-            setHoveredNpcKey(null);
-            hoverAnchorRef.current = null;
+            clearHoveredNpc();
           }}
         >
           Prev
@@ -375,13 +417,32 @@ export function GalaxyPanel({ onNavigate }: GalaxyPanelProps = {}) {
           disabled={currentSystem >= GALAXY_CONSTANTS.MAX_SYSTEMS}
           onClick={() => {
             setCurrentSystem((s) => Math.min(GALAXY_CONSTANTS.MAX_SYSTEMS, s + 1));
-            clearNpcHoverCloseTimer();
-            setHoveredNpcKey(null);
-            hoverAnchorRef.current = null;
+            clearHoveredNpc();
           }}
         >
           Next
         </button>
+      </div>
+
+      <div className="galaxy-jump-input">
+        <label htmlFor="galaxy-jump">Jump to:</label>
+        <input
+          id="galaxy-jump"
+          type="text"
+          className="input"
+          placeholder={`System 1-${GALAXY_CONSTANTS.MAX_SYSTEMS}`}
+          value={jumpInput}
+          onChange={(event) => setJumpInput(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              handleJump();
+            }
+          }}
+        />
+        <button type="button" className="btn btn-primary" onClick={handleJump}>
+          Go
+        </button>
+        {jumpError && <span className="galaxy-jump-error">{jumpError}</span>}
       </div>
 
       <div className="table-wrap">
