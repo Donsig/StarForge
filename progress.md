@@ -8,3 +8,4 @@ Task 6: added defence card banners and a dedicated DefencePanel banner test.
 Task 7: added research card banners and covered asset wiring in ResearchPanel tests.
 Task 8: added temperature-driven planet portraits to Overview with placeholder-safe image fallback.
 Task 9: added temperature-based planet icons to galaxy rows and aligned the name-cell layout.
+Task 0: added DefencePanel banner assertion and verified defence.webp rendering.
