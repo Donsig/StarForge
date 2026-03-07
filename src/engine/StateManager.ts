@@ -387,6 +387,16 @@ function migrate(state: GameState): GameState {
     }
     state.version = 14;
   }
+
+  if (state.version < 15) {
+    (legacyState as unknown as Record<string, unknown>)['statistics'] = {
+      resourcesMined: { metal: 0, crystal: 0, deuterium: 0 },
+      combat: { fought: 0, won: 0, lost: 0, drawn: 0, totalLoot: 0, shipsLost: 0 },
+      fleet: { sent: {}, totalDistance: 0 },
+      milestones: {},
+    };
+    state.version = 15;
+  }
   return state;
 }
 

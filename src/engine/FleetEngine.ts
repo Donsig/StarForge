@@ -226,6 +226,26 @@ function resolveAttackAtTarget(state: GameState, mission: FleetMission, now: num
 
   const survivingShips = compactShips(combatResult.attackerEnd.ships);
   const loot = calcLoot(availableResources, survivingShips);
+  if (state.statistics) {
+    state.statistics.combat.fought += 1;
+    if (combatResult.outcome === 'attacker_wins') {
+      state.statistics.combat.won += 1;
+      state.statistics.combat.totalLoot += loot.metal + loot.crystal + loot.deuterium;
+      if (state.statistics.milestones.firstBattleWon === undefined) {
+        state.statistics.milestones.firstBattleWon = now;
+      }
+    } else if (combatResult.outcome === 'defender_wins') {
+      state.statistics.combat.lost += 1;
+    } else {
+      state.statistics.combat.drawn += 1;
+    }
+
+    const shipsLost = Object.entries(mission.ships).reduce((total, [shipId, startCount]) => {
+      const endCount = Math.max(0, Math.floor(combatResult.attackerEnd.ships[shipId] ?? 0));
+      return total + Math.max(0, startCount - endCount);
+    }, 0);
+    state.statistics.combat.shipsLost += shipsLost;
+  }
   const resultWithLoot: CombatResult = {
     ...combatResult,
     loot,
@@ -300,6 +320,9 @@ function resolveEspionageAtTarget(
   );
 
   state.espionageReports.push(report);
+  if (state.statistics && state.statistics.milestones.firstEspionage === undefined) {
+    state.statistics.milestones.firstEspionage = now;
+  }
   mission.espionageReportId = report.id;
 
   if (report.detected) {
@@ -737,6 +760,11 @@ export function dispatch(
     returnTime: 0,
   };
 
+  if (state.statistics) {
+    state.statistics.fleet.sent[missionType] =
+      (state.statistics.fleet.sent[missionType] ?? 0) + 1;
+    state.statistics.fleet.totalDistance += distance;
+  }
   state.fleetMissions.push(mission);
   return mission;
 }
@@ -814,6 +842,10 @@ export function dispatchHarvest(
     returnTime: 0,
   };
 
+  if (state.statistics) {
+    state.statistics.fleet.sent.harvest = (state.statistics.fleet.sent.harvest ?? 0) + 1;
+    state.statistics.fleet.totalDistance += distance;
+  }
   state.fleetMissions.push(mission);
   return mission;
 }

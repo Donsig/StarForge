@@ -7,6 +7,27 @@ import { createDefaultPlanet } from './Planet.ts';
 
 export type ResearchLevels = Record<ResearchId, number>;
 
+export interface GameStatistics {
+  resourcesMined: { metal: number; crystal: number; deuterium: number };
+  combat: {
+    fought: number;
+    won: number;
+    lost: number;
+    drawn: number;
+    totalLoot: number;
+    shipsLost: number;
+  };
+  fleet: {
+    sent: Partial<Record<string, number>>;
+    totalDistance: number;
+  };
+  milestones: {
+    firstColony?: number;
+    firstBattleWon?: number;
+    firstEspionage?: number;
+  };
+}
+
 export interface GameState {
   version: number;
   lastSaveTimestamp: number;
@@ -23,6 +44,7 @@ export interface GameState {
   researchQueue: QueueItem[];
   settings: GameSettings;
   playerScores: PlayerScores;
+  statistics: GameStatistics;
 }
 
 export function createNewGameState(): GameState {
@@ -72,6 +94,12 @@ export function createNewGameState(): GameState {
       fleet: 0,
       defence: 0,
       total: 0,
+    },
+    statistics: {
+      resourcesMined: { metal: 0, crystal: 0, deuterium: 0 },
+      combat: { fought: 0, won: 0, lost: 0, drawn: 0, totalLoot: 0, shipsLost: 0 },
+      fleet: { sent: {}, totalDistance: 0 },
+      milestones: {},
     },
   };
 }
