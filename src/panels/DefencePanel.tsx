@@ -128,22 +128,44 @@ export function DefencePanel() {
 
               <div className="item-meta">
                 <span className="label">Batch Quantity</span>
-                <input
-                  className="input quantity-input number"
-                  type="number"
-                  min={1}
-                  step={1}
-                  max={remainingMax ?? undefined}
-                  value={quantityInput}
-                  disabled={maxReached}
-                  onChange={(event) => {
-                    const nextValue = event.target.value;
-                    setQuantities((current) => ({
-                      ...current,
-                      [defenceId]: nextValue,
-                    }));
-                  }}
-                />
+                <div className="qty-input-group">
+                  <input
+                    className="input quantity-input number"
+                    type="number"
+                    min={1}
+                    step={1}
+                    max={remainingMax ?? undefined}
+                    value={quantityInput}
+                    disabled={maxReached}
+                    onChange={(event) => {
+                      const nextValue = event.target.value;
+                      setQuantities((current) => ({
+                        ...current,
+                        [defenceId]: nextValue,
+                      }));
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-sm"
+                    disabled={maxReached}
+                    onClick={() => {
+                      const { metal, crystal, deuterium } = planet.resources;
+                      const { cost } = definition;
+                      const limits: number[] = [];
+                      if (cost.metal > 0) limits.push(Math.floor(metal / cost.metal));
+                      if (cost.crystal > 0) limits.push(Math.floor(crystal / cost.crystal));
+                      if (cost.deuterium > 0) limits.push(Math.floor(deuterium / cost.deuterium));
+                      let max = limits.length > 0 ? Math.max(0, Math.min(...limits)) : 0;
+                      if (remainingMax !== null) {
+                        max = Math.min(max, remainingMax);
+                      }
+                      setQuantities((current) => ({ ...current, [defenceId]: String(max) }));
+                    }}
+                  >
+                    Max
+                  </button>
+                </div>
               </div>
 
               <div className="item-meta">
