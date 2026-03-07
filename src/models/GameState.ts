@@ -1,6 +1,6 @@
 import type { PlanetState } from './Planet.ts';
 import type { DebrisField, GalaxyState } from './Galaxy.ts';
-import type { CombatLogEntry, EspionageReport, FleetMission, FleetNotification } from './Fleet.ts';
+import type { CombatLogEntry, EspionageReport, FleetMission, FleetNotification, MissionType } from './Fleet.ts';
 import type { GameSettings, PlayerScores, ResearchId, QueueItem } from './types.ts';
 import { GAME_CONSTANTS } from './types.ts';
 import { createDefaultPlanet } from './Planet.ts';
@@ -18,7 +18,7 @@ export interface GameStatistics {
     shipsLost: number;
   };
   fleet: {
-    sent: Partial<Record<string, number>>;
+    sent: Partial<Record<MissionType, number>>;
     totalDistance: number;
   };
   milestones: {

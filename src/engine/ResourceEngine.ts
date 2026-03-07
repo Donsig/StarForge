@@ -139,9 +139,9 @@ export function processTick(state: GameState): void {
     res.energyConsumption = rates.energyConsumption;
 
     if (state.statistics) {
-      state.statistics.resourcesMined.metal += res.metal - previousMetal;
-      state.statistics.resourcesMined.crystal += res.crystal - previousCrystal;
-      state.statistics.resourcesMined.deuterium += res.deuterium - previousDeuterium;
+      state.statistics.resourcesMined.metal += Math.max(0, res.metal - previousMetal);
+      state.statistics.resourcesMined.crystal += Math.max(0, res.crystal - previousCrystal);
+      state.statistics.resourcesMined.deuterium += Math.max(0, res.deuterium - previousDeuterium);
     }
   }
 }
@@ -169,9 +169,9 @@ export function accumulateBulk(state: GameState, seconds: number): void {
     res.energyConsumption = rates.energyConsumption;
 
     if (state.statistics) {
-      state.statistics.resourcesMined.metal += res.metal - previousMetal;
-      state.statistics.resourcesMined.crystal += res.crystal - previousCrystal;
-      state.statistics.resourcesMined.deuterium += res.deuterium - previousDeuterium;
+      state.statistics.resourcesMined.metal += Math.max(0, res.metal - previousMetal);
+      state.statistics.resourcesMined.crystal += Math.max(0, res.crystal - previousCrystal);
+      state.statistics.resourcesMined.deuterium += Math.max(0, res.deuterium - previousDeuterium);
     }
   }
 }
