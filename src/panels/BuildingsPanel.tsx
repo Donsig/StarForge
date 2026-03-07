@@ -109,7 +109,8 @@ export function BuildingsPanel() {
               (buildingId) => {
                 const definition = BUILDINGS[buildingId];
                 const currentLevel = planet.buildings[buildingId];
-                const nextLevel = currentLevel + 1;
+                const queuedCount = planet.buildingQueue.filter((q) => q.id === buildingId).length;
+                const nextLevel = currentLevel + queuedCount + 1;
                 const cost = buildingCostAtLevel(
                   definition.baseCost,
                   definition.costMultiplier,
