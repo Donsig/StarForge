@@ -859,6 +859,12 @@ body {
   background: rgba(239, 68, 68, 0.12);
 }
 
+.galaxy-planet-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
 .galaxy-row-clickable {
   cursor: pointer;
 }

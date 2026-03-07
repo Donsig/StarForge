@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { HoverPortal } from '../components/HoverPortal';
 import type { EspionageReport } from '../models/Fleet.ts';
 import { useGame } from '../context/GameContext';
-import { PANEL_IMAGES } from '../data/assets.ts';
+import { PANEL_IMAGES, getPlanetImageUrl } from '../data/assets.ts';
 import { GALAXY_CONSTANTS } from '../data/galaxy.ts';
 import { BUILDINGS } from '../data/buildings.ts';
 import { DEFENCES } from '../data/defences.ts';
@@ -683,8 +683,34 @@ function GalaxySlotRow({
         )}
       </td>
       <td>
-        {slot.type === 'player' && slot.planet?.name}
-        {slot.type === 'npc' && slot.npc?.name}
+        {slot.type === 'player' && slot.planet && (
+          <div className="galaxy-planet-cell">
+            <div className="planet-icon">
+              <img
+                src={getPlanetImageUrl(slot.planet.maxTemperature, 'icon')}
+                alt=""
+                onError={(event) => {
+                  event.currentTarget.style.display = 'none';
+                }}
+              />
+            </div>
+            <span>{slot.planet.name}</span>
+          </div>
+        )}
+        {slot.type === 'npc' && slot.npc && (
+          <div className="galaxy-planet-cell">
+            <div className="planet-icon">
+              <img
+                src={getPlanetImageUrl(slot.npc.temperature, 'icon')}
+                alt=""
+                onError={(event) => {
+                  event.currentTarget.style.display = 'none';
+                }}
+              />
+            </div>
+            <span>{slot.npc.name}</span>
+          </div>
+        )}
         {slot.type === 'empty' && (
           <span className="galaxy-uninhabited">Uninhabited</span>
         )}
