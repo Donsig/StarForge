@@ -241,4 +241,12 @@ describe('BuildingsPanel', () => {
 
     expect(buildShips).toHaveBeenCalledWith('solarSatellite', 4);
   });
+
+  it('renders a card banner img with correct src for each building', () => {
+    renderWithGame(<BuildingsPanel />);
+
+    const images = document.querySelectorAll('.card-banner img');
+    const srcs = Array.from(images).map((image) => (image as HTMLImageElement).src);
+    expect(srcs.some((src) => src.includes('metalMine.webp'))).toBe(true);
+  });
 });

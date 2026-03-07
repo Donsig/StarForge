@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { PANEL_IMAGES } from '../data/assets.ts';
+import { BUILDING_IMAGES, PANEL_IMAGES, SHIP_IMAGES } from '../data/assets.ts';
 import { BUILDINGS, BUILDING_ORDER, type BuildingCategory } from '../data/buildings.ts';
 import { RESEARCH } from '../data/research.ts';
 import { SHIPS } from '../data/ships.ts';
@@ -146,6 +146,18 @@ export function BuildingsPanel() {
 
                 return (
                   <article key={buildingId} className="item-card">
+                    <div className="card-banner">
+                      <img
+                        src={BUILDING_IMAGES[buildingId]}
+                        alt=""
+                        onLoad={(event) => {
+                          event.currentTarget.parentElement?.classList.add('card-banner--loaded');
+                        }}
+                        onError={(event) => {
+                          event.currentTarget.remove();
+                        }}
+                      />
+                    </div>
                     <div className="item-header">
                       <h3>{definition.name}</h3>
                       <span className="item-level number">Lv {currentLevel}</span>
@@ -203,6 +215,18 @@ export function BuildingsPanel() {
               <h3 className="section-title">Energy</h3>
               <div className="items-grid">
                 <article className="item-card">
+                  <div className="card-banner">
+                    <img
+                      src={SHIP_IMAGES.solarSatellite}
+                      alt=""
+                      onLoad={(event) => {
+                        event.currentTarget.parentElement?.classList.add('card-banner--loaded');
+                      }}
+                      onError={(event) => {
+                        event.currentTarget.remove();
+                      }}
+                    />
+                  </div>
                   <div className="item-header">
                     <h3>Solar Satellites</h3>
                     <span className="item-level number">
