@@ -468,8 +468,36 @@ function resolveTransportAtTarget(state: GameState, mission: FleetMission, now: 
 }
 
 function resolveDeployAtTarget(state: GameState, mission: FleetMission, now: number): void {
-  mission.returnTime = now + calcMissionReturnTravelMs(state, mission);
-  mission.status = 'returning';
+  const targetPlanet = state.planets.find((planet) =>
+    isMatchingCoordinates(planet.coordinates, mission.targetCoordinates));
+
+  if (!targetPlanet) {
+    mission.status = 'completed';
+    return;
+  }
+
+  for (const [shipId, countValue] of Object.entries(mission.ships)) {
+    const count = Math.max(0, Math.floor(countValue));
+    if (count <= 0) continue;
+    if (targetPlanet.ships[shipId as ShipId] === undefined) continue;
+    targetPlanet.ships[shipId as ShipId] += count;
+  }
+
+  const caps = getStorageCaps(targetPlanet);
+  targetPlanet.resources.metal = Math.min(
+    caps.metal,
+    targetPlanet.resources.metal + mission.cargo.metal,
+  );
+  targetPlanet.resources.crystal = Math.min(
+    caps.crystal,
+    targetPlanet.resources.crystal + mission.cargo.crystal,
+  );
+  targetPlanet.resources.deuterium = Math.min(
+    caps.deuterium,
+    targetPlanet.resources.deuterium + mission.cargo.deuterium,
+  );
+
+  mission.status = 'completed';
 }
 
 function resolveColoniseAtTarget(state: GameState, mission: FleetMission, now: number): void {
@@ -778,6 +806,17 @@ export function dispatch(
     }
   }
 
+  if (missionType === 'deploy') {
+    const targetPlanet = state.planets.find((planet) =>
+      isMatchingCoordinates(planet.coordinates, targetCoords));
+    if (!targetPlanet) {
+      return null;
+    }
+    if (isMatchingCoordinates(sourcePlanet.coordinates, targetCoords)) {
+      return null;
+    }
+  }
+
   const distance = calcDistance(sourcePlanet.coordinates, targetCoords);
   const fleetSpeed = calcFleetSpeed(selectedShips, state.research);
   if (fleetSpeed <= 0) return null;
@@ -791,7 +830,7 @@ export function dispatch(
   }
 
   let missionCargo = { metal: 0, crystal: 0, deuterium: 0 };
-  if (missionType === 'transport') {
+  if (missionType === 'transport' || missionType === 'deploy') {
     const targetPlanet = state.planets.find((planet) =>
       isMatchingCoordinates(planet.coordinates, targetCoords));
     if (!targetPlanet) return null; // must be player-owned

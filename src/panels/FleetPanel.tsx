@@ -611,8 +611,9 @@ export function FleetPanel() {
 
   const insufficientFuel = sourcePlanet.resources.deuterium < dispatchPreview.fuelCost;
   const invalidTransportCargo =
-    usesManualCargo(missionType) &&
-    (totalTransportCargo <= 0 || totalTransportCargo > cargoCapacity);
+    (missionType === 'transport' &&
+      (totalTransportCargo <= 0 || totalTransportCargo > cargoCapacity)) ||
+    ((missionType === 'deploy') && totalTransportCargo > cargoCapacity);
   const invalidColoniseFleet = missionType === 'colonise' && (selectedShips.colonyShip ?? 0) !== 1;
   const canDispatch =
     missionTarget !== null &&

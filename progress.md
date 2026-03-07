@@ -12,3 +12,5 @@ Task 0: added DefencePanel banner assertion and verified defence.webp rendering.
 Task 1: added accumulated building, fleet, and defence score tracking with v14 migration coverage.
 Task 2: added lifetime statistics state, v15 migration, and resource/combat/fleet tracking hooks.
 Task 3: added the Statistics panel, navigation entry, and panel asset wiring with test coverage.
+Task 4: added colonise fleet missions with empty-slot settlement, escort returns, and FleetPanel mission support.
+Task 5: added deploy missions that permanently station fleets and optionally transfer cargo to player planets.
