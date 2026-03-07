@@ -67,7 +67,8 @@ export function ResearchPanel() {
         {RESEARCH_ORDER.map((researchId) => {
           const definition = RESEARCH[researchId];
           const currentLevel = gameState.research[researchId];
-          const nextLevel = currentLevel + 1;
+          const queuedCount = gameState.researchQueue.filter((q) => q.id === researchId).length;
+          const nextLevel = currentLevel + queuedCount + 1;
           const cost = researchCostAtLevel(
             definition.baseCost,
             definition.costMultiplier,

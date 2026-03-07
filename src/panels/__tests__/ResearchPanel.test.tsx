@@ -86,6 +86,30 @@ describe('ResearchPanel', () => {
     ).not.toBeDisabled();
   });
 
+  it('research button shows future level accounting for items already in queue', () => {
+    renderWithGame(<ResearchPanel />, {
+      gameState: {
+        research: { energyTechnology: 3 },
+        researchQueue: [
+          {
+            type: 'research',
+            id: 'energyTechnology',
+            targetLevel: 4,
+            sourcePlanetIndex: 0,
+            startedAt: Date.now(),
+            completesAt: Date.now() + 60_000,
+          },
+        ],
+        planet: {
+          buildings: { researchLab: 1 },
+          resources: { metal: 10_000_000, crystal: 10_000_000, deuterium: 10_000_000 },
+        },
+      },
+    });
+
+    expect(screen.getByRole('button', { name: 'Queue Lv 5' })).toBeInTheDocument();
+  });
+
   it('calls startResearchAction with the correct research ID', async () => {
     const user = userEvent.setup();
     const startResearchAction = vi.fn(() => true);
