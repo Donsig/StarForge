@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { PANEL_IMAGES } from '../data/assets.ts';
 import { BUILDINGS, BUILDING_ORDER, type BuildingCategory } from '../data/buildings.ts';
 import { RESEARCH } from '../data/research.ts';
 import { SHIPS } from '../data/ships.ts';
@@ -74,6 +75,18 @@ export function BuildingsPanel() {
 
   return (
     <section className="panel">
+      <div className="panel-banner">
+        <img
+          src={PANEL_IMAGES.buildings}
+          alt=""
+          onLoad={(event) => {
+            event.currentTarget.parentElement?.classList.add('panel-banner--loaded');
+          }}
+          onError={(event) => {
+            event.currentTarget.remove();
+          }}
+        />
+      </div>
       <h1 className="panel-title">Buildings</h1>
       <p className="panel-subtitle">
         Construct and upgrade structures that power your economy and unlock advanced capabilities.

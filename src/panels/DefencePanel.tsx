@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { PANEL_IMAGES } from '../data/assets.ts';
 import { BUILDINGS } from '../data/buildings.ts';
 import { DEFENCES, DEFENCE_ORDER } from '../data/defences.ts';
 import { RESEARCH } from '../data/research.ts';
@@ -50,6 +51,18 @@ export function DefencePanel() {
 
   return (
     <section className="panel">
+      <div className="panel-banner">
+        <img
+          src={PANEL_IMAGES.defence}
+          alt=""
+          onLoad={(event) => {
+            event.currentTarget.parentElement?.classList.add('panel-banner--loaded');
+          }}
+          onError={(event) => {
+            event.currentTarget.remove();
+          }}
+        />
+      </div>
       <h1 className="panel-title">Defence</h1>
       <p className="panel-subtitle">
         Build planetary defenses in the shared shipyard queue.

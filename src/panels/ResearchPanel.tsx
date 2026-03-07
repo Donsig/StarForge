@@ -1,3 +1,4 @@
+import { PANEL_IMAGES } from '../data/assets.ts';
 import { BUILDINGS } from '../data/buildings.ts';
 import { RESEARCH, RESEARCH_ORDER } from '../data/research.ts';
 import { canAfford, effectiveResearchLabLevel, prerequisitesMet } from '../engine/BuildQueue.ts';
@@ -36,6 +37,18 @@ export function ResearchPanel() {
   const planet = gameState.planets[gameState.activePlanetIndex];
   return (
     <section className="panel">
+      <div className="panel-banner">
+        <img
+          src={PANEL_IMAGES.research}
+          alt=""
+          onLoad={(event) => {
+            event.currentTarget.parentElement?.classList.add('panel-banner--loaded');
+          }}
+          onError={(event) => {
+            event.currentTarget.remove();
+          }}
+        />
+      </div>
       <h1 className="panel-title">Research</h1>
       <p className="panel-subtitle">
         Unlock technologies that expand production, ship access, and combat capability.
