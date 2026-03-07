@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { SHIP_IMAGES } from '../data/assets.ts';
 import { BUILDINGS } from '../data/buildings.ts';
 import { DEFENCES } from '../data/defences.ts';
 import { RESEARCH } from '../data/research.ts';
@@ -105,6 +106,18 @@ export function ShipyardPanel() {
 
           return (
             <article key={shipId} className="item-card">
+              <div className="card-banner">
+                <img
+                  src={SHIP_IMAGES[shipId]}
+                  alt=""
+                  onLoad={(event) => {
+                    event.currentTarget.parentElement?.classList.add('card-banner--loaded');
+                  }}
+                  onError={(event) => {
+                    event.currentTarget.remove();
+                  }}
+                />
+              </div>
               <div className="item-header">
                 <h3>{definition.name}</h3>
                 <span className="item-level number">

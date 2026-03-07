@@ -235,6 +235,48 @@ describe('GalaxyPanel', () => {
     expect(screen.getByRole('button', { name: 'Harvest' })).toBeDisabled();
     expect(screen.getByText('No recyclers on active planet')).toBeInTheDocument();
   });
+
+  it('renders planet icon for NPC colony row', () => {
+    renderWithGame(<GalaxyPanel />, {
+      gameState: {
+        galaxy: {
+          seed: 1,
+          npcColonies: [
+            {
+              coordinates: { galaxy: 1, system: 1, slot: 3 },
+              name: 'Test Base',
+              temperature: 80,
+              tier: 1,
+              specialty: 'balanced',
+              maxTier: 5,
+              initialUpgradeIntervalMs: 21_600_000,
+              currentUpgradeIntervalMs: 21_600_000,
+              targetTier: 1,
+              catchUpUpgradeIntervalMs: 5_400_000,
+              catchUpProgressTicks: 0,
+              lastUpgradeAt: 0,
+              upgradeTickCount: 0,
+              raidCount: 0,
+              recentRaidTimestamps: [],
+              abandonedAt: undefined,
+              buildings: {},
+              baseDefences: {},
+              baseShips: {},
+              currentDefences: {},
+              currentShips: {},
+              lastRaidedAt: 0,
+              resourcesAtLastRaid: { metal: 0, crystal: 0, deuterium: 0 },
+            },
+          ],
+        },
+      },
+    });
+
+    const icons = document.querySelectorAll('.planet-icon img');
+    expect(icons.length).toBeGreaterThan(0);
+    const srcs = Array.from(icons).map((image) => (image as HTMLImageElement).src);
+    expect(srcs.some((src) => src.includes('hot-icon.webp'))).toBe(true);
+  });
 });
 
 describe('npcRelativeStrengthLabel', () => {

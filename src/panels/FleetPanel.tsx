@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { PANEL_IMAGES } from '../data/assets.ts';
 import type { FleetMission, MissionType } from '../models/Fleet.ts';
 import { SHIP_ORDER, SHIPS } from '../data/ships.ts';
 import { DEFENCES } from '../data/defences.ts';
@@ -589,6 +590,18 @@ export function FleetPanel() {
 
   return (
     <section className="panel">
+      <div className="panel-banner">
+        <img
+          src={PANEL_IMAGES.fleet}
+          alt=""
+          onLoad={(event) => {
+            event.currentTarget.parentElement?.classList.add('panel-banner--loaded');
+          }}
+          onError={(event) => {
+            event.currentTarget.remove();
+          }}
+        />
+      </div>
       <div className="fleet-panel-header">
         <h1 className="panel-title">Fleet Command</h1>
         <span className={`fleet-slots-counter${slotsFull ? ' fleet-slots-counter--full' : ''}`}>

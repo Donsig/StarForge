@@ -183,4 +183,17 @@ describe('ShipyardPanel', () => {
       within(lightFighterCard).getByText('Insufficient resources'),
     ).toBeInTheDocument();
   });
+
+  it('renders card banner imgs for ship cards', () => {
+    renderWithGame(<ShipyardPanel />, {
+      gameState: {
+        planet: { buildings: { shipyard: 1 } },
+      },
+    });
+
+    const images = document.querySelectorAll('.card-banner img');
+    expect(images.length).toBeGreaterThan(0);
+    const srcs = Array.from(images).map((image) => (image as HTMLImageElement).src);
+    expect(srcs.some((src) => src.includes('lightFighter.webp'))).toBe(true);
+  });
 });

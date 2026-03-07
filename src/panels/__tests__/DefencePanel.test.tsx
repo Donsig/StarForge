@@ -45,4 +45,15 @@ describe('DefencePanel', () => {
 
     expect(within(card as HTMLElement).getByRole('spinbutton')).toHaveValue(1);
   });
+
+  it('renders card banner imgs for defence cards', () => {
+    renderWithGame(<DefencePanel />, {
+      gameState: { planet: { buildings: { shipyard: 1 } } },
+    });
+
+    const images = document.querySelectorAll('.card-banner img');
+    expect(images.length).toBeGreaterThan(0);
+    const srcs = Array.from(images).map((image) => (image as HTMLImageElement).src);
+    expect(srcs.some((src) => src.includes('rocketLauncher.webp'))).toBe(true);
+  });
 });

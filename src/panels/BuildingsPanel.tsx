@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { BUILDING_IMAGES, PANEL_IMAGES, SHIP_IMAGES } from '../data/assets.ts';
 import { BUILDINGS, BUILDING_ORDER, type BuildingCategory } from '../data/buildings.ts';
 import { RESEARCH } from '../data/research.ts';
 import { SHIPS } from '../data/ships.ts';
@@ -74,6 +75,18 @@ export function BuildingsPanel() {
 
   return (
     <section className="panel">
+      <div className="panel-banner">
+        <img
+          src={PANEL_IMAGES.buildings}
+          alt=""
+          onLoad={(event) => {
+            event.currentTarget.parentElement?.classList.add('panel-banner--loaded');
+          }}
+          onError={(event) => {
+            event.currentTarget.remove();
+          }}
+        />
+      </div>
       <h1 className="panel-title">Buildings</h1>
       <p className="panel-subtitle">
         Construct and upgrade structures that power your economy and unlock advanced capabilities.
@@ -133,6 +146,18 @@ export function BuildingsPanel() {
 
                 return (
                   <article key={buildingId} className="item-card">
+                    <div className="card-banner">
+                      <img
+                        src={BUILDING_IMAGES[buildingId]}
+                        alt=""
+                        onLoad={(event) => {
+                          event.currentTarget.parentElement?.classList.add('card-banner--loaded');
+                        }}
+                        onError={(event) => {
+                          event.currentTarget.remove();
+                        }}
+                      />
+                    </div>
                     <div className="item-header">
                       <h3>{definition.name}</h3>
                       <span className="item-level number">Lv {currentLevel}</span>
@@ -190,6 +215,18 @@ export function BuildingsPanel() {
               <h3 className="section-title">Energy</h3>
               <div className="items-grid">
                 <article className="item-card">
+                  <div className="card-banner">
+                    <img
+                      src={SHIP_IMAGES.solarSatellite}
+                      alt=""
+                      onLoad={(event) => {
+                        event.currentTarget.parentElement?.classList.add('card-banner--loaded');
+                      }}
+                      onError={(event) => {
+                        event.currentTarget.remove();
+                      }}
+                    />
+                  </div>
                   <div className="item-header">
                     <h3>Solar Satellites</h3>
                     <span className="item-level number">

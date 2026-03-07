@@ -164,4 +164,17 @@ describe('ResearchPanel', () => {
       within(laserTechnologyCard).getByRole('button', { name: /Research Lv 1/i }),
     ).toBeEnabled();
   });
+
+  it('renders card banner imgs for research cards', () => {
+    renderWithGame(<ResearchPanel />, {
+      gameState: {
+        planet: { buildings: { researchLab: 1 } },
+      },
+    });
+
+    const images = document.querySelectorAll('.card-banner img');
+    expect(images.length).toBeGreaterThan(0);
+    const srcs = Array.from(images).map((image) => (image as HTMLImageElement).src);
+    expect(srcs.some((src) => src.includes('energyTechnology.webp'))).toBe(true);
+  });
 });

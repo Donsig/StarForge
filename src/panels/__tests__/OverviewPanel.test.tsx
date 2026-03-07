@@ -65,4 +65,16 @@ describe('OverviewPanel planet rename', () => {
 
     expect(renamePlanet).toHaveBeenCalledWith(0, 'Blurred Name');
   });
+
+  it('renders planet portrait img with correct type src based on temperature', () => {
+    renderWithGame(<OverviewPanel />, {
+      gameState: {
+        planet: { maxTemperature: 80 },
+      },
+    });
+
+    const portrait = document.querySelector('.planet-portrait img') as HTMLImageElement | null;
+    expect(portrait).toBeTruthy();
+    expect(portrait?.src).toContain('hot.webp');
+  });
 });

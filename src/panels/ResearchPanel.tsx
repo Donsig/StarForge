@@ -1,3 +1,4 @@
+import { PANEL_IMAGES, RESEARCH_IMAGES } from '../data/assets.ts';
 import { BUILDINGS } from '../data/buildings.ts';
 import { RESEARCH, RESEARCH_ORDER } from '../data/research.ts';
 import { canAfford, effectiveResearchLabLevel, prerequisitesMet } from '../engine/BuildQueue.ts';
@@ -36,6 +37,18 @@ export function ResearchPanel() {
   const planet = gameState.planets[gameState.activePlanetIndex];
   return (
     <section className="panel">
+      <div className="panel-banner">
+        <img
+          src={PANEL_IMAGES.research}
+          alt=""
+          onLoad={(event) => {
+            event.currentTarget.parentElement?.classList.add('panel-banner--loaded');
+          }}
+          onError={(event) => {
+            event.currentTarget.remove();
+          }}
+        />
+      </div>
       <h1 className="panel-title">Research</h1>
       <p className="panel-subtitle">
         Unlock technologies that expand production, ship access, and combat capability.
@@ -92,11 +105,23 @@ export function ResearchPanel() {
           const inQueue = gameState.researchQueue.some(q => q.id === researchId);
           const disabled = !affordable || !prereqMet;
 
-          return (
-            <article key={researchId} className="item-card">
-              <div className="item-header">
-                <h3>{definition.name}</h3>
-                <span className="item-level number">Lv {currentLevel}</span>
+        return (
+          <article key={researchId} className="item-card">
+            <div className="card-banner">
+              <img
+                src={RESEARCH_IMAGES[researchId]}
+                alt=""
+                onLoad={(event) => {
+                  event.currentTarget.parentElement?.classList.add('card-banner--loaded');
+                }}
+                onError={(event) => {
+                  event.currentTarget.remove();
+                }}
+              />
+            </div>
+            <div className="item-header">
+              <h3>{definition.name}</h3>
+              <span className="item-level number">Lv {currentLevel}</span>
               </div>
 
               <p className="item-description">{definition.description}</p>
