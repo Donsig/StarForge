@@ -114,12 +114,15 @@ export const GAME_CONSTANTS = {
   AUTO_SAVE_TICKS: 30,
   MAX_OFFLINE_SECONDS: 7 * 24 * 3600, // 7 days
   STORAGE_KEY: 'starforge_save',
-  STATE_VERSION: 13,
+  STATE_VERSION: 14,
 } as const;
 
 export interface PlayerScores {
   military: number;
   economy: number;
   research: number;
+  buildings: number;
+  fleet: number;
+  defence: number;
   total: number;
 }

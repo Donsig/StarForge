@@ -21,6 +21,20 @@ import {
 } from './FormulasEngine.ts';
 import { activePlanet } from './helpers.ts';
 
+function addAccumulatedScore(
+  state: GameState,
+  field: 'buildings' | 'fleet' | 'defence',
+  resourceCost: ResourceCost,
+): void {
+  const points = Math.floor(
+    (resourceCost.metal + resourceCost.crystal + resourceCost.deuterium) / 1000,
+  );
+  if (points <= 0) {
+    return;
+  }
+  state.playerScores[field] = (state.playerScores[field] ?? 0) + points;
+}
+
 export function effectiveResearchLabLevel(state: GameState, item: QueueItem): number {
   const irnLevel = (state.research as Record<string, number>).intergalacticResearchNetwork ?? 0;
   if (irnLevel === 0 || state.planets.length <= 1) {
@@ -443,6 +457,13 @@ export function processTick(state: GameState, now: number = Date.now()): void {
     if (planet.buildingQueue.length > 0 && now >= planet.buildingQueue[0].completesAt) {
       const item = planet.buildingQueue[0];
       planet.buildings[item.id as BuildingId] = item.targetLevel!;
+      const buildingDefinition = BUILDINGS[item.id as BuildingId];
+      const buildingCost = buildingCostAtLevel(
+        buildingDefinition.baseCost,
+        buildingDefinition.costMultiplier,
+        item.targetLevel!,
+      );
+      addAccumulatedScore(state, 'buildings', buildingCost);
       planet.buildingQueue.shift();
 
       const nextItem = planet.buildingQueue[0];
@@ -472,8 +493,10 @@ export function processTick(state: GameState, now: number = Date.now()): void {
         item.completed = (item.completed ?? 0) + 1;
         if (item.type === 'defence') {
           planet.defences[item.id as DefenceId] += 1;
+          addAccumulatedScore(state, 'defence', DEFENCES[item.id as DefenceId].cost);
         } else {
           planet.ships[item.id as ShipId] += 1;
+          addAccumulatedScore(state, 'fleet', SHIPS[item.id as ShipId].cost);
         }
 
         if (item.completed >= item.quantity!) {

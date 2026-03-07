@@ -9,3 +9,4 @@ Task 7: added research card banners and covered asset wiring in ResearchPanel te
 Task 8: added temperature-driven planet portraits to Overview with placeholder-safe image fallback.
 Task 9: added temperature-based planet icons to galaxy rows and aligned the name-cell layout.
 Task 0: added DefencePanel banner assertion and verified defence.webp rendering.
+Task 1: added accumulated building, fleet, and defence score tracking with v14 migration coverage.

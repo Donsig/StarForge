@@ -76,7 +76,15 @@ describe('GalaxyPanel', () => {
 
     renderWithGame(<GalaxyPanel />, {
       gameState: {
-        playerScores: { military: 1000, economy: 0, research: 0, total: 0 },
+        playerScores: {
+          military: 1000,
+          economy: 0,
+          research: 0,
+          buildings: 0,
+          fleet: 0,
+          defence: 0,
+          total: 0,
+        },
         galaxy: {
           seed: 1,
           npcColonies: [

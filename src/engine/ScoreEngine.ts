@@ -54,5 +54,5 @@ export function computePlayerScores(state: GameState): PlayerScores {
   );
   const total = military * 2 + economy * 5 + research * 3;
 
-  return { military, economy, research, total };
+  return { military, economy, research, buildings: 0, fleet: 0, defence: 0, total };
 }

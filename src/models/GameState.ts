@@ -68,6 +68,9 @@ export function createNewGameState(): GameState {
       military: 0,
       economy: 0,
       research: 0,
+      buildings: 0,
+      fleet: 0,
+      defence: 0,
       total: 0,
     },
   };
