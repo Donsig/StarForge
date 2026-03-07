@@ -525,7 +525,7 @@ function resolveColoniseAtTarget(state: GameState, mission: FleetMission, now: n
   newPlanet.fieldCount = stats.maxFields;
   state.planets.push(newPlanet);
 
-  if (state.statistics.milestones.firstColony === undefined) {
+  if (state.statistics?.milestones && state.statistics.milestones.firstColony === undefined) {
     state.statistics.milestones.firstColony = now;
   }
 

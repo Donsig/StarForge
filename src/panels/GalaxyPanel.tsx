@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { useCallback } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { HoverPortal } from '../components/HoverPortal';
 import type { EspionageReport } from '../models/Fleet.ts';
 import { useGame } from '../context/GameContext';
@@ -273,12 +272,12 @@ export function GalaxyPanel({ onNavigate }: GalaxyPanelProps = {}) {
   const hoverCloseTimerRef = useRef<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
 
-  const clearNpcHoverCloseTimer = () => {
+  const clearNpcHoverCloseTimer = useCallback(() => {
     if (hoverCloseTimerRef.current !== null) {
       window.clearTimeout(hoverCloseTimerRef.current);
       hoverCloseTimerRef.current = null;
     }
-  };
+  }, []);
 
   const scheduleNpcHoverClose = () => {
     clearNpcHoverCloseTimer();
@@ -299,7 +298,7 @@ export function GalaxyPanel({ onNavigate }: GalaxyPanelProps = {}) {
     clearNpcHoverCloseTimer();
     setHoveredNpcKey(null);
     hoverAnchorRef.current = null;
-  }, []);
+  }, [clearNpcHoverCloseTimer]);
 
   function commitSystem(value: string) {
     const n = parseInt(value, 10);
