@@ -467,7 +467,7 @@ function resolveTransportAtTarget(state: GameState, mission: FleetMission, now: 
   mission.status = 'returning';
 }
 
-function resolveDeployAtTarget(state: GameState, mission: FleetMission, now: number): void {
+function resolveDeployAtTarget(state: GameState, mission: FleetMission): void {
   const targetPlanet = state.planets.find((planet) =>
     isMatchingCoordinates(planet.coordinates, mission.targetCoordinates));
 
@@ -565,7 +565,7 @@ function resolveAtTarget(state: GameState, mission: FleetMission, now: number): 
     return;
   }
   if (mission.type === 'deploy') {
-    resolveDeployAtTarget(state, mission, now);
+    resolveDeployAtTarget(state, mission);
     return;
   }
   resolveAttackAtTarget(state, mission, now);

@@ -379,7 +379,7 @@ function migrate(state: GameState): GameState {
   }
 
   if (state.version < 14) {
-    const playerScores = legacyState.playerScores as Record<string, number> | undefined;
+    const playerScores = legacyState.playerScores as unknown as Record<string, number> | undefined;
     if (playerScores !== undefined) {
       playerScores['buildings'] ??= 0;
       playerScores['fleet'] ??= 0;

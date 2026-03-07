@@ -1,5 +1,6 @@
 import userEvent from '@testing-library/user-event';
-import { GalaxyPanel, npcRelativeStrengthLabel } from '../GalaxyPanel';
+import { GalaxyPanel } from '../GalaxyPanel';
+import { npcRelativeStrengthLabel } from '../galaxyStrength';
 import { renderWithGame, screen } from '../../test/test-utils';
 import { dispatchHarvest as dispatchHarvestMission } from '../../engine/FleetEngine.ts';
 import type { GameState } from '../../models/GameState.ts';
