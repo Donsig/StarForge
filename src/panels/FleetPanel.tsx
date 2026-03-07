@@ -12,6 +12,7 @@ import {
   calcMaxFleetSlots,
   calcTravelSeconds,
 } from '../engine/FleetEngine.ts';
+import { getNPCResources } from '../engine/GalaxyEngine.ts';
 import { useCountdown } from '../hooks/useCountdown.ts';
 import { formatNumber } from '../utils/format.ts';
 import { formatDuration } from '../utils/time.ts';
@@ -513,6 +514,62 @@ export function FleetPanel() {
     return buildCombatEstimate(ratio);
   }, [gameState.research.weaponsTechnology, latestCombatIntel, selectedShipCount, selectedShips]);
 
+  const cargoInfo = useMemo(() => {
+    if (missionType !== 'attack' || !fleetTarget) return null;
+
+    const colony = gameState.galaxy.npcColonies.find(
+      (c) =>
+        c.coordinates.galaxy === fleetTarget.galaxy &&
+        c.coordinates.system === fleetTarget.system &&
+        c.coordinates.slot === fleetTarget.slot,
+    );
+    if (!colony) return null;
+
+    const reportWithResources = espionageReports
+      .filter(
+        (report) =>
+          report.targetCoordinates.galaxy === fleetTarget.galaxy &&
+          report.targetCoordinates.system === fleetTarget.system &&
+          report.targetCoordinates.slot === fleetTarget.slot &&
+          report.detected === false &&
+          report.resources !== undefined,
+      )
+      .sort((a, b) => b.timestamp - a.timestamp)[0];
+
+    const resources = reportWithResources?.resources
+      ?? getNPCResources(colony, currentTime, gameState.settings.gameSpeed);
+
+    const lootable = Math.floor(
+      (resources.metal + resources.crystal + resources.deuterium) * 0.5,
+    );
+
+    const largeCargoCap = SHIPS.largeCargo.cargoCapacity;
+    const smallCargoCap = SHIPS.smallCargo.cargoCapacity;
+    const availableLarge = sourcePlanet.ships.largeCargo ?? 0;
+    const availableSmall = sourcePlanet.ships.smallCargo ?? 0;
+    const deficit = Math.max(0, lootable - cargoCapacity);
+    const additionalLarge = Math.ceil(deficit / largeCargoCap);
+    const additionalSmall = Math.ceil(deficit / smallCargoCap);
+
+    return {
+      lootable,
+      additionalLarge,
+      additionalSmall,
+      availableLarge,
+      availableSmall,
+      fromReport: reportWithResources !== undefined,
+    };
+  }, [
+    cargoCapacity,
+    currentTime,
+    espionageReports,
+    fleetTarget,
+    gameState.galaxy.npcColonies,
+    gameState.settings.gameSpeed,
+    missionType,
+    sourcePlanet.ships,
+  ]);
+
   const insufficientFuel = sourcePlanet.resources.deuterium < dispatchPreview.fuelCost;
   const invalidTransportCargo =
     missionType === 'transport' &&
@@ -749,6 +806,61 @@ export function FleetPanel() {
               <p className="fleet-combat-title">{combatEstimate.title}</p>
               <p className="hint">{combatEstimate.message}</p>
               <p className="hint">Approximate only, based on latest espionage report.</p>
+            </div>
+          )}
+
+          {cargoInfo && missionType === 'attack' && (
+            <div className="fleet-cargo-helper">
+              <div className="fleet-cargo-header">
+                <strong>Cargo needed</strong>
+                <span className="hint">{cargoInfo.fromReport ? 'from spy report' : 'estimated'}</span>
+              </div>
+              <p className="stat-line">
+                <span className="label">Lootable</span>
+                <span className="number">~{formatNumber(cargoInfo.lootable)}</span>
+              </p>
+              <p className="stat-line">
+                <span className="label">Fleet cargo capacity</span>
+                <span className="number">{formatNumber(cargoCapacity)}</span>
+              </p>
+              <div className="fleet-cargo-buttons">
+                {cargoInfo.additionalLarge > 0 && (
+                  <button
+                    type="button"
+                    className="btn btn-sm"
+                    disabled={cargoInfo.availableLarge < cargoInfo.additionalLarge}
+                    onClick={() => {
+                      setSelectedShips((current) => ({
+                        ...current,
+                        largeCargo: Math.min(
+                          cargoInfo.availableLarge,
+                          (current.largeCargo ?? 0) + cargoInfo.additionalLarge,
+                        ),
+                      }));
+                    }}
+                  >
+                    + {cargoInfo.additionalLarge} Large Cargo
+                  </button>
+                )}
+                {cargoInfo.additionalSmall > 0 && (
+                  <button
+                    type="button"
+                    className="btn btn-sm"
+                    disabled={cargoInfo.availableSmall < cargoInfo.additionalSmall}
+                    onClick={() => {
+                      setSelectedShips((current) => ({
+                        ...current,
+                        smallCargo: Math.min(
+                          cargoInfo.availableSmall,
+                          (current.smallCargo ?? 0) + cargoInfo.additionalSmall,
+                        ),
+                      }));
+                    }}
+                  >
+                    + {cargoInfo.additionalSmall} Small Cargo
+                  </button>
+                )}
+              </div>
             </div>
           )}
 

@@ -653,6 +653,28 @@ body {
   background: rgba(34, 197, 94, 0.1);
 }
 
+.fleet-cargo-helper {
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  padding: 0.6rem 0.8rem;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.fleet-cargo-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.4rem;
+}
+
+.fleet-cargo-buttons {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+  flex-wrap: wrap;
+}
+
 .fleet-dispatch-footer {
   display: flex;
   align-items: center;
