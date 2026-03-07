@@ -4,16 +4,26 @@ import { RESEARCH } from '../data/research.ts';
 import { SHIPS } from '../data/ships.ts';
 import { useGame } from '../context/GameContext';
 import { useCountdown } from '../hooks/useCountdown';
+import { formatDuration } from '../utils/time.ts';
 import type { BuildingId, DefenceId, QueueItem, ResearchId, ShipId } from '../models/types.ts';
 
 interface QueueRowProps {
   label: string;
   subtitle: string;
   completesAt: number | null;
+  duration?: string;
   onCancel?: () => void;
 }
 
-function QueueRow({ label, subtitle, completesAt, onCancel }: QueueRowProps) {
+function getQueuedItemDuration(item: QueueItem): string {
+  const perUnitMs = item.completesAt - item.startedAt;
+  if (item.type === 'ship' || item.type === 'defence') {
+    return formatDuration((perUnitMs * (item.quantity ?? 1)) / 1000);
+  }
+  return formatDuration(perUnitMs / 1000);
+}
+
+function QueueRow({ label, subtitle, completesAt, duration, onCancel }: QueueRowProps) {
   const countdown = useCountdown(completesAt);
 
   return (
@@ -22,7 +32,9 @@ function QueueRow({ label, subtitle, completesAt, onCancel }: QueueRowProps) {
         <div className="queue-label">{label}</div>
         <div className="queue-subtitle">{subtitle}</div>
       </div>
-      {countdown && <div className="queue-time number">{countdown}</div>}
+      {(countdown || duration) && (
+        <div className="queue-time number">{countdown || duration}</div>
+      )}
       {onCancel && (
         <button type="button" className="btn btn-danger" onClick={onCancel}>
           Cancel
@@ -58,6 +70,7 @@ export function QueueDisplay() {
           label={`Building: ${BUILDINGS[item.id as BuildingId].name}`}
           subtitle={`Lv ${item.targetLevel ?? 0}${index > 0 ? ' (queued)' : ''}`}
           completesAt={index === 0 ? item.completesAt : null}
+          duration={index > 0 ? getQueuedItemDuration(item) : undefined}
           onCancel={() => cancelBuilding(index)}
         />
       ))}
@@ -68,6 +81,7 @@ export function QueueDisplay() {
           label={`Research: ${RESEARCH[item.id as ResearchId].name}`}
           subtitle={`Lv ${item.targetLevel ?? 0}${index > 0 ? ' (queued)' : ''}`}
           completesAt={index === 0 ? item.completesAt : null}
+          duration={index > 0 ? getQueuedItemDuration(item) : undefined}
           onCancel={() => cancelResearch(index)}
         />
       ))}
@@ -83,6 +97,7 @@ export function QueueDisplay() {
             label={`Shipyard: ${name}`}
             subtitle={`${progress}${index > 0 ? ' (queued)' : ''}`}
             completesAt={index === 0 ? item.completesAt : null}
+            duration={index > 0 ? getQueuedItemDuration(item) : undefined}
             onCancel={() => cancelShipyard(index)}
           />
         );
