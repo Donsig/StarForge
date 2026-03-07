@@ -8,7 +8,6 @@ import { activePlanet } from './helpers.ts';
 
 const NPC_RECOVERY_MS = 48 * 3600 * 1000;
 const NPC_RESOURCE_CAP_HOURS = 48;
-const NPC_BASE_POOL = { metal: 50_000, crystal: 30_000, deuterium: 10_000 };
 
 const NPC_NAME_PREFIXES = [
   'Zorgon',
