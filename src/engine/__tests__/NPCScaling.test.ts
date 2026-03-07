@@ -138,25 +138,19 @@ describe('catch-up upgrade mode', () => {
   });
 });
 
-describe('getNPCResources tier² floor', () => {
-  it('tier-1 NPC has at least BASE_POOL × 1 resources', () => {
+describe('getNPCResources post-raid state', () => {
+  it('respects resourcesAtLastRaid instead of snapping back to a tier floor', () => {
+    const now = Date.now();
+    const baseline = { metal: 1_000, crystal: 500, deuterium: 0 };
     const colony = {
       ...makeStateWithColony().galaxy.npcColonies[0]!,
-      tier: 1,
-      lastRaidedAt: Date.now() - 1000, // recently raided
-      resourcesAtLastRaid: { metal: 0, crystal: 0, deuterium: 0 },
+      tier: 4,
+      lastRaidedAt: now,
+      resourcesAtLastRaid: baseline,
     };
-    const resources = getNPCResources(colony, Date.now(), 1);
-    expect(resources.metal).toBeGreaterThanOrEqual(50_000);
-    expect(resources.crystal).toBeGreaterThanOrEqual(30_000);
-  });
 
-  it('tier-4 NPC floor is 16× tier-1 floor', () => {
-    const base = makeStateWithColony().galaxy.npcColonies[0]!;
-    const colony4 = { ...base, tier: 4, lastRaidedAt: Date.now() - 1000, resourcesAtLastRaid: { metal: 0, crystal: 0, deuterium: 0 } };
-    const colony1 = { ...base, tier: 1, lastRaidedAt: Date.now() - 1000, resourcesAtLastRaid: { metal: 0, crystal: 0, deuterium: 0 } };
-    const r4 = getNPCResources(colony4, Date.now(), 1);
-    const r1 = getNPCResources(colony1, Date.now(), 1);
-    expect(r4.metal).toBeGreaterThanOrEqual(r1.metal * 16 * 0.9); // tier² scaling with 10% tolerance
+    const resources = getNPCResources(colony, now, 1);
+
+    expect(resources).toEqual(baseline);
   });
 });

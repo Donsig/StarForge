@@ -456,42 +456,32 @@ export function getNPCResources(
     crystal: 0,
     deuterium: 0,
   };
-  const tierFloor = colony.tier * colony.tier;
 
   return {
     metal: Math.max(
-      NPC_BASE_POOL.metal * tierFloor,
-      Math.max(
-        0,
-        Math.floor(
-          Math.min(
-            stockpileCap.metal,
-            baseline.metal + production.metalPerHour * elapsedHours,
-          ),
+      0,
+      Math.floor(
+        Math.min(
+          stockpileCap.metal,
+          baseline.metal + production.metalPerHour * elapsedHours,
         ),
       ),
     ),
     crystal: Math.max(
-      NPC_BASE_POOL.crystal * tierFloor,
-      Math.max(
-        0,
-        Math.floor(
-          Math.min(
-            stockpileCap.crystal,
-            baseline.crystal + production.crystalPerHour * elapsedHours,
-          ),
+      0,
+      Math.floor(
+        Math.min(
+          stockpileCap.crystal,
+          baseline.crystal + production.crystalPerHour * elapsedHours,
         ),
       ),
     ),
     deuterium: Math.max(
-      NPC_BASE_POOL.deuterium * tierFloor,
-      Math.max(
-        0,
-        Math.floor(
-          Math.min(
-            stockpileCap.deuterium,
-            baseline.deuterium + production.deuteriumPerHour * elapsedHours,
-          ),
+      0,
+      Math.floor(
+        Math.min(
+          stockpileCap.deuterium,
+          baseline.deuterium + production.deuteriumPerHour * elapsedHours,
         ),
       ),
     ),
