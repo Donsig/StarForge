@@ -1,5 +1,11 @@
 import { SHIPS, type CombatShipId, type ShipDrive } from '../data/ships.ts';
-import { addDebris, getNPCCurrentForce, getNPCResources } from './GalaxyEngine.ts';
+import {
+  addDebris,
+  getNPCCurrentForce,
+  getNPCResources,
+  isSlotEmpty,
+  planetStatsForSlot,
+} from './GalaxyEngine.ts';
 import { simulate } from './CombatEngine.ts';
 import { generateReport } from './EspionageEngine.ts';
 import { getStorageCaps } from './ResourceEngine.ts';
@@ -9,6 +15,7 @@ import type { CombatResult } from '../models/Combat.ts';
 import type { FleetMission, MissionType } from '../models/Fleet.ts';
 import type { Coordinates } from '../models/Galaxy.ts';
 import type { ShipId } from '../models/types.ts';
+import { createDefaultPlanet } from '../models/Planet.ts';
 
 const COMPLETED_MISSION_RETENTION_MS = 7 * 24 * 3600 * 1000;
 const HISTORY_RETENTION_MS = 30 * 24 * 3600 * 1000;
@@ -460,6 +467,58 @@ function resolveTransportAtTarget(state: GameState, mission: FleetMission, now: 
   mission.status = 'returning';
 }
 
+function resolveDeployAtTarget(state: GameState, mission: FleetMission, now: number): void {
+  mission.returnTime = now + calcMissionReturnTravelMs(state, mission);
+  mission.status = 'returning';
+}
+
+function resolveColoniseAtTarget(state: GameState, mission: FleetMission, now: number): void {
+  if (!isSlotEmpty(state, mission.targetCoordinates)) {
+    mission.returnTime = now + calcMissionReturnTravelMs(state, mission);
+    mission.status = 'returning';
+    return;
+  }
+
+  const astrophysicsLevel = state.research.astrophysicsTechnology ?? 0;
+  const maxColonies = Math.floor(astrophysicsLevel / 2) + (astrophysicsLevel > 0 ? 1 : 0);
+  if (state.planets.length - 1 >= maxColonies) {
+    mission.returnTime = now + calcMissionReturnTravelMs(state, mission);
+    mission.status = 'returning';
+    return;
+  }
+
+  const newPlanet = createDefaultPlanet();
+  newPlanet.name = `Colony ${state.planets.length + 1}`;
+  newPlanet.coordinates = { ...mission.targetCoordinates };
+  const rerollSeed = now ^ (mission.targetCoordinates.system * 1000 + mission.targetCoordinates.slot * 17);
+  const stats = planetStatsForSlot(rerollSeed, mission.targetCoordinates);
+  newPlanet.maxTemperature = stats.maxTemperature;
+  newPlanet.maxFields = stats.maxFields;
+  newPlanet.fieldCount = stats.maxFields;
+  state.planets.push(newPlanet);
+
+  if (state.statistics.milestones.firstColony === undefined) {
+    state.statistics.milestones.firstColony = now;
+  }
+
+  const returningShips = { ...mission.ships };
+  if ((returningShips.colonyShip ?? 0) > 0) {
+    returningShips.colonyShip -= 1;
+    if (returningShips.colonyShip <= 0) {
+      delete returningShips.colonyShip;
+    }
+  }
+  mission.ships = returningShips;
+
+  if (Object.keys(returningShips).length > 0) {
+    mission.returnTime = now + calcMissionReturnTravelMs(state, mission);
+    mission.status = 'returning';
+    return;
+  }
+
+  mission.status = 'completed';
+}
+
 function resolveAtTarget(state: GameState, mission: FleetMission, now: number): void {
   if (mission.type === 'transport') {
     resolveTransportAtTarget(state, mission, now);
@@ -471,6 +530,14 @@ function resolveAtTarget(state: GameState, mission: FleetMission, now: number): 
   }
   if (mission.type === 'harvest') {
     resolveHarvestAtTarget(state, mission, now);
+    return;
+  }
+  if (mission.type === 'colonise') {
+    resolveColoniseAtTarget(state, mission, now);
+    return;
+  }
+  if (mission.type === 'deploy') {
+    resolveDeployAtTarget(state, mission, now);
     return;
   }
   resolveAttackAtTarget(state, mission, now);
@@ -650,7 +717,7 @@ export function dispatch(
 ): FleetMission | null {
   const sourcePlanet = state.planets[sourcePlanetIndex];
   if (!sourcePlanet) return null;
-  if (missionType !== 'transport') {
+  if (missionType !== 'transport' && missionType !== 'colonise' && missionType !== 'deploy') {
     const targetNpc = state.galaxy.npcColonies.find((npc) =>
       isMatchingCoordinates(npc.coordinates, targetCoords));
     if (targetNpc?.abandonedAt !== undefined) {
@@ -691,6 +758,24 @@ export function dispatch(
     }
   } else if (Object.keys(selectedShips).length === 0) {
     return null;
+  }
+
+  if (missionType === 'colonise') {
+    if (!isSlotEmpty(state, targetCoords)) {
+      return null;
+    }
+    const astrophysicsLevel = state.research.astrophysicsTechnology ?? 0;
+    const maxColonies = Math.floor(astrophysicsLevel / 2) + (astrophysicsLevel > 0 ? 1 : 0);
+    if (maxColonies <= 0) {
+      return null;
+    }
+    if (state.planets.length - 1 >= maxColonies) {
+      return null;
+    }
+    const requestedColonyShips = Math.floor(ships.colonyShip ?? 0);
+    if (requestedColonyShips !== 1) {
+      return null;
+    }
   }
 
   const distance = calcDistance(sourcePlanet.coordinates, targetCoords);
@@ -751,7 +836,12 @@ export function dispatch(
     status: 'outbound',
     sourcePlanetIndex,
     targetCoordinates: { ...targetCoords },
-    targetType: missionType === 'transport' ? 'player_planet' : 'npc_colony',
+    targetType:
+      missionType === 'transport' || missionType === 'deploy'
+        ? 'player_planet'
+        : missionType === 'colonise'
+          ? 'empty_slot'
+          : 'npc_colony',
     ships: { ...selectedShips },
     cargo: missionCargo,
     fuelCost,

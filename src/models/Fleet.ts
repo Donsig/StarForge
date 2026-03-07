@@ -1,7 +1,13 @@
 import type { CombatResult } from './Combat.ts';
 import type { Coordinates, NPCAbandonmentProximity } from './Galaxy.ts';
 
-export type MissionType = 'attack' | 'espionage' | 'harvest' | 'transport';
+export type MissionType =
+  | 'attack'
+  | 'espionage'
+  | 'harvest'
+  | 'transport'
+  | 'colonise'
+  | 'deploy';
 export type MissionStatus = 'outbound' | 'at_target' | 'returning' | 'completed';
 
 export interface FleetMission {
@@ -10,7 +16,7 @@ export interface FleetMission {
   status: MissionStatus;
   sourcePlanetIndex: number;
   targetCoordinates: Coordinates;
-  targetType: 'npc_colony' | 'debris_field' | 'player_planet';
+  targetType: 'npc_colony' | 'debris_field' | 'player_planet' | 'empty_slot';
   ships: Record<string, number>;
   cargo: { metal: number; crystal: number; deuterium: number };
   fuelCost: number;

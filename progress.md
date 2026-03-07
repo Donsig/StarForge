@@ -11,3 +11,4 @@ Task 9: added temperature-based planet icons to galaxy rows and aligned the name
 Task 0: added DefencePanel banner assertion and verified defence.webp rendering.
 Task 1: added accumulated building, fleet, and defence score tracking with v14 migration coverage.
 Task 2: added lifetime statistics state, v15 migration, and resource/combat/fleet tracking hooks.
+Task 3: added the Statistics panel, navigation entry, and panel asset wiring with test coverage.

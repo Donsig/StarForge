@@ -35,16 +35,57 @@ function formatEta(timestamp: number): string {
 }
 
 function formatMissionType(type: MissionType): string {
-  if (type === 'espionage') {
-    return 'Espionage';
+  switch (type) {
+    case 'espionage':
+      return 'Espionage';
+    case 'harvest':
+      return 'Harvest';
+    case 'transport':
+      return 'Transport';
+    case 'colonise':
+      return 'Colonise';
+    case 'deploy':
+      return 'Deploy';
+    default:
+      return 'Attack';
   }
-  if (type === 'harvest') {
-    return 'Harvest';
+}
+
+function usesPlayerPlanetTarget(type: MissionType): boolean {
+  return type === 'transport' || type === 'deploy';
+}
+
+function usesManualCargo(type: MissionType): boolean {
+  return type === 'transport' || type === 'deploy';
+}
+
+function missionTargetHint(type: MissionType): string {
+  if (type === 'transport') {
+    return 'Select one of your colonies as the transport target.';
+  }
+  if (type === 'deploy') {
+    return 'Select one of your planets to station the fleet there.';
+  }
+  if (type === 'colonise') {
+    return 'Select an empty slot from the Galaxy panel to prepare a colonisation mission.';
+  }
+  return 'Select an NPC target from the Galaxy panel to prepare a fleet mission.';
+}
+
+function dispatchLabel(type: MissionType): string {
+  if (type === 'espionage') {
+    return 'Dispatch Espionage';
   }
   if (type === 'transport') {
-    return 'Transport';
+    return 'Dispatch Transport';
   }
-  return 'Attack';
+  if (type === 'colonise') {
+    return 'Dispatch Colonise';
+  }
+  if (type === 'deploy') {
+    return 'Deploy Fleet';
+  }
+  return 'Dispatch Attack';
 }
 
 function formatCargo(cargo: { metal: number; crystal: number; deuterium: number }): string {
@@ -333,8 +374,8 @@ export function FleetPanel() {
       setSelectedShips({});
       setTransportCargo({ metal: 0, crystal: 0, deuterium: 0 });
 
-      if (pendingMissionTarget.type === 'transport') {
-        setMissionType('transport');
+      if (usesPlayerPlanetTarget(pendingMissionTarget.type)) {
+        setMissionType(pendingMissionTarget.type);
         setFleetTarget(null);
         const targetIndex = gameState.planets.findIndex(
           (planet, index) =>
@@ -347,7 +388,7 @@ export function FleetPanel() {
           setTransportTargetIndex(targetIndex);
         }
       } else {
-        setMissionType(pendingMissionTarget.type === 'espionage' ? 'espionage' : 'attack');
+        setMissionType(pendingMissionTarget.type);
         setFleetTarget(pendingMissionTarget.coords);
       }
 
@@ -366,7 +407,7 @@ export function FleetPanel() {
   ]);
 
   useEffect(() => {
-    if (missionType !== 'transport') {
+    if (!usesPlayerPlanetTarget(missionType)) {
       return;
     }
 
@@ -405,7 +446,7 @@ export function FleetPanel() {
     ({ index }) => index === transportTargetIndex,
   )?.planet ?? null;
   const missionTarget =
-    missionType === 'transport'
+    usesPlayerPlanetTarget(missionType)
       ? transportTarget?.coordinates ?? null
       : fleetTarget;
   const cargoCapacity = calcCargoCapacity(selectedShips);
@@ -570,14 +611,16 @@ export function FleetPanel() {
 
   const insufficientFuel = sourcePlanet.resources.deuterium < dispatchPreview.fuelCost;
   const invalidTransportCargo =
-    missionType === 'transport' &&
+    usesManualCargo(missionType) &&
     (totalTransportCargo <= 0 || totalTransportCargo > cargoCapacity);
+  const invalidColoniseFleet = missionType === 'colonise' && (selectedShips.colonyShip ?? 0) !== 1;
   const canDispatch =
     missionTarget !== null &&
     selectedShipCount > 0 &&
     !slotsFull &&
     !insufficientFuel &&
-    !invalidTransportCargo;
+    !invalidTransportCargo &&
+    !invalidColoniseFleet;
 
   const remainingLarge = cargoInfo
     ? Math.max(0, cargoInfo.availableLarge - (selectedShips.largeCargo ?? 0))
@@ -608,14 +651,14 @@ export function FleetPanel() {
           {activeMissions.length} / {maxSlots} slots
         </span>
       </div>
-      <p className="panel-subtitle">Dispatch attacks against NPC colonies and track active missions.</p>
+      <p className="panel-subtitle">Dispatch combat, logistics, and colonisation missions.</p>
 
       <div className="panel-card fleet-dispatch-card">
-        {missionType !== 'transport' && !missionTarget && (
-          <p className="hint">Select an NPC target from the Galaxy panel to prepare an attack mission.</p>
+        {!usesPlayerPlanetTarget(missionType) && !missionTarget && (
+          <p className="hint">{missionTargetHint(missionType)}</p>
         )}
 
-          {missionType === 'transport' ? (
+          {usesPlayerPlanetTarget(missionType) ? (
             <div className="fleet-mission-type">
               <label htmlFor="transport-target-select" className="label">Send To</label>
               <select
@@ -662,7 +705,11 @@ export function FleetPanel() {
                     ? 'espionage'
                     : value === 'transport'
                       ? 'transport'
-                      : 'attack';
+                      : value === 'colonise'
+                        ? 'colonise'
+                        : value === 'deploy'
+                          ? 'deploy'
+                          : 'attack';
                 setMissionType(nextType);
                 setSelectedShips({});
                 setTransportCargo({ metal: 0, crystal: 0, deuterium: 0 });
@@ -670,7 +717,9 @@ export function FleetPanel() {
             >
               <option value="attack">Attack</option>
               {espionageAvailable && <option value="espionage">Espionage</option>}
+              <option value="colonise">Colonise</option>
               {transportTargets.length > 0 && <option value="transport">Transport</option>}
+              {transportTargets.length > 0 && <option value="deploy">Deploy</option>}
             </select>
           </div>
 
@@ -678,6 +727,8 @@ export function FleetPanel() {
             <p className="hint">
               {missionType === 'espionage'
                 ? 'No espionage probes available on this planet.'
+                : missionType === 'colonise'
+                  ? 'No ships available on this planet. Colony Ship required (exactly 1).'
                 : 'No ships available on this planet.'}
             </p>
           ) : (
@@ -731,7 +782,11 @@ export function FleetPanel() {
             </div>
           )}
 
-          {missionType === 'transport' && (
+          {missionType === 'colonise' && (
+            <p className="hint">Colonise missions require exactly 1 Colony Ship. Escort ships may return after settlement.</p>
+          )}
+
+          {usesManualCargo(missionType) && (
             <div className="fleet-ship-grid">
               <div className="fleet-ship-row">
                 <div>
@@ -886,6 +941,9 @@ export function FleetPanel() {
               Not enough deuterium on this planet for the required fuel.
             </p>
           )}
+          {invalidColoniseFleet && (
+            <p className="hint danger">Colonise missions require exactly 1 Colony Ship.</p>
+          )}
 
           <div className="fleet-dispatch-footer">
             <span className={`label${slotsFull ? ' danger' : ''}`}>
@@ -910,7 +968,7 @@ export function FleetPanel() {
                         missionTarget,
                         selectedShips,
                         missionType,
-                        missionType === 'transport' ? transportCargo : undefined,
+                        usesManualCargo(missionType) ? transportCargo : undefined,
                       );
                 if (mission) {
                   setSelectedShips({});
@@ -918,11 +976,7 @@ export function FleetPanel() {
                 }
               }}
             >
-              {missionType === 'espionage'
-                ? 'Dispatch Espionage'
-                : missionType === 'transport'
-                  ? 'Dispatch Transport'
-                  : 'Dispatch Attack'}
+              {dispatchLabel(missionType)}
             </button>
           </div>
       </div>
