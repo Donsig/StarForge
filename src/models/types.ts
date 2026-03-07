@@ -96,6 +96,7 @@ export type NavId =
   | 'fleet'
   | 'galaxy'
   | 'messages'
+  | 'statistics'
   | 'settings'
   | 'admin';
 

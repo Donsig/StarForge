@@ -1,7 +1,13 @@
 import type { BuildingId, DefenceId, ResearchId, ShipId } from '../models/types.ts';
 
 export type PlanetType = 'hot' | 'temperate' | 'cold' | 'frozen';
-export type PanelImageId = 'fleet' | 'defence' | 'buildings' | 'research' | 'galaxy';
+export type PanelImageId =
+  | 'fleet'
+  | 'defence'
+  | 'buildings'
+  | 'research'
+  | 'galaxy'
+  | 'statistics';
 
 export function getPlanetType(maxTemperature: number): PlanetType {
   if (maxTemperature > 60) {
@@ -92,4 +98,5 @@ export const PANEL_IMAGES: Record<PanelImageId, string> = {
   buildings: '/assets/panels/buildings.webp',
   research: '/assets/panels/research.webp',
   galaxy: '/assets/panels/galaxy.webp',
+  statistics: '/assets/panels/statistics.webp',
 };

@@ -15,6 +15,7 @@ const MAIN_NAV_ITEMS: Array<{ id: Exclude<ActivePanel, 'admin'>; label: string }
   { id: 'galaxy', label: 'Galaxy' },
   { id: 'fleet', label: 'Fleet' },
   { id: 'messages', label: 'Messages' },
+  { id: 'statistics', label: 'Statistics' },
   { id: 'settings', label: 'Settings' },
 ];
 
