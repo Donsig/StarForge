@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { HoverPortal } from '../components/HoverPortal';
 import type { EspionageReport } from '../models/Fleet.ts';
 import { useGame } from '../context/GameContext';
@@ -17,18 +17,9 @@ import {
 import type { Coordinates, DebrisField, NPCColony } from '../models/Galaxy.ts';
 import type { ActivePanel } from '../models/types.ts';
 import { formatNumber } from '../utils/format.ts';
+import { npcRelativeStrengthLabel } from './galaxyStrength.ts';
 
 const HOVER_CLOSE_DELAY_MS = 120;
-
-export function npcRelativeStrengthLabel(npcPower: number, playerMilitary: number): string {
-  if (playerMilitary <= 0) return 'Easy';
-  const ratio = npcPower / playerMilitary;
-  if (ratio < 0.3) return 'Easy';
-  if (ratio < 0.7) return 'Fair';
-  if (ratio < 1.3) return 'Even';
-  if (ratio < 2.5) return 'Hard';
-  return 'Dangerous';
-}
 
 function calcNPCPower(colony: NPCColony, now: number): number {
   const force = getNPCCurrentForce(colony, now);
@@ -281,12 +272,12 @@ export function GalaxyPanel({ onNavigate }: GalaxyPanelProps = {}) {
   const hoverCloseTimerRef = useRef<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
 
-  const clearNpcHoverCloseTimer = () => {
+  const clearNpcHoverCloseTimer = useCallback(() => {
     if (hoverCloseTimerRef.current !== null) {
       window.clearTimeout(hoverCloseTimerRef.current);
       hoverCloseTimerRef.current = null;
     }
-  };
+  }, []);
 
   const scheduleNpcHoverClose = () => {
     clearNpcHoverCloseTimer();
@@ -303,11 +294,11 @@ export function GalaxyPanel({ onNavigate }: GalaxyPanelProps = {}) {
     setHoveredNpcKey(key);
   };
 
-  const clearHoveredNpc = () => {
+  const clearHoveredNpc = useCallback(() => {
     clearNpcHoverCloseTimer();
     setHoveredNpcKey(null);
     hoverAnchorRef.current = null;
-  };
+  }, [clearNpcHoverCloseTimer]);
 
   function commitSystem(value: string) {
     const n = parseInt(value, 10);
@@ -350,7 +341,7 @@ export function GalaxyPanel({ onNavigate }: GalaxyPanelProps = {}) {
     setCurrentSystem(galaxyJumpTarget.system);
     setGalaxyJumpTarget(null);
     clearHoveredNpc();
-  }, [galaxyJumpTarget, setGalaxyJumpTarget]);
+  }, [clearHoveredNpc, galaxyJumpTarget, setGalaxyJumpTarget]);
 
   const slots = getSystemSlots(gameState, 1, currentSystem);
   const debrisByCoord = useMemo(() => {

@@ -9,7 +9,13 @@ import type {
 } from '../models/Fleet.ts';
 import type { Coordinates, NPCColony, NPCSpecialty } from '../models/Galaxy.ts';
 import { createDefaultPlanet, type PlanetState } from '../models/Planet.ts';
-import type { BuildingId, DefenceId, ResearchId, ShipId } from '../models/types.ts';
+import type {
+  BuildingId,
+  DefenceId,
+  ResearchId,
+  ResourceCost,
+  ShipId,
+} from '../models/types.ts';
 import { GAME_CONSTANTS } from '../models/types.ts';
 import { BUILDINGS, BUILDING_ORDER } from '../data/buildings.ts';
 import { DEFENCE_ORDER, DEFENCES } from '../data/defences.ts';
@@ -226,6 +232,19 @@ function sanitizeResourceValue(value: number): number {
   return Math.floor(value);
 }
 
+function addAccumulatedScore(
+  state: GameState,
+  field: 'buildings' | 'fleet' | 'defence',
+  cost: ResourceCost,
+  quantity: number = 1,
+): void {
+  const points = Math.floor((cost.metal + cost.crystal + cost.deuterium) / 1000);
+  if (points <= 0 || quantity <= 0) {
+    return;
+  }
+  state.playerScores[field] = (state.playerScores[field] ?? 0) + points * quantity;
+}
+
 function sanitizeShipCounts(input: Partial<Record<ShipId, number>>): Record<string, number> {
   const normalized: Record<string, number> = {};
   for (const shipId of SHIP_ORDER) {
@@ -355,9 +374,15 @@ export function useGameEngine(): GameEngineState {
         processResourceTick(currentState);
         processQueueTick(currentState, now);
         processFleetTick(currentState, now);
-        const scores = computePlayerScores(currentState);
-        currentState.playerScores = scores;
-        processNPCUpgrades(currentState, now, scores.total);
+        const snapshotScores = computePlayerScores(currentState);
+        const previousScores = currentState.playerScores;
+        currentState.playerScores = {
+          ...snapshotScores,
+          buildings: previousScores.buildings ?? 0,
+          fleet: previousScores.fleet ?? 0,
+          defence: previousScores.defence ?? 0,
+        };
+        processNPCUpgrades(currentState, now, snapshotScores.total);
         currentState.tickCount += 1;
 
         if (currentState.tickCount % GAME_CONSTANTS.AUTO_SAVE_TICKS === 0) {
@@ -996,6 +1021,13 @@ export function useGameEngine(): GameEngineState {
       const currentItem = planet.buildingQueue[0];
       if (currentItem.targetLevel !== undefined) {
         planet.buildings[currentItem.id as BuildingId] = currentItem.targetLevel;
+        const definition = BUILDINGS[currentItem.id as BuildingId];
+        const cost = buildingCostAtLevel(
+          definition.baseCost,
+          definition.costMultiplier,
+          currentItem.targetLevel,
+        );
+        addAccumulatedScore(stateRef.current, 'buildings', cost);
       }
       planet.buildingQueue.shift();
 
@@ -1070,8 +1102,20 @@ export function useGameEngine(): GameEngineState {
       if (remaining > 0) {
         if (currentItem.type === 'defence') {
           planet.defences[currentItem.id as DefenceId] += remaining;
+          addAccumulatedScore(
+            stateRef.current,
+            'defence',
+            DEFENCES[currentItem.id as DefenceId].cost,
+            remaining,
+          );
         } else {
           planet.ships[currentItem.id as ShipId] += remaining;
+          addAccumulatedScore(
+            stateRef.current,
+            'fleet',
+            SHIPS[currentItem.id as ShipId].cost,
+            remaining,
+          );
         }
       }
 
@@ -1116,6 +1160,13 @@ export function useGameEngine(): GameEngineState {
         if (planet.buildings[buildingId] !== undefined) {
           // eslint-disable-next-line react-hooks/immutability -- useGameEngine owns a mutable engine state object behind stateRef.
           planet.buildings[buildingId] = item.targetLevel;
+          const definition = BUILDINGS[buildingId];
+          const cost = buildingCostAtLevel(
+            definition.baseCost,
+            definition.costMultiplier,
+            item.targetLevel,
+          );
+          addAccumulatedScore(stateRef.current, 'buildings', cost);
         }
       }
 
@@ -1132,11 +1183,18 @@ export function useGameEngine(): GameEngineState {
           const defenceId = item.id as DefenceId;
           if (planet.defences[defenceId] !== undefined) {
             planet.defences[defenceId] += remaining;
+            addAccumulatedScore(
+              stateRef.current,
+              'defence',
+              DEFENCES[defenceId].cost,
+              remaining,
+            );
           }
         } else if (item.type === 'ship') {
           const shipId = item.id as ShipId;
           if (planet.ships[shipId] !== undefined) {
             planet.ships[shipId] += remaining;
+            addAccumulatedScore(stateRef.current, 'fleet', SHIPS[shipId].cost, remaining);
           }
         }
       }

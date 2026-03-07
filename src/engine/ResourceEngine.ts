@@ -126,6 +126,9 @@ export function processTick(state: GameState): void {
     const caps = getStorageCaps(planet);
 
     const res = planet.resources;
+    const previousMetal = res.metal;
+    const previousCrystal = res.crystal;
+    const previousDeuterium = res.deuterium;
     res.metal = Math.min(caps.metal, res.metal + rates.metalPerHour / 3600);
     res.crystal = Math.min(caps.crystal, res.crystal + rates.crystalPerHour / 3600);
     res.deuterium = Math.min(
@@ -134,6 +137,12 @@ export function processTick(state: GameState): void {
     );
     res.energyProduction = rates.energyProduction;
     res.energyConsumption = rates.energyConsumption;
+
+    if (state.statistics) {
+      state.statistics.resourcesMined.metal += Math.max(0, res.metal - previousMetal);
+      state.statistics.resourcesMined.crystal += Math.max(0, res.crystal - previousCrystal);
+      state.statistics.resourcesMined.deuterium += Math.max(0, res.deuterium - previousDeuterium);
+    }
   }
 }
 
@@ -144,6 +153,9 @@ export function accumulateBulk(state: GameState, seconds: number): void {
     const caps = getStorageCaps(planet);
 
     const res = planet.resources;
+    const previousMetal = res.metal;
+    const previousCrystal = res.crystal;
+    const previousDeuterium = res.deuterium;
     res.metal = Math.min(caps.metal, res.metal + (rates.metalPerHour / 3600) * seconds);
     res.crystal = Math.min(
       caps.crystal,
@@ -155,5 +167,11 @@ export function accumulateBulk(state: GameState, seconds: number): void {
     );
     res.energyProduction = rates.energyProduction;
     res.energyConsumption = rates.energyConsumption;
+
+    if (state.statistics) {
+      state.statistics.resourcesMined.metal += Math.max(0, res.metal - previousMetal);
+      state.statistics.resourcesMined.crystal += Math.max(0, res.crystal - previousCrystal);
+      state.statistics.resourcesMined.deuterium += Math.max(0, res.deuterium - previousDeuterium);
+    }
   }
 }

@@ -58,8 +58,8 @@ describe('asset maps', () => {
     expect(Object.keys(RESEARCH_IMAGES)).toHaveLength(15);
   });
 
-  it('PANEL_IMAGES has all 5 panels', () => {
-    expect(Object.keys(PANEL_IMAGES)).toHaveLength(5);
+  it('PANEL_IMAGES has all 6 panels', () => {
+    expect(Object.keys(PANEL_IMAGES)).toHaveLength(6);
     expect(PANEL_IMAGES.fleet).toBe('/assets/panels/fleet.webp');
   });
 });

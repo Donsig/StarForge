@@ -1,5 +1,6 @@
 import userEvent from '@testing-library/user-event';
-import { GalaxyPanel, npcRelativeStrengthLabel } from '../GalaxyPanel';
+import { GalaxyPanel } from '../GalaxyPanel';
+import { npcRelativeStrengthLabel } from '../galaxyStrength';
 import { renderWithGame, screen } from '../../test/test-utils';
 import { dispatchHarvest as dispatchHarvestMission } from '../../engine/FleetEngine.ts';
 import type { GameState } from '../../models/GameState.ts';
@@ -76,7 +77,15 @@ describe('GalaxyPanel', () => {
 
     renderWithGame(<GalaxyPanel />, {
       gameState: {
-        playerScores: { military: 1000, economy: 0, research: 0, total: 0 },
+        playerScores: {
+          military: 1000,
+          economy: 0,
+          research: 0,
+          buildings: 0,
+          fleet: 0,
+          defence: 0,
+          total: 0,
+        },
         galaxy: {
           seed: 1,
           npcColonies: [

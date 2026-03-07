@@ -1,5 +1,11 @@
 import { SHIPS, type CombatShipId, type ShipDrive } from '../data/ships.ts';
-import { addDebris, getNPCCurrentForce, getNPCResources } from './GalaxyEngine.ts';
+import {
+  addDebris,
+  getNPCCurrentForce,
+  getNPCResources,
+  isSlotEmpty,
+  planetStatsForSlot,
+} from './GalaxyEngine.ts';
 import { simulate } from './CombatEngine.ts';
 import { generateReport } from './EspionageEngine.ts';
 import { getStorageCaps } from './ResourceEngine.ts';
@@ -9,6 +15,7 @@ import type { CombatResult } from '../models/Combat.ts';
 import type { FleetMission, MissionType } from '../models/Fleet.ts';
 import type { Coordinates } from '../models/Galaxy.ts';
 import type { ShipId } from '../models/types.ts';
+import { createDefaultPlanet } from '../models/Planet.ts';
 
 const COMPLETED_MISSION_RETENTION_MS = 7 * 24 * 3600 * 1000;
 const HISTORY_RETENTION_MS = 30 * 24 * 3600 * 1000;
@@ -226,6 +233,26 @@ function resolveAttackAtTarget(state: GameState, mission: FleetMission, now: num
 
   const survivingShips = compactShips(combatResult.attackerEnd.ships);
   const loot = calcLoot(availableResources, survivingShips);
+  if (state.statistics) {
+    state.statistics.combat.fought += 1;
+    if (combatResult.outcome === 'attacker_wins') {
+      state.statistics.combat.won += 1;
+      state.statistics.combat.totalLoot += loot.metal + loot.crystal + loot.deuterium;
+      if (state.statistics.milestones.firstBattleWon === undefined) {
+        state.statistics.milestones.firstBattleWon = now;
+      }
+    } else if (combatResult.outcome === 'defender_wins') {
+      state.statistics.combat.lost += 1;
+    } else {
+      state.statistics.combat.drawn += 1;
+    }
+
+    const shipsLost = Object.entries(mission.ships).reduce((total, [shipId, startCount]) => {
+      const endCount = Math.max(0, Math.floor(combatResult.attackerEnd.ships[shipId] ?? 0));
+      return total + Math.max(0, startCount - endCount);
+    }, 0);
+    state.statistics.combat.shipsLost += shipsLost;
+  }
   const resultWithLoot: CombatResult = {
     ...combatResult,
     loot,
@@ -300,6 +327,9 @@ function resolveEspionageAtTarget(
   );
 
   state.espionageReports.push(report);
+  if (state.statistics && state.statistics.milestones.firstEspionage === undefined) {
+    state.statistics.milestones.firstEspionage = now;
+  }
   mission.espionageReportId = report.id;
 
   if (report.detected) {
@@ -437,6 +467,86 @@ function resolveTransportAtTarget(state: GameState, mission: FleetMission, now: 
   mission.status = 'returning';
 }
 
+function resolveDeployAtTarget(state: GameState, mission: FleetMission): void {
+  const targetPlanet = state.planets.find((planet) =>
+    isMatchingCoordinates(planet.coordinates, mission.targetCoordinates));
+
+  if (!targetPlanet) {
+    mission.status = 'completed';
+    return;
+  }
+
+  for (const [shipId, countValue] of Object.entries(mission.ships)) {
+    const count = Math.max(0, Math.floor(countValue));
+    if (count <= 0) continue;
+    if (targetPlanet.ships[shipId as ShipId] === undefined) continue;
+    targetPlanet.ships[shipId as ShipId] += count;
+  }
+
+  const caps = getStorageCaps(targetPlanet);
+  targetPlanet.resources.metal = Math.min(
+    caps.metal,
+    targetPlanet.resources.metal + mission.cargo.metal,
+  );
+  targetPlanet.resources.crystal = Math.min(
+    caps.crystal,
+    targetPlanet.resources.crystal + mission.cargo.crystal,
+  );
+  targetPlanet.resources.deuterium = Math.min(
+    caps.deuterium,
+    targetPlanet.resources.deuterium + mission.cargo.deuterium,
+  );
+
+  mission.status = 'completed';
+}
+
+function resolveColoniseAtTarget(state: GameState, mission: FleetMission, now: number): void {
+  if (!isSlotEmpty(state, mission.targetCoordinates)) {
+    mission.returnTime = now + calcMissionReturnTravelMs(state, mission);
+    mission.status = 'returning';
+    return;
+  }
+
+  const astrophysicsLevel = state.research.astrophysicsTechnology ?? 0;
+  const maxColonies = Math.floor(astrophysicsLevel / 2) + (astrophysicsLevel > 0 ? 1 : 0);
+  if (state.planets.length - 1 >= maxColonies) {
+    mission.returnTime = now + calcMissionReturnTravelMs(state, mission);
+    mission.status = 'returning';
+    return;
+  }
+
+  const newPlanet = createDefaultPlanet();
+  newPlanet.name = `Colony ${state.planets.length + 1}`;
+  newPlanet.coordinates = { ...mission.targetCoordinates };
+  const rerollSeed = now ^ (mission.targetCoordinates.system * 1000 + mission.targetCoordinates.slot * 17);
+  const stats = planetStatsForSlot(rerollSeed, mission.targetCoordinates);
+  newPlanet.maxTemperature = stats.maxTemperature;
+  newPlanet.maxFields = stats.maxFields;
+  newPlanet.fieldCount = stats.maxFields;
+  state.planets.push(newPlanet);
+
+  if (state.statistics?.milestones && state.statistics.milestones.firstColony === undefined) {
+    state.statistics.milestones.firstColony = now;
+  }
+
+  const returningShips = { ...mission.ships };
+  if ((returningShips.colonyShip ?? 0) > 0) {
+    returningShips.colonyShip -= 1;
+    if (returningShips.colonyShip <= 0) {
+      delete returningShips.colonyShip;
+    }
+  }
+  mission.ships = returningShips;
+
+  if (Object.keys(returningShips).length > 0) {
+    mission.returnTime = now + calcMissionReturnTravelMs(state, mission);
+    mission.status = 'returning';
+    return;
+  }
+
+  mission.status = 'completed';
+}
+
 function resolveAtTarget(state: GameState, mission: FleetMission, now: number): void {
   if (mission.type === 'transport') {
     resolveTransportAtTarget(state, mission, now);
@@ -448,6 +558,14 @@ function resolveAtTarget(state: GameState, mission: FleetMission, now: number): 
   }
   if (mission.type === 'harvest') {
     resolveHarvestAtTarget(state, mission, now);
+    return;
+  }
+  if (mission.type === 'colonise') {
+    resolveColoniseAtTarget(state, mission, now);
+    return;
+  }
+  if (mission.type === 'deploy') {
+    resolveDeployAtTarget(state, mission);
     return;
   }
   resolveAttackAtTarget(state, mission, now);
@@ -627,7 +745,7 @@ export function dispatch(
 ): FleetMission | null {
   const sourcePlanet = state.planets[sourcePlanetIndex];
   if (!sourcePlanet) return null;
-  if (missionType !== 'transport') {
+  if (missionType !== 'transport' && missionType !== 'colonise' && missionType !== 'deploy') {
     const targetNpc = state.galaxy.npcColonies.find((npc) =>
       isMatchingCoordinates(npc.coordinates, targetCoords));
     if (targetNpc?.abandonedAt !== undefined) {
@@ -670,6 +788,35 @@ export function dispatch(
     return null;
   }
 
+  if (missionType === 'colonise') {
+    if (!isSlotEmpty(state, targetCoords)) {
+      return null;
+    }
+    const astrophysicsLevel = state.research.astrophysicsTechnology ?? 0;
+    const maxColonies = Math.floor(astrophysicsLevel / 2) + (astrophysicsLevel > 0 ? 1 : 0);
+    if (maxColonies <= 0) {
+      return null;
+    }
+    if (state.planets.length - 1 >= maxColonies) {
+      return null;
+    }
+    const requestedColonyShips = Math.floor(ships.colonyShip ?? 0);
+    if (requestedColonyShips !== 1) {
+      return null;
+    }
+  }
+
+  if (missionType === 'deploy') {
+    const targetPlanet = state.planets.find((planet) =>
+      isMatchingCoordinates(planet.coordinates, targetCoords));
+    if (!targetPlanet) {
+      return null;
+    }
+    if (isMatchingCoordinates(sourcePlanet.coordinates, targetCoords)) {
+      return null;
+    }
+  }
+
   const distance = calcDistance(sourcePlanet.coordinates, targetCoords);
   const fleetSpeed = calcFleetSpeed(selectedShips, state.research);
   if (fleetSpeed <= 0) return null;
@@ -683,7 +830,7 @@ export function dispatch(
   }
 
   let missionCargo = { metal: 0, crystal: 0, deuterium: 0 };
-  if (missionType === 'transport') {
+  if (missionType === 'transport' || missionType === 'deploy') {
     const targetPlanet = state.planets.find((planet) =>
       isMatchingCoordinates(planet.coordinates, targetCoords));
     if (!targetPlanet) return null; // must be player-owned
@@ -728,7 +875,12 @@ export function dispatch(
     status: 'outbound',
     sourcePlanetIndex,
     targetCoordinates: { ...targetCoords },
-    targetType: missionType === 'transport' ? 'player_planet' : 'npc_colony',
+    targetType:
+      missionType === 'transport' || missionType === 'deploy'
+        ? 'player_planet'
+        : missionType === 'colonise'
+          ? 'empty_slot'
+          : 'npc_colony',
     ships: { ...selectedShips },
     cargo: missionCargo,
     fuelCost,
@@ -737,6 +889,11 @@ export function dispatch(
     returnTime: 0,
   };
 
+  if (state.statistics) {
+    state.statistics.fleet.sent[missionType] =
+      (state.statistics.fleet.sent[missionType] ?? 0) + 1;
+    state.statistics.fleet.totalDistance += distance;
+  }
   state.fleetMissions.push(mission);
   return mission;
 }
@@ -814,6 +971,10 @@ export function dispatchHarvest(
     returnTime: 0,
   };
 
+  if (state.statistics) {
+    state.statistics.fleet.sent.harvest = (state.statistics.fleet.sent.harvest ?? 0) + 1;
+    state.statistics.fleet.totalDistance += distance;
+  }
   state.fleetMissions.push(mission);
   return mission;
 }

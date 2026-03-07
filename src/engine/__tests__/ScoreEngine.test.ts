@@ -9,6 +9,9 @@ describe('computePlayerScores', () => {
     expect(scores.military).toBe(0);
     expect(scores.economy).toBe(0);
     expect(scores.research).toBe(0);
+    expect(scores.buildings).toBe(0);
+    expect(scores.fleet).toBe(0);
+    expect(scores.defence).toBe(0);
     expect(scores.total).toBe(0);
   });
 
@@ -57,11 +60,23 @@ describe('computePlayerScores', () => {
     expect(scores.total).toBe(550 * 2 + 5 * 5 + 1 * 3);
   });
 
-  it('migration v12→v13 adds playerScores with zeros', () => {
+  it('migration v13→v14 adds accumulated playerScores fields with zeros', () => {
     const base = createNewGameState();
-    const raw = JSON.stringify({ ...base, version: 12, playerScores: undefined });
+    const raw = JSON.stringify({
+      ...base,
+      version: 13,
+      playerScores: { military: 0, economy: 0, research: 0, total: 0 },
+    });
     localStorage.setItem('starforge_save', raw);
     const loaded = loadState();
-    expect(loaded?.playerScores).toEqual({ military: 0, economy: 0, research: 0, total: 0 });
+    expect(loaded?.playerScores).toEqual({
+      military: 0,
+      economy: 0,
+      research: 0,
+      buildings: 0,
+      fleet: 0,
+      defence: 0,
+      total: 0,
+    });
   });
 });

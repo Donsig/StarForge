@@ -3,6 +3,16 @@ import { DefencePanel } from '../DefencePanel';
 import { renderWithGame, screen, within } from '../../test/test-utils';
 
 describe('DefencePanel', () => {
+  it('renders panel banner with defence.webp src', () => {
+    renderWithGame(<DefencePanel />, {
+      gameState: { planet: { buildings: { shipyard: 1 } } },
+    });
+
+    const banner = document.querySelector('.panel-banner img') as HTMLImageElement | null;
+    expect(banner).not.toBeNull();
+    expect(banner!.src).toContain('defence.webp');
+  });
+
   it('Max button sets quantity to max affordable count', async () => {
     const user = userEvent.setup();
 

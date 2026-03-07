@@ -99,6 +99,10 @@ function mulberry32(seed: number): () => number {
   };
 }
 
+function scorePointsForCost(cost: { metal: number; crystal: number; deuterium: number }): number {
+  return Math.floor((cost.metal + cost.crystal + cost.deuterium) / 1000);
+}
+
 function clampActivePlanetIndex(state: GameState): void {
   if (!Array.isArray(state.planets) || state.planets.length === 0) {
     state.planets = createNewGameState().planets;
@@ -373,6 +377,26 @@ function migrate(state: GameState): GameState {
     }
     state.version = 13;
   }
+
+  if (state.version < 14) {
+    const playerScores = legacyState.playerScores as unknown as Record<string, number> | undefined;
+    if (playerScores !== undefined) {
+      playerScores['buildings'] ??= 0;
+      playerScores['fleet'] ??= 0;
+      playerScores['defence'] ??= 0;
+    }
+    state.version = 14;
+  }
+
+  if (state.version < 15) {
+    (legacyState as unknown as Record<string, unknown>)['statistics'] = {
+      resourcesMined: { metal: 0, crystal: 0, deuterium: 0 },
+      combat: { fought: 0, won: 0, lost: 0, drawn: 0, totalLoot: 0, shipsLost: 0 },
+      fleet: { sent: {}, totalDistance: 0 },
+      milestones: {},
+    };
+    state.version = 15;
+  }
   return state;
 }
 
@@ -480,6 +504,14 @@ export function processOfflineTime(state: GameState): { elapsedSeconds: number }
       if (!planet) continue;
 
       planet.buildings[queueEvent.id as BuildingId] = queueEvent.targetLevel!;
+      const buildingDefinition = BUILDINGS[queueEvent.id as BuildingId];
+      const buildingCost = buildingCostAtLevel(
+        buildingDefinition.baseCost,
+        buildingDefinition.costMultiplier,
+        queueEvent.targetLevel!,
+      );
+      state.playerScores.buildings =
+        (state.playerScores.buildings ?? 0) + scorePointsForCost(buildingCost);
       if (planet.buildingQueue.length > 0) {
         planet.buildingQueue.shift();
       }
@@ -532,8 +564,14 @@ export function processOfflineTime(state: GameState): { elapsedSeconds: number }
 
       if (queueEvent.type === 'defence') {
         planet.defences[queueEvent.id as DefenceId] += 1;
+        state.playerScores.defence =
+          (state.playerScores.defence ?? 0) +
+          scorePointsForCost(DEFENCES[queueEvent.id as DefenceId].cost);
       } else {
         planet.ships[queueEvent.id as ShipId] += 1;
+        state.playerScores.fleet =
+          (state.playerScores.fleet ?? 0) +
+          scorePointsForCost(SHIPS[queueEvent.id as ShipId].cost);
       }
 
       // Update the queue item

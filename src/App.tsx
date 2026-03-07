@@ -15,6 +15,7 @@ import { GalaxyPanel } from './panels/GalaxyPanel';
 import { SettingsPanel } from './panels/SettingsPanel';
 import { AdminPanel } from './panels/AdminPanel';
 import { MessagesPanel } from './panels/MessagesPanel';
+import { StatisticsPanel } from './panels/StatisticsPanel';
 
 function ActivePanelContent({
   activePanel,
@@ -40,6 +41,8 @@ function ActivePanelContent({
       return <FleetPanel />;
     case 'messages':
       return <MessagesPanel setActivePanel={onNavigate} />;
+    case 'statistics':
+      return <StatisticsPanel />;
     case 'settings':
       return <SettingsPanel />;
     case 'admin':

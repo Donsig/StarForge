@@ -368,7 +368,7 @@ describe('StateManager migration', () => {
 
     const state = loadState();
     expect(state).not.toBeNull();
-    expect(state!.version).toBe(13);
+    expect(state!.version).toBe(15);
     expect(state!.fleetNotifications).toEqual([]);
     expect(state!.research.intergalacticResearchNetwork).toBe(0);
   });
@@ -412,7 +412,7 @@ describe('StateManager migration', () => {
 
     const state = loadState();
     expect(state).not.toBeNull();
-    expect(state!.version).toBe(13);
+    expect(state!.version).toBe(15);
     expect(state!.research.intergalacticResearchNetwork).toBe(0);
   });
 
