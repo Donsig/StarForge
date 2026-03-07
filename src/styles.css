@@ -1351,6 +1351,83 @@ body {
   font-size: 0.8rem;
 }
 
+/* Artwork */
+
+.card-banner {
+  width: 100%;
+  height: 0;
+  overflow: hidden;
+  margin-bottom: -0.7rem;
+}
+
+.card-banner--loaded {
+  height: 120px;
+  margin-bottom: 0;
+}
+
+.card-banner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  border-radius: 0.4rem 0.4rem 0 0;
+}
+
+.panel-banner {
+  width: 100%;
+  height: 0;
+  overflow: hidden;
+  margin-bottom: -1rem;
+}
+
+.panel-banner--loaded {
+  height: 180px;
+  margin-bottom: 0;
+}
+
+.panel-banner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  border-radius: 0.4rem;
+}
+
+.planet-portrait {
+  width: 256px;
+  height: 256px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0d1117 0%, #1c2333 100%);
+  overflow: hidden;
+  flex-shrink: 0;
+  margin: 0 auto 1rem;
+}
+
+.planet-portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.planet-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0d1117 0%, #1c2333 100%);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.planet-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 @media (max-width: 900px) {
   .app-shell {
     grid-template-columns: 1fr;
