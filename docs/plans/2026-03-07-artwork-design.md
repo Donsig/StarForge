@@ -1,7 +1,7 @@
 # Artwork System Design
 
 **Date:** 2026-03-07
-**Status:** Approved, awaiting implementation plan
+**Status:** Approved – implementation plan drafted
 
 ## Overview
 
