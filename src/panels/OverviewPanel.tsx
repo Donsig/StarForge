@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { getPlanetImageUrl } from '../data/assets.ts';
 import { SHIP_ORDER, SHIPS } from '../data/ships.ts';
 import { usedFields } from '../engine/BuildQueue.ts';
 import { useGame } from '../context/GameContext';
@@ -71,6 +72,15 @@ export function OverviewPanel() {
       <div className="stat-grid">
         <article className="panel-card">
           <h2 className="section-title">Colony Status</h2>
+          <div className="planet-portrait">
+            <img
+              src={getPlanetImageUrl(planet.maxTemperature)}
+              alt={planet.name}
+              onError={(event) => {
+                event.currentTarget.style.display = 'none';
+              }}
+            />
+          </div>
           <p className="stat-line">
             <span className="label">Name</span>
             {editing ? (
