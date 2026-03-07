@@ -93,6 +93,27 @@ describe('ShipyardPanel', () => {
     expect(within(lightFighterCard).getByText('C 3,000')).toBeInTheDocument();
   });
 
+  it('Max button sets quantity to max affordable count', async () => {
+    const user = userEvent.setup();
+
+    renderWithGame(<ShipyardPanel />, {
+      gameState: {
+        planet: {
+          buildings: { shipyard: 2 },
+          resources: { metal: 6000, crystal: 2000, deuterium: 0 },
+        },
+        research: { combustionDrive: 2 },
+      },
+    });
+
+    const card = screen.getByRole('heading', { name: 'Small Cargo', level: 3 }).closest('article');
+    expect(card).not.toBeNull();
+
+    await user.click(within(card as HTMLElement).getByRole('button', { name: 'Max' }));
+
+    expect(within(card as HTMLElement).getByRole('spinbutton')).toHaveValue(1);
+  });
+
   it('calls buildShips with ship ID and quantity', async () => {
     const user = userEvent.setup();
     const buildShips = vi.fn(() => true);

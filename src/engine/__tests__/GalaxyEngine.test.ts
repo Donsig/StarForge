@@ -357,6 +357,21 @@ describe('GalaxyEngine', () => {
     expect(resources2.deuterium).toBeGreaterThanOrEqual(resources1.deuterium);
   });
 
+  it('getNPCResources reflects post-raid reduction (tier 10 floor bug)', () => {
+    const now = Date.now();
+    const colony = createNPCColony({
+      tier: 10,
+      lastRaidedAt: now,
+      resourcesAtLastRaid: { metal: 1_000_000, crystal: 600_000, deuterium: 200_000 },
+    });
+
+    const resources = getNPCResources(colony, now, 1);
+
+    expect(resources.metal).toBeLessThan(2_000_000);
+    expect(resources.crystal).toBeLessThan(1_500_000);
+    expect(resources.deuterium).toBeLessThan(600_000);
+  });
+
   it('getNPCResources scales production with game speed', () => {
     const now = 2_500_000_000;
     const baseline = { metal: 52_000, crystal: 32_000, deuterium: 12_000 };

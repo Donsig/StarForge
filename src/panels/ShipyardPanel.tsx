@@ -129,20 +129,38 @@ export function ShipyardPanel() {
 
               <div className="item-meta">
                 <span className="label">Batch Quantity</span>
-                <input
-                  className="input quantity-input number"
-                  type="number"
-                  min={1}
-                  step={1}
-                  value={quantityInput}
-                  onChange={(event) => {
-                    const nextValue = event.target.value;
-                    setQuantities((current) => ({
-                      ...current,
-                      [shipId]: nextValue,
-                    }));
-                  }}
-                />
+                <div className="qty-input-group">
+                  <input
+                    className="input quantity-input number"
+                    type="number"
+                    min={1}
+                    step={1}
+                    value={quantityInput}
+                    onChange={(event) => {
+                      const nextValue = event.target.value;
+                      setQuantities((current) => ({
+                        ...current,
+                        [shipId]: nextValue,
+                      }));
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-sm"
+                    onClick={() => {
+                      const { metal, crystal, deuterium } = planet.resources;
+                      const { cost } = definition;
+                      const limits: number[] = [];
+                      if (cost.metal > 0) limits.push(Math.floor(metal / cost.metal));
+                      if (cost.crystal > 0) limits.push(Math.floor(crystal / cost.crystal));
+                      if (cost.deuterium > 0) limits.push(Math.floor(deuterium / cost.deuterium));
+                      const max = limits.length > 0 ? Math.max(0, Math.min(...limits)) : 0;
+                      setQuantities((current) => ({ ...current, [shipId]: String(max) }));
+                    }}
+                  >
+                    Max
+                  </button>
+                </div>
               </div>
 
               <div className="item-meta">

@@ -300,4 +300,71 @@ describe('FleetPanel', () => {
       3,
     );
   });
+
+  it('shows cargo capacity helper with + cargo buttons when attacking NPC with known resources', async () => {
+    const user = userEvent.setup();
+    const now = Date.now();
+
+    renderWithGame(<FleetPanel />, {
+      gameState: {
+        galaxy: {
+          seed: 1,
+          npcColonies: [
+            {
+              coordinates: { galaxy: 1, system: 2, slot: 4 },
+              name: 'Target Base',
+              temperature: 25,
+              tier: 5,
+              specialty: 'balanced',
+              maxTier: 8,
+              initialUpgradeIntervalMs: 10_800_000,
+              currentUpgradeIntervalMs: 10_800_000,
+              targetTier: 5,
+              catchUpUpgradeIntervalMs: 2_700_000,
+              catchUpProgressTicks: 0,
+              lastUpgradeAt: 0,
+              upgradeTickCount: 0,
+              raidCount: 0,
+              recentRaidTimestamps: [],
+              abandonedAt: undefined,
+              buildings: {},
+              baseDefences: {},
+              baseShips: {},
+              currentDefences: {},
+              currentShips: {},
+              lastRaidedAt: 0,
+              resourcesAtLastRaid: { metal: 0, crystal: 0, deuterium: 0 },
+            },
+          ],
+        },
+        espionageReports: [
+          {
+            id: 'report_1',
+            timestamp: now - 1000,
+            targetCoordinates: { galaxy: 1, system: 2, slot: 4 },
+            targetName: 'Target Base',
+            sourcePlanetIndex: 0,
+            probesSent: 1,
+            probesLost: 0,
+            detected: false,
+            detectionChance: 0,
+            read: false,
+            resources: { metal: 200_000, crystal: 100_000, deuterium: 50_000 },
+          },
+        ],
+        planet: {
+          ships: { largeCargo: 10, smallCargo: 5 },
+          resources: { deuterium: 50_000 },
+        },
+      },
+      actions: { fleetTarget: { galaxy: 1, system: 2, slot: 4 } },
+    });
+
+    expect(screen.getByText(/Lootable/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /\+ 7 Large Cargo/i })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /\+ 7 Large Cargo/i }));
+
+    expect(screen.getAllByText(/175,000/)).toHaveLength(2);
+  });
 });

@@ -84,6 +84,35 @@ describe('BuildingsPanel', () => {
     ).not.toBeDisabled();
   });
 
+  it('upgrade button shows future level accounting for items already in queue', () => {
+    renderWithGame(<BuildingsPanel />, {
+      gameState: {
+        planet: {
+          buildings: { metalMine: 5 },
+          buildingQueue: [
+            {
+              type: 'building',
+              id: 'metalMine',
+              targetLevel: 6,
+              startedAt: Date.now(),
+              completesAt: Date.now() + 60_000,
+            },
+            {
+              type: 'building',
+              id: 'metalMine',
+              targetLevel: 7,
+              startedAt: Date.now() + 60_000,
+              completesAt: Date.now() + 120_000,
+            },
+          ],
+          resources: { metal: 10_000_000, crystal: 10_000_000, deuterium: 10_000_000 },
+        },
+      },
+    });
+
+    expect(screen.getByRole('button', { name: 'Queue Lv 8' })).toBeInTheDocument();
+  });
+
   it('calls upgradeBuilding with the correct building ID', async () => {
     const user = userEvent.setup();
     const upgradeBuilding = vi.fn(() => true);

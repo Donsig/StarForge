@@ -101,6 +101,68 @@ describe('QueueDisplay', () => {
     expect(cancelButtons).toHaveLength(2);
   });
 
+  it('shows duration for queued (non-active) building items', () => {
+    const now = Date.now();
+    const oneHourMs = 3600 * 1000;
+
+    renderWithGame(<QueueDisplay />, {
+      gameState: {
+        planet: {
+          buildingQueue: [
+            {
+              type: 'building',
+              id: 'metalMine',
+              targetLevel: 2,
+              startedAt: now,
+              completesAt: now + oneHourMs,
+            },
+            {
+              type: 'building',
+              id: 'metalMine',
+              targetLevel: 3,
+              startedAt: now + oneHourMs,
+              completesAt: now + 3 * oneHourMs,
+            },
+          ],
+        },
+      },
+    });
+
+    expect(screen.getByText('2h')).toBeInTheDocument();
+  });
+
+  it('shows duration for queued shipyard batches as total batch time', () => {
+    const now = Date.now();
+    const perUnitMs = 30 * 60 * 1000;
+
+    renderWithGame(<QueueDisplay />, {
+      gameState: {
+        planet: {
+          shipyardQueue: [
+            {
+              type: 'ship',
+              id: 'lightFighter',
+              quantity: 1,
+              completed: 0,
+              startedAt: now,
+              completesAt: now + perUnitMs,
+            },
+            {
+              type: 'ship',
+              id: 'cruiser',
+              quantity: 4,
+              completed: 0,
+              startedAt: now + perUnitMs,
+              completesAt: now + 2 * perUnitMs,
+            },
+          ],
+        },
+      },
+    });
+
+    expect(screen.getByText('2h')).toBeInTheDocument();
+  });
+
   it('calls cancel actions with correct index when cancel buttons are clicked', async () => {
     const user = userEvent.setup();
     const cancelBuilding = vi.fn();
