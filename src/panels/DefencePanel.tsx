@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { PANEL_IMAGES } from '../data/assets.ts';
+import { DEFENCE_IMAGES, PANEL_IMAGES } from '../data/assets.ts';
 import { BUILDINGS } from '../data/buildings.ts';
 import { DEFENCES, DEFENCE_ORDER } from '../data/defences.ts';
 import { RESEARCH } from '../data/research.ts';
@@ -112,6 +112,18 @@ export function DefencePanel() {
 
           return (
             <article key={defenceId} className="item-card">
+              <div className="card-banner">
+                <img
+                  src={DEFENCE_IMAGES[defenceId]}
+                  alt=""
+                  onLoad={(event) => {
+                    event.currentTarget.parentElement?.classList.add('card-banner--loaded');
+                  }}
+                  onError={(event) => {
+                    event.currentTarget.remove();
+                  }}
+                />
+              </div>
               <div className="item-header">
                 <h3>{definition.name}</h3>
                 <span className="item-level number">Owned: {ownedCount}</span>
