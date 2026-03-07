@@ -12,7 +12,7 @@ import {
   calcMaxFleetSlots,
   calcTravelSeconds,
 } from '../engine/FleetEngine.ts';
-import { getNPCResources } from '../engine/GalaxyEngine.ts';
+
 import { useCountdown } from '../hooks/useCountdown.ts';
 import { formatNumber } from '../utils/format.ts';
 import { formatDuration } from '../utils/time.ts';
@@ -536,9 +536,9 @@ export function FleetPanel() {
       )
       .sort((a, b) => b.timestamp - a.timestamp)[0];
 
-    const resources = reportWithResources?.resources
-      ?? getNPCResources(colony, currentTime, gameState.settings.gameSpeed);
+    if (!reportWithResources?.resources) return null;
 
+    const resources = reportWithResources.resources;
     const lootable = Math.floor(
       (resources.metal + resources.crystal + resources.deuterium) * 0.5,
     );
@@ -557,15 +557,12 @@ export function FleetPanel() {
       additionalSmall,
       availableLarge,
       availableSmall,
-      fromReport: reportWithResources !== undefined,
     };
   }, [
     cargoCapacity,
-    currentTime,
     espionageReports,
     fleetTarget,
     gameState.galaxy.npcColonies,
-    gameState.settings.gameSpeed,
     missionType,
     sourcePlanet.ships,
   ]);
@@ -580,6 +577,15 @@ export function FleetPanel() {
     !slotsFull &&
     !insufficientFuel &&
     !invalidTransportCargo;
+
+  const remainingLarge = cargoInfo
+    ? Math.max(0, cargoInfo.availableLarge - (selectedShips.largeCargo ?? 0))
+    : 0;
+  const remainingSmall = cargoInfo
+    ? Math.max(0, cargoInfo.availableSmall - (selectedShips.smallCargo ?? 0))
+    : 0;
+  const cargoAddableLarge = cargoInfo ? Math.min(cargoInfo.additionalLarge, remainingLarge) : 0;
+  const cargoAddableSmall = cargoInfo ? Math.min(cargoInfo.additionalSmall, remainingSmall) : 0;
 
   return (
     <section className="panel">
@@ -813,7 +819,7 @@ export function FleetPanel() {
             <div className="fleet-cargo-helper">
               <div className="fleet-cargo-header">
                 <strong>Cargo needed</strong>
-                <span className="hint">{cargoInfo.fromReport ? 'from spy report' : 'estimated'}</span>
+                <span className="hint">from spy report</span>
               </div>
               <p className="stat-line">
                 <span className="label">Lootable</span>
@@ -824,40 +830,38 @@ export function FleetPanel() {
                 <span className="number">{formatNumber(cargoCapacity)}</span>
               </p>
               <div className="fleet-cargo-buttons">
-                {cargoInfo.additionalLarge > 0 && (
+                {cargoAddableLarge > 0 && (
                   <button
                     type="button"
                     className="btn btn-sm"
-                    disabled={cargoInfo.availableLarge < cargoInfo.additionalLarge}
                     onClick={() => {
                       setSelectedShips((current) => ({
                         ...current,
                         largeCargo: Math.min(
                           cargoInfo.availableLarge,
-                          (current.largeCargo ?? 0) + cargoInfo.additionalLarge,
+                          (current.largeCargo ?? 0) + cargoAddableLarge,
                         ),
                       }));
                     }}
                   >
-                    + {cargoInfo.additionalLarge} Large Cargo
+                    + {cargoAddableLarge} Large Cargo
                   </button>
                 )}
-                {cargoInfo.additionalSmall > 0 && (
+                {cargoAddableSmall > 0 && (
                   <button
                     type="button"
                     className="btn btn-sm"
-                    disabled={cargoInfo.availableSmall < cargoInfo.additionalSmall}
                     onClick={() => {
                       setSelectedShips((current) => ({
                         ...current,
                         smallCargo: Math.min(
                           cargoInfo.availableSmall,
-                          (current.smallCargo ?? 0) + cargoInfo.additionalSmall,
+                          (current.smallCargo ?? 0) + cargoAddableSmall,
                         ),
                       }));
                     }}
                   >
-                    + {cargoInfo.additionalSmall} Small Cargo
+                    + {cargoAddableSmall} Small Cargo
                   </button>
                 )}
               </div>

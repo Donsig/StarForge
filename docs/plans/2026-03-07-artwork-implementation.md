@@ -1,6 +1,6 @@
 # Artwork System Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+> **Note:** This is an implementation plan intended to be followed task-by-task by contributors or automation.
 
 **Goal:** Wire up the artwork system — asset map, CSS, card banners, page banners, and planet visuals — so that dropping `.webp` files into `public/assets/` makes them appear automatically. No images are generated here; this is code-only.
 
