@@ -334,6 +334,8 @@ export function deriveFleetMovements(
   missions: FleetMission[],
   planets: PlanetState[],
 ): PlayerMovementEntry[] {
+  void planets;
+
   return missions
     .filter((mission) => mission.status !== 'completed')
     .map((mission): PlayerMovementEntry => ({

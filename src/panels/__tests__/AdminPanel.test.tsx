@@ -32,6 +32,7 @@ function Harness({ children }: { children?: ReactNode }) {
     gameState,
     espionageReports: gameState.espionageReports,
     fleetNotifications: gameState.fleetNotifications,
+    fleetMovements: [],
     productionRates: calculateProduction(gameState),
     storageCaps: getStorageCaps(gameState),
     upgradeBuilding: () => false,

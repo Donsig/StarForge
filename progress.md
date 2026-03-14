@@ -1,3 +1,4 @@
+Original prompt: Implement the Fleet Movements Bar feature for the Star Forge game. Follow the implementation plan exactly as written — do not deviate from it.
 
 Task 1: added central asset map and planet temperature artwork helpers.
 Task 2: added zero-footprint banner CSS and gradient-backed planet placeholders.
@@ -14,3 +15,5 @@ Task 2: added lifetime statistics state, v15 migration, and resource/combat/flee
 Task 3: added the Statistics panel, navigation entry, and panel asset wiring with test coverage.
 Task 4: added colonise fleet missions with empty-slot settlement, escort returns, and FleetPanel mission support.
 Task 5: added deploy missions that permanently station fleets and optionally transfer cargo to player planets.
+Task 6: added FleetMovementsBar component tests, verified fleet movement derivation, and validated the shared countdown hook.
+Task 7: integrated the fleet movements bar into the app shell, verified screenshots in tmp/fleet-bar-manual, and confirmed Recall transitions outbound missions to returning instead of removing them immediately.
