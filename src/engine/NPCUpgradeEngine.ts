@@ -150,7 +150,7 @@ export function applyUpgradeIncrement(colony: NPCColony, rng: () => number): voi
     } else {
       // tick 2: deuterium synthesizer OR solar satellites (alternate every 3rd cycle)
       if (colony.upgradeTickCount % 9 === 2) {
-        colony.buildings.deuteriumSynthesizer = (colony.buildings.deuteriumSynthesizer ?? 0) + 1;
+        upgradeBuilding(colony, 'deuteriumSynthesizer', maxBuildingLevel);
       } else {
         const satelliteIncrement = Math.max(1, Math.floor(colony.tier / 2));
         colony.baseShips.solarSatellite = (colony.baseShips.solarSatellite ?? 0) + satelliteIncrement;

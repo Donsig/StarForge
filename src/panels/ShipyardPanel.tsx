@@ -8,6 +8,7 @@ import { canAfford, prerequisitesMet } from '../engine/BuildQueue.ts';
 import { shipBuildTime } from '../engine/FormulasEngine.ts';
 import { useGame } from '../context/GameContext';
 import { CostDisplay } from '../components/CostDisplay';
+import { QueueRow, getQueuedItemDuration } from '../components/QueueRow';
 import { formatDuration } from '../utils/time.ts';
 import type { GameState } from '../models/GameState.ts';
 import type {
@@ -62,14 +63,15 @@ export function ShipyardPanel() {
         <div className="panel-card">
           <h2 className="section-title">Shipyard Queue</h2>
           {planet.shipyardQueue.map((item, index) => (
-            <div key={`${item.id}-${item.type}-${index}`} className="item-footer">
-              <span>
-                {item.type === 'defence'
-                  ? DEFENCES[item.id as DefenceId].name
-                  : SHIPS[item.id as ShipId].name}{' '}
-                ({item.completed ?? 0}/{item.quantity ?? 0})
-              </span>
-              {gameState.settings.godMode && index === 0 && (
+            <QueueRow
+              key={`${item.id}-${item.type}-${index}`}
+              label={`Shipyard: ${item.type === 'defence'
+                ? DEFENCES[item.id as DefenceId].name
+                : SHIPS[item.id as ShipId].name}`}
+              subtitle={`${index === 0 ? `${(item.completed ?? 0) + 1}/${item.quantity}` : `0/${item.quantity}`}${index > 0 ? ' (queued)' : ''}`}
+              completesAt={index === 0 ? item.completesAt : null}
+              duration={index > 0 ? getQueuedItemDuration(item) : undefined}
+              action={gameState.settings.godMode && index === 0 && (
                 <button
                   type="button"
                   className="btn btn-sm"
@@ -78,7 +80,7 @@ export function ShipyardPanel() {
                   ⚡ Complete
                 </button>
               )}
-            </div>
+            />
           ))}
         </div>
       )}

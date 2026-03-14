@@ -11,6 +11,7 @@ import {
 import { buildingCostAtLevel, buildingTime } from '../engine/FormulasEngine.ts';
 import { useGame } from '../context/GameContext';
 import { CostDisplay } from '../components/CostDisplay';
+import { QueueRow, getQueuedItemDuration } from '../components/QueueRow';
 import { formatDuration } from '../utils/time.ts';
 import type { GameState } from '../models/GameState.ts';
 import type {
@@ -96,11 +97,13 @@ export function BuildingsPanel() {
         <div className="panel-card">
           <h2 className="section-title">Building Queue</h2>
           {planet.buildingQueue.map((item, index) => (
-            <div key={`${item.id}-${item.targetLevel}-${index}`} className="item-footer">
-              <span>
-                {BUILDINGS[item.id as BuildingId].name} Lv {item.targetLevel ?? 0}
-              </span>
-              {gameState.settings.godMode && index === 0 && (
+            <QueueRow
+              key={`${item.id}-${item.targetLevel}-${index}`}
+              label={`Building: ${BUILDINGS[item.id as BuildingId].name}`}
+              subtitle={`Lv ${item.targetLevel ?? 0}${index > 0 ? ' (queued)' : ''}`}
+              completesAt={index === 0 ? item.completesAt : null}
+              duration={index > 0 ? getQueuedItemDuration(item) : undefined}
+              action={gameState.settings.godMode && index === 0 && (
                 <button
                   type="button"
                   className="btn btn-sm"
@@ -109,7 +112,7 @@ export function BuildingsPanel() {
                   ⚡ Complete
                 </button>
               )}
-            </div>
+            />
           ))}
         </div>
       )}

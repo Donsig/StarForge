@@ -884,6 +884,150 @@ describe('FleetEngine', () => {
       expect(updatedColony.lastRaidedAt).toBe(now);
     });
 
+    it('preserves NPC resources not taken due to cargo limit (partial-cargo raid)', () => {
+      const state = createNewGameState();
+      const now = 5_000_000;
+      state.settings.gameSpeed = 1;
+      // Only 1 small cargo ship: capacity = 5000
+      state.planets[0].ships.smallCargo = 1;
+      state.planets[0].resources.deuterium = 50_000;
+
+      // NPC has large resources — well above what 1 small cargo can carry
+      const npcCoords: Coordinates = { galaxy: 1, system: 3, slot: 5 };
+      state.galaxy.npcColonies = [
+        {
+          coordinates: npcCoords,
+          name: 'Rich NPC',
+          temperature: 30,
+          tier: 5,
+          specialty: 'balanced',
+          maxTier: 10,
+          initialUpgradeIntervalMs: 10_800_000,
+          currentUpgradeIntervalMs: 10_800_000,
+          targetTier: 5,
+          catchUpUpgradeIntervalMs: 2_700_000,
+          catchUpProgressTicks: 0,
+          lastUpgradeAt: 0,
+          upgradeTickCount: 0,
+          raidCount: 0,
+          recentRaidTimestamps: [],
+          abandonedAt: undefined,
+          buildings: { metalMine: 20, crystalMine: 18, deuteriumSynthesizer: 15, solarPlant: 30 },
+          baseDefences: {},
+          baseShips: {},
+          currentDefences: {},
+          currentShips: {},
+          lastRaidedAt: now - 24 * 3600 * 1000,
+          resourcesAtLastRaid: { metal: 50_000, crystal: 30_000, deuterium: 20_000 },
+        },
+      ] as typeof state.galaxy.npcColonies;
+
+      const availableBefore = getNPCResources(state.galaxy.npcColonies[0], now, 1);
+      const totalStealable =
+        Math.floor(availableBefore.metal * 0.5) +
+        Math.floor(availableBefore.crystal * 0.5) +
+        Math.floor(availableBefore.deuterium * 0.5);
+      // Confirm cargo IS the limiting factor (5000 << stealable)
+      expect(totalStealable).toBeGreaterThan(5000);
+
+      const mission = dispatch(state, 0, npcCoords, { smallCargo: 1 });
+      expect(mission).not.toBeNull();
+      if (!mission) return;
+      mission.arrivalTime = now;
+
+      processTick(state, now);
+
+      const colony = state.galaxy.npcColonies[0];
+      const loot = state.fleetMissions[0].cargo;
+
+      // Cargo-limited: total loot must be ≤ 5000
+      expect(loot.metal + loot.crystal + loot.deuterium).toBeLessThanOrEqual(5000);
+
+      // KEY: NPC still has most resources — attacker only took 5000 out of tens of thousands
+      expect(colony.resourcesAtLastRaid.metal).toBeGreaterThan(0);
+      const remainingTotal =
+        colony.resourcesAtLastRaid.metal +
+        colony.resourcesAtLastRaid.crystal +
+        colony.resourcesAtLastRaid.deuterium;
+      expect(remainingTotal).toBeGreaterThan(availableBefore.metal * 0.4);
+
+      // getNPCResources immediately after raid also reflects the remaining resources
+      const resourcesAfterRaid = getNPCResources(colony, now + 1000, 1);
+      expect(resourcesAfterRaid.metal).toBeGreaterThan(0);
+    });
+
+    it('returns with 0 loot without touching NPC state when colony is already abandoned', () => {
+      const state = createNewGameState();
+      const now = 6_000_000;
+      state.settings.gameSpeed = 1;
+      state.planets[0].ships.smallCargo = 5;
+      state.planets[0].resources.deuterium = 10_000;
+
+      const npcCoords: Coordinates = { galaxy: 1, system: 2, slot: 4 };
+      state.galaxy.npcColonies = [
+        {
+          coordinates: npcCoords,
+          name: 'Abandoned Colony',
+          temperature: 20,
+          tier: 3,
+          specialty: 'balanced',
+          maxTier: 5,
+          initialUpgradeIntervalMs: 21_600_000,
+          currentUpgradeIntervalMs: 21_600_000,
+          targetTier: 3,
+          catchUpUpgradeIntervalMs: 21_600_000 / 4,
+          catchUpProgressTicks: 0,
+          lastUpgradeAt: 0,
+          upgradeTickCount: 0,
+          raidCount: 5,
+          recentRaidTimestamps: [now - 1000, now - 2000, now - 3000],
+          abandonedAt: now - 500,  // already abandoned before fleet arrives
+          buildings: { metalMine: 10, crystalMine: 8, deuteriumSynthesizer: 5, solarPlant: 15 },
+          baseDefences: {},
+          baseShips: {},
+          currentDefences: {},
+          currentShips: {},
+          lastRaidedAt: now - 3000,
+          resourcesAtLastRaid: { metal: 5000, crystal: 3000, deuterium: 1000 },
+        },
+      ] as typeof state.galaxy.npcColonies;
+
+      // Dispatch succeeds at dispatch time (abandon check uses gameState at dispatch time)
+      // Simulate the mission as already outbound (arrivalTime forced to now)
+      const mission = dispatch(state, 0, npcCoords, { smallCargo: 5 });
+      // Note: dispatch blocks on abandonedAt check, so we force a mission manually
+      if (!mission) {
+        // Create mission manually to simulate in-transit scenario
+        state.fleetMissions.push({
+          id: 'test_abandoned_arrival',
+          sourcePlanetIndex: 0,
+          targetCoordinates: { ...npcCoords },
+          targetType: 'npc',
+          type: 'attack',
+          ships: { smallCargo: 5 },
+          cargo: { metal: 0, crystal: 0, deuterium: 0 },
+          departureTime: now - 60_000,
+          arrivalTime: now,
+          returnTime: 0,
+          status: 'outbound',
+        });
+      } else {
+        mission.arrivalTime = now;
+      }
+
+      const savedResourcesAtLastRaid = { ...state.galaxy.npcColonies[0].resourcesAtLastRaid };
+
+      processTick(state, now);
+
+      const colony = state.galaxy.npcColonies[0];
+      // Fleet should return with 0 loot
+      const returnedMission = state.fleetMissions[0];
+      expect(returnedMission.cargo).toEqual({ metal: 0, crystal: 0, deuterium: 0 });
+      expect(returnedMission.status).toBe('returning');
+      // Colony resourcesAtLastRaid should NOT be overwritten to {0,0,0}
+      expect(colony.resourcesAtLastRaid).toEqual(savedResourcesAtLastRaid);
+    });
+
     it('prunes old fleet notifications using history retention rules', () => {
       const state = createNewGameState();
       const now = 10_000_000;

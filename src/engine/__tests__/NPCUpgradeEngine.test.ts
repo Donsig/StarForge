@@ -2,6 +2,7 @@
 
 import { createNewGameState } from '../../models/GameState.ts';
 import type { NPCColony, NPCSpecialty } from '../../models/Galaxy.ts';
+import { createNPCColonyForTier } from '../GalaxyEngine.ts';
 import {
   applyUpgradeIncrement,
   processUpgrades,
@@ -90,6 +91,21 @@ describe('NPCUpgradeEngine', () => {
       colony.baseShips.solarSatellite = 0;
       applyUpgradeIncrement(colony, () => 0.5);
       expect(colony.baseShips.solarSatellite).toBeGreaterThan(0);
+    });
+
+    it('caps miner building growth during long catch-up runs', () => {
+      const colony = createNPCColonyForTier({ galaxy: 1, system: 12, slot: 7 }, 8, 12345);
+      colony.specialty = 'miner';
+      colony.maxTier = 10;
+
+      for (let tick = 0; tick < 300; tick += 1) {
+        applyUpgradeIncrement(colony, () => 0.5);
+        colony.upgradeTickCount += 1;
+      }
+
+      expect(colony.buildings.deuteriumSynthesizer).toBeLessThanOrEqual(colony.maxTier * 2);
+      expect(colony.buildings.metalMine).toBeLessThanOrEqual(colony.maxTier * 2);
+      expect(colony.buildings.crystalMine).toBeLessThanOrEqual(colony.maxTier * 2);
     });
 
     it('applies balanced speciality defence branch at phase 2', () => {

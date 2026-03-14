@@ -199,7 +199,7 @@ function resolveAttackAtTarget(state: GameState, mission: FleetMission, now: num
   const colony = state.galaxy.npcColonies.find((npc) =>
     isMatchingCoordinates(npc.coordinates, mission.targetCoordinates));
 
-  if (!colony) {
+  if (!colony || colony.abandonedAt !== undefined) {
     mission.cargo = { metal: 0, crystal: 0, deuterium: 0 };
     mission.returnTime = now + calcMissionReturnTravelMs(state, mission);
     mission.status = 'returning';
