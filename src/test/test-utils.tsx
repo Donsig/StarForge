@@ -17,7 +17,7 @@ export * from '@testing-library/react';
 
 type GameActions = Omit<
   GameContextType,
-  'gameState' | 'espionageReports' | 'fleetNotifications' | 'productionRates' | 'storageCaps'
+  'gameState' | 'espionageReports' | 'fleetNotifications' | 'fleetMovements' | 'productionRates' | 'storageCaps'
 >;
 type StorageCaps = GameContextType['storageCaps'];
 
@@ -190,6 +190,7 @@ export function createMockGameContext(
     gameState,
     espionageReports: gameState.espionageReports,
     fleetNotifications: gameState.fleetNotifications,
+    fleetMovements: [],
     productionRates,
     storageCaps,
     ...defaultActions,

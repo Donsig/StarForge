@@ -1,11 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { GameState } from '../models/GameState.ts';
 import type { CombatResult } from '../models/Combat.ts';
 import type {
   EspionageReport,
   FleetMission,
   FleetNotification,
+  MovementEntry,
   MissionType,
+  PlayerMovementEntry,
 } from '../models/Fleet.ts';
 import type { Coordinates, NPCColony, NPCSpecialty } from '../models/Galaxy.ts';
 import { createDefaultPlanet, type PlanetState } from '../models/Planet.ts';
@@ -89,6 +91,7 @@ export interface GameEngineState {
   gameState: GameState;
   espionageReports: EspionageReport[];
   fleetNotifications: FleetNotification[];
+  fleetMovements: MovementEntry[];
   productionRates: ProductionRates;
   storageCaps: { metal: number; crystal: number; deuterium: number };
   upgradeBuilding: (id: BuildingId) => boolean;
@@ -327,6 +330,38 @@ function initializeState(): GameState {
   return state;
 }
 
+export function deriveFleetMovements(
+  missions: FleetMission[],
+  planets: PlanetState[],
+): PlayerMovementEntry[] {
+  return missions
+    .filter((mission) => mission.status !== 'completed')
+    .map((mission): PlayerMovementEntry => ({
+      kind: 'player',
+      id: mission.id,
+      missionType: mission.type,
+      direction: 'outgoing',
+      sourcePlanetIndex: mission.sourcePlanetIndex,
+      targetCoordinates: mission.targetCoordinates,
+      status: mission.status,
+      nextTransitionTime:
+        mission.status === 'outbound'
+          ? mission.arrivalTime
+          : mission.status === 'returning'
+            ? mission.returnTime
+            : null,
+      ships: mission.ships,
+      cargo: mission.cargo,
+      canRecall: mission.status === 'outbound',
+    }))
+    .sort((a, b) => {
+      if (a.nextTransitionTime === null && b.nextTransitionTime === null) return 0;
+      if (a.nextTransitionTime === null) return 1;
+      if (b.nextTransitionTime === null) return -1;
+      return a.nextTransitionTime - b.nextTransitionTime;
+    });
+}
+
 export function useGameEngine(): GameEngineState {
   const [gameState, setGameState] = useState<GameState>(() => initializeState());
   const [fleetTarget, setFleetTarget] = useState<Coordinates | null>(null);
@@ -340,6 +375,10 @@ export function useGameEngine(): GameEngineState {
   );
   const [storageCaps, setStorageCaps] = useState(() => getStorageCaps(gameState));
   const stateRef = useRef<GameState>(gameState);
+  const fleetMovements: MovementEntry[] = useMemo(
+    () => deriveFleetMovements(gameState.fleetMissions, gameState.planets),
+    [gameState.fleetMissions, gameState.planets],
+  );
 
   const syncReactState = useCallback((): void => {
     const currentState = stateRef.current;
@@ -1633,6 +1672,7 @@ export function useGameEngine(): GameEngineState {
     gameState,
     espionageReports: gameState.espionageReports,
     fleetNotifications: gameState.fleetNotifications,
+    fleetMovements,
     productionRates,
     storageCaps,
     upgradeBuilding,

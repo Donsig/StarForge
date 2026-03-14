@@ -4,6 +4,7 @@ import type {
   EspionageReport,
   FleetMission,
   FleetNotification,
+  MovementEntry,
   MissionType,
 } from '../models/Fleet.ts';
 import type { CombatResult } from '../models/Combat.ts';
@@ -17,6 +18,7 @@ export interface GameContextType {
   gameState: GameState;
   espionageReports: EspionageReport[];
   fleetNotifications: FleetNotification[];
+  fleetMovements: MovementEntry[];
   productionRates: ProductionRates;
   storageCaps: { metal: number; crystal: number; deuterium: number };
   upgradeBuilding: (id: BuildingId) => boolean;
