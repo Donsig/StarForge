@@ -5,6 +5,7 @@ import { ResourceBar } from './components/ResourceBar';
 import { PlanetSwitcher } from './components/PlanetSwitcher';
 import { NavSidebar } from './components/NavSidebar';
 import { QueueDisplay } from './components/QueueDisplay';
+import { FleetMovementsBar } from './components/FleetMovementsBar.tsx';
 import { OverviewPanel } from './panels/OverviewPanel';
 import { BuildingsPanel } from './panels/BuildingsPanel';
 import { ResearchPanel } from './panels/ResearchPanel';
@@ -73,6 +74,7 @@ function GameLayout() {
         <ActivePanelContent activePanel={activePanel} onNavigate={setActivePanel} />
       </main>
       <QueueDisplay />
+      <FleetMovementsBar />
     </div>
   );
 }

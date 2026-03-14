@@ -761,6 +761,139 @@ body {
   font-size: 0.85rem;
 }
 
+/* ── Fleet Movements Bar ─────────────────────────── */
+
+.fleet-movements-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  z-index: 100;
+  max-height: 40vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: rgba(10, 14, 26, 0.96);
+  border-top: 1px solid #2a3554;
+}
+
+.movement-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.movement-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 0.8rem;
+}
+
+.movement-row:last-child {
+  border-bottom: none;
+}
+
+.movement-type-pill {
+  display: inline-block;
+  padding: 0.15rem 0.45rem;
+  border-radius: 3px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  min-width: 5.5rem;
+  text-align: center;
+}
+
+.movement-arrow {
+  color: #6b7fb5;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.movement-source,
+.movement-target {
+  color: #c0cce8;
+  white-space: nowrap;
+}
+
+.movement-status {
+  color: #7a8db8;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.movement-countdown {
+  font-family: monospace;
+  color: #9fb0d8;
+  white-space: nowrap;
+  margin-left: auto;
+}
+
+.movement-tooltip {
+  background: #131a2e;
+  border: 1px solid #2a3554;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8rem;
+  color: #c0cce8;
+  max-width: 300px;
+  white-space: pre-wrap;
+}
+
+.movement-type--attack {
+  background: #7a3a00;
+  color: #ffb366;
+}
+
+.movement-type--espionage {
+  background: #00336b;
+  color: #66aaff;
+}
+
+.movement-type--harvest {
+  background: #003d3d;
+  color: #4dd9d9;
+}
+
+.movement-type--transport {
+  background: #003d00;
+  color: #66ff88;
+}
+
+.movement-type--colonise {
+  background: #3d0066;
+  color: #cc88ff;
+}
+
+.movement-type--deploy {
+  background: #2a2a3a;
+  color: #9999bb;
+}
+
+.movement-type--npc-raid {
+  background: #7a0000;
+  color: #ff6666;
+  animation: npc-raid-flash 1s ease-in-out infinite alternate;
+}
+
+@keyframes npc-raid-flash {
+  from {
+    background: #7a0000;
+  }
+
+  to {
+    background: #cc0000;
+  }
+}
+
+.app-shell {
+  padding-bottom: var(--movements-bar-height, 0px);
+}
+
 /* Galaxy panel */
 
 .galaxy-nav {
@@ -1481,5 +1614,13 @@ body {
 
   .message-delete-btn {
     margin: 0 0.85rem 0.85rem;
+  }
+}
+
+@media (max-height: 500px) {
+  .fleet-movements-bar {
+    max-height: 25vh;
+    overflow-y: auto;
+    overflow-x: hidden;
   }
 }
