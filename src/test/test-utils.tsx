@@ -11,6 +11,7 @@ import {
   createNewGameState,
   type GameState,
 } from '../models/GameState.ts';
+import type { MovementEntry } from '../models/Fleet.ts';
 import { createDefaultPlanet } from '../models/Planet.ts';
 
 export * from '@testing-library/react';
@@ -37,6 +38,7 @@ interface RenderWithGameOptions {
   productionRates?: Partial<ProductionRates>;
   storageCaps?: Partial<StorageCaps>;
   actions?: Partial<GameActions>;
+  fleetMovements?: MovementEntry[];
   withMultiplePlanets?: boolean;
 }
 
@@ -190,7 +192,7 @@ export function createMockGameContext(
     gameState,
     espionageReports: gameState.espionageReports,
     fleetNotifications: gameState.fleetNotifications,
-    fleetMovements: [],
+    fleetMovements: options.fleetMovements ?? [],
     productionRates,
     storageCaps,
     ...defaultActions,
