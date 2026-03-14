@@ -68,3 +68,65 @@ export interface FleetNotification {
   failureReason?: 'planet_missing' | 'storage_full';
   read: boolean;
 }
+
+export type MovementDirection = 'outgoing' | 'incoming';
+
+export interface PlayerMovementEntry {
+  kind: 'player';
+  id: string;
+  missionType: MissionType;
+  direction: 'outgoing';
+  sourcePlanetIndex: number;
+  targetCoordinates: Coordinates;
+  status: MissionStatus;
+  nextTransitionTime: number | null;
+  ships: Partial<Record<string, number>>;
+  cargo: { metal: number; crystal: number; deuterium: number };
+  canRecall: boolean;
+}
+
+export interface NpcRaidEntry {
+  kind: 'npc';
+  id: string;
+  missionType: 'npc_raid';
+  direction: 'incoming';
+  sourceCoordinates: Coordinates;
+  targetCoordinates: Coordinates;
+  status: MissionStatus;
+  nextTransitionTime: number | null;
+  ships: Partial<Record<string, number>>;
+  canRecall: false;
+}
+
+export type MovementEntry = PlayerMovementEntry | NpcRaidEntry;
+
+export type MovementDirection = 'outgoing' | 'incoming';
+
+export interface PlayerMovementEntry {
+  kind: 'player';
+  id: string;
+  missionType: MissionType;
+  direction: 'outgoing';
+  sourcePlanetIndex: number;
+  targetCoordinates: Coordinates;
+  status: MissionStatus;
+  nextTransitionTime: number | null;
+  ships: Partial<Record<string, number>>;
+  cargo: { metal: number; crystal: number; deuterium: number };
+  canRecall: boolean;
+}
+
+export interface NpcRaidEntry {
+  kind: 'npc';
+  id: string;
+  missionType: 'npc_raid';
+  direction: 'incoming';
+  sourceCoordinates: Coordinates;
+  targetCoordinates: Coordinates;
+  status: MissionStatus;
+  nextTransitionTime: number | null;
+  ships: Partial<Record<string, number>>;
+  canRecall: false;
+}
+
+export type MovementEntry = PlayerMovementEntry | NpcRaidEntry;
