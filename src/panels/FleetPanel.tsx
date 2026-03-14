@@ -17,6 +17,7 @@ import {
 import { useCountdown } from '../hooks/useCountdown.ts';
 import { formatNumber } from '../utils/format.ts';
 import { formatDuration } from '../utils/time.ts';
+import { missionShipManifest } from '../utils/fleet.ts';
 
 const ESPIONAGE_MAX_TRAVEL_SECONDS = 10;
 const ESPIONAGE_MIN_FUEL_COST = 1;
@@ -90,18 +91,6 @@ function dispatchLabel(type: MissionType): string {
 
 function formatCargo(cargo: { metal: number; crystal: number; deuterium: number }): string {
   return `M ${formatNumber(cargo.metal)}  C ${formatNumber(cargo.crystal)}  D ${formatNumber(cargo.deuterium)}`;
-}
-
-function missionShipManifest(ships: Record<string, number>): string {
-  return Object.entries(ships)
-    .map(([shipId, countValue]) => {
-      const count = Math.max(0, Math.floor(countValue ?? 0));
-      if (count <= 0) return null;
-      const shipName = SHIPS[shipId as keyof typeof SHIPS]?.name ?? shipId;
-      return `${count}× ${shipName}`;
-    })
-    .filter((entry): entry is string => entry !== null)
-    .join(', ');
 }
 
 interface MissionRowProps {
