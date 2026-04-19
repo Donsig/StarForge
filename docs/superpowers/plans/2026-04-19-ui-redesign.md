@@ -898,15 +898,15 @@ git commit -m "feat(ui): redesign ShipyardPanel with stat strips, owned count ba
 - Modify: `src/panels/DefencePanel.tsx`
 - Modify: `src/styles.css`
 
-- [ ] **Step 1: Add PanelBanner**
+- [x] **Step 1: Add PanelBanner**
 
 `<PanelBanner panel="defence" title="Defence" subtitle="Fortify your world against enemy incursions." />`
 
-- [ ] **Step 2: Add summary bar**
+- [x] **Step 2: Add summary bar**
 
 3 stat cards at top: Total Firepower (red), Shield Rating (blue), Defence Units (white).
 
-- [ ] **Step 3: Rewrite defence cards**
+- [x] **Step 3: Rewrite defence cards**
 
 Same as ship cards but with **amber accent** on hover:
 - `border-color: rgba(240,168,50,0.4)`, `box-shadow: 0 0 20px rgba(240,168,50,0.08)`
@@ -921,7 +921,7 @@ Card-specific details:
 - Quantity input: same styling as shipyard (64px, JetBrains Mono)
 - Stat strip shows only ATK · SHD · HULL (no CARGO/SPD)
 
-- [ ] **Step 4: Verify and commit**
+- [x] **Step 4: Verify and commit**
 
 ```bash
 git add src/panels/DefencePanel.tsx src/styles.css
