@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useGame } from '../context/GameContext';
+import { usedFields } from '../engine/BuildQueue.ts';
 import { HoverPortal } from './HoverPortal';
+import { PlanetSwitcher } from './PlanetSwitcher';
 import {
   solarPlantEnergy,
   fusionReactorEnergy,
@@ -8,7 +10,7 @@ import {
   crystalMineEnergy,
   deuteriumSynthEnergy,
 } from '../engine/FormulasEngine.ts';
-import { formatNumber, formatRate } from '../utils/format.ts';
+import { formatCompact, formatNumber, formatRate } from '../utils/format.ts';
 
 const HOVER_CLOSE_DELAY_MS = 120;
 
@@ -53,6 +55,7 @@ export function ResourceBar() {
   const { gameState, productionRates, storageCaps } = useGame();
   const planet = gameState.planets[gameState.activePlanetIndex];
   const { resources, buildings } = planet;
+  const fieldsUsed = usedFields(gameState);
   const speed = gameState.settings.gameSpeed;
   const energyOk = productionRates.energyProduction >= productionRates.energyConsumption;
   const metalNearCap = resources.metal > storageCaps.metal * 0.9;
@@ -86,6 +89,8 @@ export function ResourceBar() {
     productionRows.reduce((sum, row) => sum + row.value, 0) + satelliteEnergy;
   const totalConsumption = consumptionRows.reduce((sum, row) => sum + row.value, 0);
   const netBalance = totalProduction - totalConsumption;
+  const energyBalance = productionRates.energyProduction - productionRates.energyConsumption;
+  const energyDisplay = `${energyBalance >= 0 ? '+' : ''}${formatCompact(energyBalance)}`;
   const energyPenalised =
     productionRates.energyConsumption > 0 &&
     productionRates.energyProduction < productionRates.energyConsumption;
@@ -106,13 +111,16 @@ export function ResourceBar() {
 
   return (
     <header className="resource-bar">
+      <PlanetSwitcher />
+      <div className="resource-bar__divider" aria-hidden="true" />
+
       <div
         ref={metalRef}
         className="resource-entry resource-entry--metal"
         onMouseEnter={metalHover.open}
         onMouseLeave={metalHover.close}
       >
-        <span className="resource-dot dot-metal" />
+        <span className="resource-dot resource-dot--metal" />
         <div>
           <div className="resource-label">Metal</div>
           <div
@@ -122,7 +130,7 @@ export function ResourceBar() {
                 : 'resource-value number'
             }
           >
-            {formatNumber(resources.metal)} / {formatNumber(storageCaps.metal)}
+            {formatCompact(resources.metal)} / {formatCompact(storageCaps.metal)}
           </div>
           <div className="resource-rate number">{formatRate(productionRates.metalPerHour * speed)}</div>
         </div>
@@ -162,7 +170,7 @@ export function ResourceBar() {
         onMouseEnter={crystalHover.open}
         onMouseLeave={crystalHover.close}
       >
-        <span className="resource-dot dot-crystal" />
+        <span className="resource-dot resource-dot--crystal" />
         <div>
           <div className="resource-label">Crystal</div>
           <div
@@ -172,7 +180,7 @@ export function ResourceBar() {
                 : 'resource-value number'
             }
           >
-            {formatNumber(resources.crystal)} / {formatNumber(storageCaps.crystal)}
+            {formatCompact(resources.crystal)} / {formatCompact(storageCaps.crystal)}
           </div>
           <div className="resource-rate number">{formatRate(productionRates.crystalPerHour * speed)}</div>
         </div>
@@ -212,7 +220,7 @@ export function ResourceBar() {
         onMouseEnter={deuteriumHover.open}
         onMouseLeave={deuteriumHover.close}
       >
-        <span className="resource-dot dot-deuterium" />
+        <span className="resource-dot resource-dot--deuterium" />
         <div>
           <div className="resource-label">Deuterium</div>
           <div
@@ -222,7 +230,7 @@ export function ResourceBar() {
                 : 'resource-value number'
             }
           >
-            {formatNumber(resources.deuterium)} / {formatNumber(storageCaps.deuterium)}
+            {formatCompact(resources.deuterium)} / {formatCompact(storageCaps.deuterium)}
           </div>
           <div className="resource-rate number">{formatRate(productionRates.deuteriumPerHour * speed)}</div>
         </div>
@@ -272,14 +280,13 @@ export function ResourceBar() {
         onMouseEnter={energyHover.open}
         onMouseLeave={energyHover.close}
       >
-        <span className="resource-dot dot-energy" />
+        <span className="resource-dot resource-dot--energy" />
         <div>
           <div className="resource-label">Energy</div>
           <div className={`resource-value number ${energyOk ? 'energy-ok' : 'energy-deficit'}`}>
-            {formatNumber(productionRates.energyProduction)} /{' '}
-            {formatNumber(productionRates.energyConsumption)}
+            {energyDisplay}
           </div>
-          <div className="resource-rate">production / consumption</div>
+          <div className="resource-rate number">net balance</div>
         </div>
         <HoverPortal
           anchorRef={energyRef}
@@ -326,6 +333,10 @@ export function ResourceBar() {
               </span>
             </div>
         </HoverPortal>
+      </div>
+
+      <div className="resource-bar__fields number">
+        {fieldsUsed}/{planet.maxFields} fields
       </div>
     </header>
   );
