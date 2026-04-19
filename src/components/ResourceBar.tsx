@@ -121,19 +121,11 @@ export function ResourceBar() {
         onMouseLeave={metalHover.close}
       >
         <span className="resource-dot resource-dot--metal" />
-        <div>
-          <div className="resource-label">Metal</div>
-          <div
-            className={
-              metalNearCap
-                ? 'resource-value number resource-near-cap'
-                : 'resource-value number'
-            }
-          >
-            {formatCompact(resources.metal)} / {formatCompact(storageCaps.metal)}
-          </div>
-          <div className="resource-rate number">{formatRate(productionRates.metalPerHour * speed)}</div>
-        </div>
+        <span className="resource-label">Metal</span>
+        <span className={`resource-value number${metalNearCap ? ' resource-near-cap' : ''}`}>
+          {formatCompact(resources.metal)}
+        </span>
+        <span className="resource-rate number">{formatRate(productionRates.metalPerHour * speed)}</span>
         <HoverPortal
           anchorRef={metalRef}
           open={metalHover.hovered}
@@ -171,19 +163,11 @@ export function ResourceBar() {
         onMouseLeave={crystalHover.close}
       >
         <span className="resource-dot resource-dot--crystal" />
-        <div>
-          <div className="resource-label">Crystal</div>
-          <div
-            className={
-              crystalNearCap
-                ? 'resource-value number resource-near-cap'
-                : 'resource-value number'
-            }
-          >
-            {formatCompact(resources.crystal)} / {formatCompact(storageCaps.crystal)}
-          </div>
-          <div className="resource-rate number">{formatRate(productionRates.crystalPerHour * speed)}</div>
-        </div>
+        <span className="resource-label">Crystal</span>
+        <span className={`resource-value number${crystalNearCap ? ' resource-near-cap' : ''}`}>
+          {formatCompact(resources.crystal)}
+        </span>
+        <span className="resource-rate number">{formatRate(productionRates.crystalPerHour * speed)}</span>
         <HoverPortal
           anchorRef={crystalRef}
           open={crystalHover.hovered}
@@ -221,19 +205,11 @@ export function ResourceBar() {
         onMouseLeave={deuteriumHover.close}
       >
         <span className="resource-dot resource-dot--deuterium" />
-        <div>
-          <div className="resource-label">Deuterium</div>
-          <div
-            className={
-              deuteriumNearCap
-                ? 'resource-value number resource-near-cap'
-                : 'resource-value number'
-            }
-          >
-            {formatCompact(resources.deuterium)} / {formatCompact(storageCaps.deuterium)}
-          </div>
-          <div className="resource-rate number">{formatRate(productionRates.deuteriumPerHour * speed)}</div>
-        </div>
+        <span className="resource-label">Deuterium</span>
+        <span className={`resource-value number${deuteriumNearCap ? ' resource-near-cap' : ''}`}>
+          {formatCompact(resources.deuterium)}
+        </span>
+        <span className="resource-rate number">{formatRate(productionRates.deuteriumPerHour * speed)}</span>
         <HoverPortal
           anchorRef={deuteriumRef}
           open={deuteriumHover.hovered}
@@ -281,13 +257,10 @@ export function ResourceBar() {
         onMouseLeave={energyHover.close}
       >
         <span className="resource-dot resource-dot--energy" />
-        <div>
-          <div className="resource-label">Energy</div>
-          <div className={`resource-value number ${energyOk ? 'energy-ok' : 'energy-deficit'}`}>
-            {energyDisplay}
-          </div>
-          <div className="resource-rate number">net balance</div>
-        </div>
+        <span className="resource-label">Energy</span>
+        <span className={`resource-value number ${energyOk ? 'energy-ok' : 'energy-deficit'}`}>
+          {energyDisplay}
+        </span>
         <HoverPortal
           anchorRef={energyRef}
           open={energyHover.hovered}
