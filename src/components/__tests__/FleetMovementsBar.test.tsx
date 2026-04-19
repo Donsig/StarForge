@@ -14,6 +14,7 @@ function makeEntry(overrides: Partial<PlayerMovementEntry> = {}): PlayerMovement
     targetCoordinates: { galaxy: 1, system: 2, slot: 3 },
     status: 'outbound',
     nextTransitionTime: Date.now() + 60_000,
+    phaseStartTime: Date.now(),
     ships: { lightFighter: 3 },
     cargo: { metal: 0, crystal: 0, deuterium: 0 },
     canRecall: true,
@@ -22,6 +23,10 @@ function makeEntry(overrides: Partial<PlayerMovementEntry> = {}): PlayerMovement
 }
 
 describe('FleetMovementsBar', () => {
+  beforeEach(() => {
+    window.localStorage.removeItem('starforge:fleet-bar-collapsed');
+  });
+
   it('renders nothing when there are no fleet movements', () => {
     const { container } = renderWithGame(<FleetMovementsBar />, {
       fleetMovements: [],
@@ -44,7 +49,7 @@ describe('FleetMovementsBar', () => {
   it('shows the outgoing arrow for player missions', () => {
     renderWithGame(<FleetMovementsBar />, { fleetMovements: [makeEntry()] });
 
-    expect(screen.getByText('›')).toBeInTheDocument();
+    expect(screen.getByText('→')).toBeInTheDocument();
   });
 
   it('shows Recall button only for canRecall entries', () => {
@@ -84,6 +89,6 @@ describe('FleetMovementsBar', () => {
       fleetMovements: [makeEntry({ missionType: 'espionage' })],
     });
 
-    expect(document.querySelector('.movement-type--espionage')).toBeInTheDocument();
+    expect(document.querySelector('.movement-type-pill--espionage')).toBeInTheDocument();
   });
 });

@@ -693,7 +693,7 @@ git commit -m "feat(ui): redesign NavSidebar with Orbitron title, coords, blue a
 
 This is a large component rewrite. The ResourceBar gets a PlanetSwitcher as first element, tighter resource pills with glowing dots, and a field usage counter right-aligned.
 
-- [ ] **Step 1: Rewrite PlanetSwitcher**
+- [x] **Step 1: Rewrite PlanetSwitcher**
 
 Read the current `src/components/PlanetSwitcher.tsx` first to understand its current interface. Then rewrite it to match the design spec — planet icon, name in Orbitron, coords in JetBrains Mono, dropdown with all planets. Reference `handoff/design_handoff/sf-shared.jsx` lines 180-243 for the exact design.
 
@@ -702,7 +702,7 @@ Key visual elements:
 - Dropdown: `rgba(5,8,20,0.98)`, `backdrop-filter: blur(16px)`, border-radius 10px
 - Each row: 28x28 planet icon, name + coords + field usage, active planet gets blue highlight + bullet
 
-- [ ] **Step 2: Rewrite ResourceBar styling**
+- [x] **Step 2: Rewrite ResourceBar styling**
 
 Update the ResourceBar to use the new design tokens. Key changes:
 - Resource pills: tighter padding (0.3rem 0.65rem), 7x7 glowing dot, label 0.7rem uppercase, value JetBrains Mono 0.85rem, rate JetBrains Mono 0.72rem muted
@@ -712,15 +712,15 @@ Update the ResourceBar to use the new design tokens. Key changes:
 
 Reference `handoff/design_handoff/sf-shared.jsx` lines 245-273 for exact layout.
 
-- [ ] **Step 3: Update CSS for resource bar and resource pills**
+- [x] **Step 3: Update CSS for resource bar and resource pills**
 
 Replace existing `.resource-bar`, `.resource-entry`, `.resource-dot`, `.resource-label`, `.resource-value`, `.resource-rate` classes.
 
-- [ ] **Step 4: Verify**
+- [x] **Step 4: Verify**
 
 ResourceBar should show PlanetSwitcher → divider → 4 resource pills → field counter. PlanetSwitcher dropdown should open on click, show all planets, highlight active one.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/components/ResourceBar.tsx src/components/PlanetSwitcher.tsx src/styles.css
@@ -735,7 +735,7 @@ git commit -m "feat(ui): redesign ResourceBar with PlanetSwitcher, glowing dots,
 - Modify: `src/components/FleetMovementsBar.tsx`
 - Modify: `src/styles.css`
 
-- [ ] **Step 1: Rewrite FleetMovementsBar**
+- [x] **Step 1: Rewrite FleetMovementsBar**
 
 Complete visual rewrite. Key changes from current:
 - Collapsible header with "Fleet Movements" label + count badge
@@ -748,15 +748,15 @@ Complete visual rewrite. Key changes from current:
 
 Reference `handoff/design_handoff/sf-shared.jsx` lines 276-374 for exact implementation.
 
-- [ ] **Step 2: Update CSS**
+- [x] **Step 2: Update CSS**
 
 Replace all `.fleet-movements-bar`, `.movement-*` rules. The bar is `position: fixed; bottom: 0; z-index: 200`.
 
-- [ ] **Step 3: Verify**
+- [x] **Step 3: Verify**
 
 Start a fleet mission (or use admin panel). FleetMovementsBar should show at bottom with collapsible header, coloured mission type pills, progress bars, and correct arrow directions.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/components/FleetMovementsBar.tsx src/styles.css

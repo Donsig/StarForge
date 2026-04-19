@@ -1,50 +1,40 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useGame } from '../context/GameContext.tsx';
 import { useNow } from '../hooks/useNow.ts';
-import type { MovementEntry } from '../models/Fleet.ts';
+import type { MissionStatus, MovementEntry } from '../models/Fleet.ts';
+import type { Coordinates } from '../models/Galaxy.ts';
 import type { PlanetState } from '../models/Planet.ts';
 import { formatNumber } from '../utils/format.ts';
-import { formatCoords, missionShipManifest } from '../utils/fleet.ts';
+import { missionShipManifest } from '../utils/fleet.ts';
 import { formatCountdown } from '../utils/time.ts';
 import { HoverPortal } from './HoverPortal.tsx';
 
 const HOVER_CLOSE_DELAY_MS = 120;
+const COLLAPSED_STORAGE_KEY = 'starforge:fleet-bar-collapsed';
 
 function getMissionTypeClass(missionType: string): string {
   switch (missionType) {
     case 'attack':
-      return 'movement-type--attack';
+      return 'movement-type-pill--attack';
     case 'espionage':
-      return 'movement-type--espionage';
+      return 'movement-type-pill--espionage';
     case 'harvest':
-      return 'movement-type--harvest';
+      return 'movement-type-pill--harvest';
     case 'transport':
-      return 'movement-type--transport';
+      return 'movement-type-pill--transport';
     case 'colonise':
-      return 'movement-type--colonise';
+      return 'movement-type-pill--colonise';
     case 'deploy':
-      return 'movement-type--deploy';
+      return 'movement-type-pill--deploy';
     case 'npc_raid':
-      return 'movement-type--npc-raid';
+      return 'movement-type-pill--npc-raid';
     default:
-      return '';
+      return 'movement-type-pill--attack';
   }
 }
 
 function getMissionTypeLabel(missionType: string): string {
   switch (missionType) {
-    case 'attack':
-      return 'Attack';
-    case 'espionage':
-      return 'Espionage';
-    case 'harvest':
-      return 'Harvest';
-    case 'transport':
-      return 'Transport';
-    case 'colonise':
-      return 'Colonise';
-    case 'deploy':
-      return 'Deploy';
     case 'npc_raid':
       return 'Raid';
     default:
@@ -52,23 +42,77 @@ function getMissionTypeLabel(missionType: string): string {
   }
 }
 
-function getStatusLabel(status: string): string {
+function getStatusClass(status: MissionStatus): 'outbound' | 'returning' | 'at-target' {
   switch (status) {
-    case 'outbound':
-      return 'Outbound';
     case 'returning':
-      return 'Returning';
+      return 'returning';
     case 'at_target':
-      return 'At Target';
+      return 'at-target';
     default:
-      return status;
+      return 'outbound';
+  }
+}
+
+function getStatusLabel(status: MissionStatus): string {
+  switch (status) {
+    case 'at_target':
+      return 'at target';
+    case 'returning':
+      return 'returning';
+    case 'completed':
+      return 'completed';
+    default:
+      return 'outbound';
   }
 }
 
 function formatCountdownFromNow(nextTransitionTime: number | null, now: number): string {
   if (nextTransitionTime === null) return '—';
-  const remainingMs = nextTransitionTime - now;
-  return formatCountdown(Math.max(0, remainingMs));
+  return formatCountdown(Math.max(0, nextTransitionTime - now));
+}
+
+function formatRouteCoords(coords: Coordinates): string {
+  return `[${coords.galaxy}:${coords.system}:${coords.slot}]`;
+}
+
+function sameCoordinates(a: Coordinates, b: Coordinates): boolean {
+  return a.galaxy === b.galaxy && a.system === b.system && a.slot === b.slot;
+}
+
+function findPlanetByCoordinates(
+  planets: PlanetState[],
+  coordinates: Coordinates,
+): PlanetState | undefined {
+  return planets.find((planet) => sameCoordinates(planet.coordinates, coordinates));
+}
+
+function clamp01(value: number): number {
+  return Math.max(0, Math.min(1, value));
+}
+
+function getMovementProgress(entry: MovementEntry, now: number): number {
+  if (entry.nextTransitionTime === null) {
+    return 1;
+  }
+
+  const phaseDuration = entry.nextTransitionTime - entry.phaseStartTime;
+  if (phaseDuration <= 0) {
+    return 1;
+  }
+
+  return clamp01((now - entry.phaseStartTime) / phaseDuration);
+}
+
+function readCollapsedPreference(): boolean {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  try {
+    return window.localStorage.getItem(COLLAPSED_STORAGE_KEY) === '1';
+  } catch {
+    return false;
+  }
 }
 
 interface MovementRowProps {
@@ -105,22 +149,16 @@ function MovementRow({ entry, planets, now, onRecall }: MovementRowProps) {
 
   useEffect(() => () => clearTimer(), []);
 
-  const sourcePlanet = entry.kind === 'player' ? planets[entry.sourcePlanetIndex] : null;
-  const sourceLabel = sourcePlanet
-    ? `${sourcePlanet.name} ${formatCoords(sourcePlanet.coordinates)}`
-    : entry.kind === 'npc'
-      ? formatCoords(entry.sourceCoordinates)
-      : '?';
-  const targetLabel = formatCoords(entry.targetCoordinates);
-  const arrow = entry.direction === 'outgoing' ? '›' : '‹';
-  const typeClass = getMissionTypeClass(entry.missionType);
-  const typeLabel = getMissionTypeLabel(entry.missionType);
-  const statusLabel = getStatusLabel(entry.status);
+  const sourcePlanet = entry.kind === 'player' ? planets[entry.sourcePlanetIndex] : undefined;
+  const targetPlanet = findPlanetByCoordinates(planets, entry.targetCoordinates);
+  const statusClass = getStatusClass(entry.status);
   const countdown = formatCountdownFromNow(entry.nextTransitionTime, now);
+  const progress = getMovementProgress(entry, now);
   const shipManifest = missionShipManifest(entry.ships);
   const hasCargo = entry.kind === 'player' &&
     entry.status === 'returning' &&
     (entry.cargo.metal > 0 || entry.cargo.crystal > 0 || entry.cargo.deuterium > 0);
+  const arrow = entry.kind === 'npc' || entry.status !== 'returning' ? '→' : '←';
 
   return (
     <li
@@ -129,21 +167,72 @@ function MovementRow({ entry, planets, now, onRecall }: MovementRowProps) {
       onMouseEnter={openTooltip}
       onMouseLeave={scheduleClose}
     >
-      <span className={`movement-type-pill ${typeClass}`}>{typeLabel}</span>
-      <span className="movement-source">{sourceLabel}</span>
-      <span className="movement-arrow">{arrow}</span>
-      <span className="movement-target">{targetLabel}</span>
-      <span className={`movement-status movement-status--${entry.status}`}>{statusLabel}</span>
-      <span className="movement-countdown">{countdown}</span>
+      <span className={`movement-type-pill ${getMissionTypeClass(entry.missionType)}`}>
+        {getMissionTypeLabel(entry.missionType)}
+      </span>
+
+      <div className="movement-route-stack">
+        <div className="movement-route">
+          {entry.kind === 'npc' ? (
+            <>
+              <span className="movement-route__coords">
+                {formatRouteCoords(entry.sourceCoordinates)}
+              </span>
+              <span
+                className={`movement-route__arrow movement-route__arrow--${statusClass}`}
+                aria-hidden="true"
+              >
+                {arrow}
+              </span>
+              <span className="movement-route__home">
+                {targetPlanet?.name ?? 'Coords'}
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="movement-route__home">
+                {sourcePlanet?.name ?? 'Home Planet'}
+              </span>
+              <span
+                className={`movement-route__arrow movement-route__arrow--${statusClass}`}
+                aria-hidden="true"
+              >
+                {arrow}
+              </span>
+              <span className="movement-route__target">
+                {targetPlanet?.name ?? 'Coords'}
+              </span>
+              <span className="movement-route__coords">
+                {formatRouteCoords(entry.targetCoordinates)}
+              </span>
+            </>
+          )}
+        </div>
+
+        <div className="movement-progress" aria-hidden="true">
+          <span
+            className={`movement-progress__fill movement-progress__fill--${statusClass}`}
+            style={{ width: `${progress * 100}%` }}
+          />
+        </div>
+      </div>
+
+      <span className={`movement-status movement-status--${statusClass}`}>
+        {getStatusLabel(entry.status)}
+      </span>
+
+      <span className="movement-eta">{countdown}</span>
+
       {entry.canRecall && (
         <button
           type="button"
-          className="btn btn-sm"
+          className="movement-recall"
           onClick={() => onRecall(entry.id)}
         >
           Recall
         </button>
       )}
+
       <HoverPortal
         anchorRef={anchorRef}
         open={showTooltip && shipManifest.length > 0}
@@ -169,6 +258,7 @@ export function FleetMovementsBar() {
   const { fleetMovements, gameState, recallFleet } = useGame();
   const now = useNow(1000);
   const barRef = useRef<HTMLElement>(null);
+  const [collapsed, setCollapsed] = useState<boolean>(() => readCollapsedPreference());
 
   useLayoutEffect(() => {
     const bar = barRef.current;
@@ -208,19 +298,51 @@ export function FleetMovementsBar() {
     return null;
   }
 
+  const toggleCollapsed = () => {
+    setCollapsed((current) => {
+      const next = !current;
+
+      if (typeof window !== 'undefined') {
+        try {
+          window.localStorage.setItem(COLLAPSED_STORAGE_KEY, next ? '1' : '0');
+        } catch {
+          // Ignore storage failures and keep in-memory state.
+        }
+      }
+
+      return next;
+    });
+  };
+
   return (
     <nav ref={barRef} className="fleet-movements-bar" aria-label="Fleet movements">
-      <ul className="movement-list">
-        {fleetMovements.map((entry) => (
-          <MovementRow
-            key={entry.id}
-            entry={entry}
-            planets={gameState.planets}
-            now={now}
-            onRecall={recallFleet}
-          />
-        ))}
-      </ul>
+      <button
+        type="button"
+        className={`fleet-movements-bar__header${collapsed ? '' : ' is-expanded'}`}
+        onClick={toggleCollapsed}
+        aria-expanded={!collapsed}
+        aria-controls="fleet-movements-list"
+      >
+        <span className="fleet-movements-bar__title">Fleet Movements</span>
+        <span className="fleet-movements-bar__count">{fleetMovements.length}</span>
+        <span className="fleet-movements-bar__chevron" aria-hidden="true">
+          {collapsed ? '▲' : '▼'}
+        </span>
+      </button>
+
+      {!collapsed && (
+        <ul id="fleet-movements-list" className="fleet-movements-bar__list">
+          {fleetMovements.map((entry) => (
+            <MovementRow
+              key={entry.id}
+              entry={entry}
+              planets={gameState.planets}
+              now={now}
+              onRecall={recallFleet}
+            />
+          ))}
+        </ul>
+      )}
     </nav>
   );
 }

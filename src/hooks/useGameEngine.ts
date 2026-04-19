@@ -352,6 +352,10 @@ export function deriveFleetMovements(
           : mission.status === 'returning'
             ? mission.returnTime
             : null,
+      phaseStartTime:
+        mission.status === 'outbound'
+          ? mission.departureTime
+          : mission.arrivalTime,
       ships: mission.ships,
       cargo: mission.cargo,
       canRecall: mission.status === 'outbound',

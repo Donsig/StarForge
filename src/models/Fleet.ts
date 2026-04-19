@@ -80,6 +80,7 @@ export interface PlayerMovementEntry {
   targetCoordinates: Coordinates;
   status: MissionStatus;
   nextTransitionTime: number | null;
+  phaseStartTime: number;
   ships: Partial<Record<string, number>>;
   cargo: { metal: number; crystal: number; deuterium: number };
   canRecall: boolean;
@@ -94,6 +95,7 @@ export interface NpcRaidEntry {
   targetCoordinates: Coordinates;
   status: MissionStatus;
   nextTransitionTime: number | null;
+  phaseStartTime: number;
   ships: Partial<Record<string, number>>;
   canRecall: false;
 }
