@@ -822,11 +822,11 @@ git commit -m "feat(ui): redesign BuildingsPanel with banner, card images, level
 - Modify: `src/panels/ResearchPanel.tsx`
 - Modify: `src/styles.css`
 
-- [ ] **Step 1: Add PanelBanner**
+- [x] **Step 1: Add PanelBanner**
 
 `<PanelBanner panel="research" title="Research" subtitle="Advance your civilization through scientific breakthroughs." />`
 
-- [ ] **Step 2: Rewrite research cards**
+- [x] **Step 2: Rewrite research cards**
 
 Research cards differ from building cards:
 - No CardImage — uses LevelRing (smaller, 32px) with category colour
@@ -839,15 +839,15 @@ Category colours: Propulsion `#30d5c8`, Energy & Weapons `#f87171`, Military `#f
 
 Reference `handoff/design_handoff/sf-panels-b.jsx` lines 537-668 for ResearchPanel and ResearchCard.
 
-- [ ] **Step 3: Add category section headers**
+- [x] **Step 3: Add category section headers**
 
 Same pattern as Buildings but with category-coloured icons and labels.
 
-- [ ] **Step 4: Add active research indicator**
+- [x] **Step 4: Add active research indicator**
 
 Purple-accented card at top showing currently researching tech with pulsing dot.
 
-- [ ] **Step 5: Verify and commit**
+- [x] **Step 5: Verify and commit**
 
 ```bash
 git add src/panels/ResearchPanel.tsx src/styles.css

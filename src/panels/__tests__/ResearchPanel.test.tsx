@@ -26,7 +26,7 @@ describe('ResearchPanel', () => {
 
     for (const researchId of RESEARCH_ORDER) {
       const card = getResearchCard(RESEARCH[researchId].name);
-      expect(within(card).getByText('Lv 0')).toBeInTheDocument();
+      expect(card.querySelector('.level-ring__value')).toHaveTextContent('0');
     }
   });
 
@@ -51,7 +51,7 @@ describe('ResearchPanel', () => {
 
     const laserTechnologyCard = getResearchCard('Laser Technology');
     expect(
-      within(laserTechnologyCard).getByRole('button', { name: /Research Lv/i }),
+      within(laserTechnologyCard).getByRole('button', { name: 'Research' }),
     ).toBeDisabled();
   });
 
@@ -82,7 +82,7 @@ describe('ResearchPanel', () => {
 
     const computerTechnologyCard = getResearchCard('Computer Technology');
     expect(
-      within(computerTechnologyCard).getByRole('button', { name: /Research Lv/i }),
+      within(computerTechnologyCard).getByRole('button', { name: 'Research' }),
     ).not.toBeDisabled();
   });
 
@@ -107,7 +107,7 @@ describe('ResearchPanel', () => {
       },
     });
 
-    expect(screen.getByRole('button', { name: 'Queue Lv 5' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Queue → Lv 5' })).toBeInTheDocument();
   });
 
   it('calls startResearchAction with the correct research ID', async () => {
@@ -134,7 +134,7 @@ describe('ResearchPanel', () => {
 
     const energyTechnologyCard = getResearchCard('Energy Technology');
     await user.click(
-      within(energyTechnologyCard).getByRole('button', { name: /Research Lv 1/i }),
+      within(energyTechnologyCard).getByRole('button', { name: 'Research' }),
     );
 
     expect(startResearchAction).toHaveBeenCalledWith('energyTechnology');
@@ -161,11 +161,11 @@ describe('ResearchPanel', () => {
 
     const laserTechnologyCard = getResearchCard('Laser Technology');
     expect(
-      within(laserTechnologyCard).getByRole('button', { name: /Research Lv 1/i }),
+      within(laserTechnologyCard).getByRole('button', { name: 'Research' }),
     ).toBeEnabled();
   });
 
-  it('renders card banner imgs for research cards', () => {
+  it('does not render card banner imgs for research cards', () => {
     renderWithGame(<ResearchPanel />, {
       gameState: {
         planet: { buildings: { researchLab: 1 } },
@@ -173,8 +173,6 @@ describe('ResearchPanel', () => {
     });
 
     const images = document.querySelectorAll('.card-banner img');
-    expect(images.length).toBeGreaterThan(0);
-    const srcs = Array.from(images).map((image) => (image as HTMLImageElement).src);
-    expect(srcs.some((src) => src.includes('energyTechnology.webp'))).toBe(true);
+    expect(images).toHaveLength(0);
   });
 });
