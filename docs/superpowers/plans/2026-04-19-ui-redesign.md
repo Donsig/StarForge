@@ -523,7 +523,7 @@ git commit -m "feat(ui): redesign CostDisplay with coloured cost pills"
 - Modify: `src/components/NavSidebar.tsx`
 - Modify: `src/styles.css` (`.nav-sidebar`, `.nav-button`, etc.)
 
-- [ ] **Step 1: Update NavSidebar component**
+- [x] **Step 1: Update NavSidebar component**
 
 Add planet coords display below "STARFORGE" header. The component already receives data through the parent — we need to pass planet coords from GameContext. For now, add the coords display with a static format (the parent already passes `activePanel` and `onNavigate`).
 
@@ -584,7 +584,7 @@ export function NavSidebar({ activePanel, onNavigate, unreadMessageCount }: NavS
 }
 ```
 
-- [ ] **Step 2: Update NavSidebar CSS**
+- [x] **Step 2: Update NavSidebar CSS**
 
 Replace existing `.nav-sidebar`, `.sidebar-title`, `.nav-list`, `.nav-button`, `.nav-badge`, `.nav-divider` rules with the redesigned versions. Key changes:
 - Background: `rgba(5,8,20,0.9)` with `backdrop-filter: blur(12px)`
@@ -671,11 +671,11 @@ Replace existing `.nav-sidebar`, `.sidebar-title`, `.nav-list`, `.nav-button`, `
 }
 ```
 
-- [ ] **Step 3: Verify**
+- [x] **Step 3: Verify**
 
 Run `npm run dev`. NavSidebar should show "STARFORGE" in Orbitron font, planet coords below, blue left-border on active item, gradient background on active, subtle hover on inactive.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/components/NavSidebar.tsx src/styles.css
