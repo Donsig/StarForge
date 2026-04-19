@@ -113,7 +113,8 @@ body::before {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.35rem 0.7rem;
+  height: 36px;
+  padding: 0 0.7rem;
   border: 1px solid rgba(60, 100, 200, 0.2);
   border-radius: 8px;
   background: rgba(8, 12, 28, 0.8);
@@ -1276,10 +1277,11 @@ body::before {
   align-items: center;
   gap: 0.6rem;
   min-width: 0;
+  height: 36px;
   border: 1px solid rgba(60, 100, 200, 0.25);
   border-radius: 8px;
   background: rgba(8, 12, 28, 0.8);
-  padding: 0.3rem 0.65rem 0.3rem 0.4rem;
+  padding: 0 0.65rem 0 0.4rem;
   color: var(--text);
   cursor: pointer;
   backdrop-filter: blur(8px);

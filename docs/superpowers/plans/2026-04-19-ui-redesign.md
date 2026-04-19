@@ -1261,6 +1261,12 @@ For every component, the worker should:
 
 **Conflict resolution:** When README.md and `sf-*.jsx` files disagree on a value (spacing, colour, font size, etc.), **README.md wins** — it is the canonical spec. The JSX files are rapid prototypes and may have minor inconsistencies. Known exception: the JSX files contain interaction behaviours (hover states, expand/collapse logic, tooltip tracking) that the README describes only in prose — for interaction implementation, follow the JSX.
 
+### Codex Prompt Guidelines (learned during implementation)
+
+- **Call out JSX structural changes explicitly.** Codex reliably updates CSS values but may leave the JSX element hierarchy unchanged. If the design changes layout (e.g., stacked column → flat inline row), the prompt must say so: "Flatten the nested div wrapper into inline spans" — not just "update styling."
+- **Specify element heights when multiple components must align.** Resource pills and PlanetSwitcher must share `height: 36px` to pixel-align. Call out shared dimensions explicitly.
+- **Review should check rendered structure, not just CSS values.** Compare the JSX element hierarchy against the prototype's flex layout, not just whether the right CSS properties exist.
+
 ### Key Architecture Rules
 
 - **No engine changes.** All data comes from GameContext — don't modify hooks, engines, or models.
