@@ -155,7 +155,7 @@ Run: `npm run dev`
 
 Open in browser. The app should load with the new background gradient, new font (Space Grotesk for body text), and new colour scheme. Some elements will look wrong because panel classes haven't been updated yet — that's expected.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add index.html src/styles.css
@@ -178,7 +178,7 @@ properties for the full redesign."
 
 These are new atoms used by multiple panels.
 
-- [ ] **Step 1: Create PanelBanner component**
+- [x] **Step 1: Create PanelBanner component**
 
 Create `src/components/PanelBanner.tsx`:
 
@@ -215,7 +215,7 @@ export function PanelBanner({ panel, title, subtitle }: PanelBannerProps) {
 }
 ```
 
-- [ ] **Step 2: Add PanelBanner CSS**
+- [x] **Step 2: Add PanelBanner CSS**
 
 Add to `src/styles.css`:
 
@@ -284,7 +284,7 @@ Add to `src/styles.css`:
 }
 ```
 
-- [ ] **Step 3: Create CardImage component**
+- [x] **Step 3: Create CardImage component**
 
 Create `src/components/CardImage.tsx`:
 
@@ -323,7 +323,7 @@ export function CardImage({ src, label, height = 110 }: CardImageProps) {
 }
 ```
 
-- [ ] **Step 4: Add CardImage CSS**
+- [x] **Step 4: Add CardImage CSS**
 
 ```css
 /* ── Card Image ────────────────────────────────────────────── */
@@ -364,7 +364,7 @@ export function CardImage({ src, label, height = 110 }: CardImageProps) {
 }
 ```
 
-- [ ] **Step 5: Create LevelRing component**
+- [x] **Step 5: Create LevelRing component**
 
 Create `src/components/LevelRing.tsx`:
 
@@ -400,7 +400,7 @@ export function LevelRing({ level, maxLevel = 20, size = 36, color = '#4d8fff' }
 }
 ```
 
-- [ ] **Step 6: Add LevelRing CSS**
+- [x] **Step 6: Add LevelRing CSS**
 
 ```css
 /* ── Level Ring ────────────────────────────────────────────── */
@@ -421,11 +421,11 @@ export function LevelRing({ level, maxLevel = 20, size = 36, color = '#4d8fff' }
 }
 ```
 
-- [ ] **Step 7: Verify components render in isolation**
+- [x] **Step 7: Verify components render in isolation**
 
 Temporarily import and render `<PanelBanner panel="buildings" title="Test" subtitle="Test sub" />` in any panel to confirm the banner image, gradients, and text render correctly.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add src/components/PanelBanner.tsx src/components/CardImage.tsx src/components/LevelRing.tsx src/styles.css

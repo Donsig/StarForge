@@ -1,6 +1,6 @@
 import type { ResourcesState } from '../models/Planet.ts';
 import type { ResourceCost } from '../models/types.ts';
-import { formatNumber } from '../utils/format.ts';
+import { formatCompact } from '../utils/format.ts';
 
 interface CostDisplayProps {
   cost: ResourceCost;
@@ -8,21 +8,37 @@ interface CostDisplayProps {
 }
 
 export function CostDisplay({ cost, available }: CostDisplayProps) {
-  const metalAffordable = available.metal >= cost.metal;
-  const crystalAffordable = available.crystal >= cost.crystal;
-  const deuteriumAffordable = available.deuterium >= cost.deuterium;
+  const items = [
+    {
+      key: 'metal',
+      label: 'M',
+      value: cost.metal,
+      affordable: available.metal >= cost.metal,
+    },
+    {
+      key: 'crystal',
+      label: 'C',
+      value: cost.crystal,
+      affordable: available.crystal >= cost.crystal,
+    },
+    {
+      key: 'deuterium',
+      label: 'D',
+      value: cost.deuterium,
+      affordable: available.deuterium >= cost.deuterium,
+    },
+  ].filter((item) => item.value > 0);
 
   return (
     <div className="cost-display">
-      <span className={`cost-item number ${metalAffordable ? '' : 'insufficient'}`}>
-        M {formatNumber(cost.metal)}
-      </span>
-      <span className={`cost-item number ${crystalAffordable ? '' : 'insufficient'}`}>
-        C {formatNumber(cost.crystal)}
-      </span>
-      <span className={`cost-item number ${deuteriumAffordable ? '' : 'insufficient'}`}>
-        D {formatNumber(cost.deuterium)}
-      </span>
+      {items.map((item) => (
+        <span
+          key={item.key}
+          className={`cost-pill cost-pill--${item.key}${item.affordable ? '' : ' cost-pill--insufficient'}`}
+        >
+          {item.label} {formatCompact(item.value)}
+        </span>
+      ))}
     </div>
   );
 }
