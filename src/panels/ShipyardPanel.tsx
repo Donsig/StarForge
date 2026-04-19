@@ -7,8 +7,11 @@ import { SHIP_ORDER, SHIPS } from '../data/ships.ts';
 import { canAfford, prerequisitesMet } from '../engine/BuildQueue.ts';
 import { shipBuildTime } from '../engine/FormulasEngine.ts';
 import { useGame } from '../context/GameContext';
+import { PanelBanner } from '../components/PanelBanner';
+import { CardImage } from '../components/CardImage';
 import { CostDisplay } from '../components/CostDisplay';
 import { QueueRow, getQueuedItemDuration } from '../components/QueueRow';
+import { formatCompact } from '../utils/format.ts';
 import { formatDuration } from '../utils/time.ts';
 import type { GameState } from '../models/GameState.ts';
 import type {
@@ -51,17 +54,45 @@ export function ShipyardPanel() {
   const { gameState, buildShips, adminCompleteShipyard } = useGame();
   const [quantities, setQuantities] = useState<Record<ShipId, string>>(DEFAULT_QUANTITIES);
   const planet = gameState.planets[gameState.activePlanetIndex];
+  const shipStats = [
+    {
+      key: 'ATK',
+      value: (shipId: ShipId) => SHIPS[shipId].weaponPower,
+      colorClass: 'ship-stat-chip__value--attack',
+    },
+    {
+      key: 'SHD',
+      value: (shipId: ShipId) => SHIPS[shipId].shieldPower,
+      colorClass: 'ship-stat-chip__value--shield',
+    },
+    {
+      key: 'HULL',
+      value: (shipId: ShipId) => SHIPS[shipId].structuralIntegrity,
+      colorClass: 'ship-stat-chip__value--hull',
+    },
+    {
+      key: 'CARGO',
+      value: (shipId: ShipId) => SHIPS[shipId].cargoCapacity,
+      colorClass: 'ship-stat-chip__value--cargo',
+    },
+    {
+      key: 'SPD',
+      value: (shipId: ShipId) => SHIPS[shipId].speed,
+      colorClass: 'ship-stat-chip__value--speed',
+    },
+  ];
 
   return (
     <section className="panel">
-      <h1 className="panel-title">Shipyard</h1>
-      <p className="panel-subtitle">
-        Queue ship construction batches. Each batch builds one unit at a time in the shipyard.
-      </p>
+      <PanelBanner
+        panel="shipyard"
+        title="Shipyard"
+        subtitle="Construct vessels for combat, colonisation, and logistics."
+      />
 
       {planet.shipyardQueue.length > 0 && (
-        <div className="panel-card">
-          <h2 className="section-title">Shipyard Queue</h2>
+        <div className="construction-queue">
+          <div className="construction-queue__title">Shipyard Queue</div>
           {planet.shipyardQueue.map((item, index) => (
             <QueueRow
               key={`${item.id}-${item.type}-${index}`}
@@ -107,118 +138,112 @@ export function ShipyardPanel() {
           );
 
           return (
-            <article key={shipId} className="item-card">
-              <div className="card-banner">
-                <img
-                  src={SHIP_IMAGES[shipId]}
-                  alt=""
-                  onLoad={(event) => {
-                    event.currentTarget.parentElement?.classList.add('card-banner--loaded');
-                  }}
-                  onError={(event) => {
-                    event.currentTarget.remove();
-                  }}
-                />
-              </div>
-              <div className="item-header">
-                <h3>{definition.name}</h3>
-                <span className="item-level number">
-                  Owned: {planet.ships[shipId]}
-                </span>
-              </div>
-
-              <p className="item-description">{definition.description}</p>
-
-              <div className="ship-stats">
-                <span className="ship-stat number">ATK {definition.weaponPower}</span>
-                <span className="ship-stat number">SHD {definition.shieldPower}</span>
-                <span className="ship-stat number">HULL {definition.structuralIntegrity}</span>
-                <span className="ship-stat number">SPD {definition.speed}</span>
-                <span className="ship-stat number">CARGO {definition.cargoCapacity}</span>
-              </div>
-
-              <div className="item-meta">
-                <span className="label">Unit Build Time</span>
-                <span className="number">{formatDuration(unitBuildSeconds)}</span>
-              </div>
-
-              <div className="item-meta">
-                <span className="label">Batch Quantity</span>
-                <div className="qty-input-group">
-                  <input
-                    className="input quantity-input number"
-                    type="number"
-                    min={1}
-                    step={1}
-                    value={quantityInput}
-                    onChange={(event) => {
-                      const nextValue = event.target.value;
-                      setQuantities((current) => ({
-                        ...current,
-                        [shipId]: nextValue,
-                      }));
-                    }}
-                  />
-                  <button
-                    type="button"
-                    className="btn btn-sm"
-                    onClick={() => {
-                      const { metal, crystal, deuterium } = planet.resources;
-                      const { cost } = definition;
-                      const limits: number[] = [];
-                      if (cost.metal > 0) limits.push(Math.floor(metal / cost.metal));
-                      if (cost.crystal > 0) limits.push(Math.floor(crystal / cost.crystal));
-                      if (cost.deuterium > 0) limits.push(Math.floor(deuterium / cost.deuterium));
-                      const max = limits.length > 0 ? Math.max(0, Math.min(...limits)) : 0;
-                      setQuantities((current) => ({ ...current, [shipId]: String(max) }));
-                    }}
-                  >
-                    Max
-                  </button>
+            <article key={shipId} className="item-card item-card--ship">
+              <CardImage
+                src={SHIP_IMAGES[shipId]}
+                label={shipId}
+                height={100}
+              />
+              <div className="item-card__content">
+                <div className="item-header">
+                  <h3>{definition.name}</h3>
+                  <span className="item-level item-level--owned">
+                    ×{formatCompact(planet.ships[shipId])}
+                  </span>
                 </div>
-              </div>
 
-              <div className="item-meta">
-                <span className="label">Batch Cost</span>
-                <CostDisplay cost={totalCost} available={planet.resources} />
-              </div>
+                <p className="item-description item-description--ship">{definition.description}</p>
 
-              {!unlocked && (
-                <div className="requirements locked">
-                  {definition.requires.map((prerequisite) => (
-                    <span
-                      key={`${shipId}-${prerequisite.type}-${prerequisite.id}`}
-                      className={`requirement ${
-                        requirementMet(prerequisite, gameState) ? 'met' : 'unmet'
-                      }`}
-                    >
-                      {requirementLabel(prerequisite)}
-                    </span>
+                <div className="ship-stat-strip">
+                  {shipStats.map((stat) => (
+                    <div key={`${shipId}-${stat.key}`} className="ship-stat-chip">
+                      <span className={`ship-stat-chip__value ${stat.colorClass}`}>
+                        {formatCompact(stat.value(shipId))}
+                      </span>
+                      <span className="ship-stat-chip__label">{stat.key}</span>
+                    </div>
                   ))}
                 </div>
-              )}
 
-              <div className="item-footer">
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  disabled={!canBuild}
-                  onClick={() => {
-                    if (quantity > 0) {
-                      buildShips(shipId, quantity);
-                    }
-                  }}
-                >
-                  {unlocked ? 'Queue Build' : 'Locked'}
-                </button>
-                {quantity <= 0 && <span className="hint danger">Enter a valid quantity</span>}
-                {quantity > 0 && !affordable && <span className="hint danger">Insufficient resources</span>}
+                <div className="item-card__actions item-card__actions--ship">
+                  <div className="ship-cost-row">
+                    <CostDisplay cost={totalCost} available={planet.resources} />
+                    <span className="ship-cost-row__time">
+                      {formatDuration(unitBuildSeconds)}
+                      /unit
+                    </span>
+                  </div>
+
+                  {!unlocked && (
+                    <div className="requirements locked">
+                      {definition.requires.map((prerequisite) => (
+                        <span
+                          key={`${shipId}-${prerequisite.type}-${prerequisite.id}`}
+                          className={`requirement ${
+                            requirementMet(prerequisite, gameState) ? 'met' : 'unmet'
+                          }`}
+                        >
+                          {requirementLabel(prerequisite)}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="ship-build-row">
+                    <input
+                      className="input quantity-input number"
+                      type="number"
+                      min={1}
+                      step={1}
+                      value={quantityInput}
+                      onChange={(event) => {
+                        const nextValue = event.target.value;
+                        setQuantities((current) => ({
+                          ...current,
+                          [shipId]: nextValue,
+                        }));
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className="item-action item-action--ship"
+                      disabled={!canBuild}
+                      onClick={() => {
+                        if (quantity > 0) {
+                          buildShips(shipId, quantity);
+                        }
+                      }}
+                    >
+                      {unlocked ? `Build ${quantity > 0 ? quantity : '?'}` : 'Locked'}
+                    </button>
+                    <button
+                      type="button"
+                      className="ship-max-button"
+                      onClick={() => {
+                        const { metal, crystal, deuterium } = planet.resources;
+                        const { cost } = definition;
+                        const limits: number[] = [];
+                        if (cost.metal > 0) limits.push(Math.floor(metal / cost.metal));
+                        if (cost.crystal > 0) limits.push(Math.floor(crystal / cost.crystal));
+                        if (cost.deuterium > 0) limits.push(Math.floor(deuterium / cost.deuterium));
+                        const max = limits.length > 0 ? Math.max(0, Math.min(...limits)) : 0;
+                        setQuantities((current) => ({ ...current, [shipId]: String(max) }));
+                      }}
+                    >
+                      Max
+                    </button>
+                  </div>
+
+                  {quantity <= 0 && <span className="hint danger">Enter a valid quantity</span>}
+                  {quantity > 0 && !affordable && (
+                    <span className="hint danger">Insufficient resources</span>
+                  )}
+                </div>
               </div>
             </article>
           );
         })}
       </div>
-
     </section>
   );
 }

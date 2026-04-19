@@ -862,11 +862,11 @@ git commit -m "feat(ui): redesign ResearchPanel with category colours, level rin
 - Modify: `src/panels/ShipyardPanel.tsx`
 - Modify: `src/styles.css`
 
-- [ ] **Step 1: Add PanelBanner**
+- [x] **Step 1: Add PanelBanner**
 
 `<PanelBanner panel="shipyard" title="Shipyard" subtitle="Construct vessels for combat, colonisation, and logistics." />`
 
-- [ ] **Step 2: Rewrite ship cards**
+- [x] **Step 2: Rewrite ship cards**
 
 Ship cards add a **stat strip** between description and cost:
 - 5 chips: ATK (red) · SHD (blue) · HULL (white) · CARGO (green) · SPD (amber)
@@ -883,7 +883,7 @@ Card-specific details:
 - Build button: blue gradient, shows `Build {qty}` text
 - Cost pills + `/unit` time label right-aligned in the same row
 
-- [ ] **Step 3: Verify and commit**
+- [x] **Step 3: Verify and commit**
 
 ```bash
 git add src/panels/ShipyardPanel.tsx src/styles.css

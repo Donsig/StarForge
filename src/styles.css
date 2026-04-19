@@ -395,6 +395,141 @@ body::before {
   gap: 0.45rem;
 }
 
+.item-card--ship .item-header {
+  align-items: baseline;
+}
+
+.item-card--ship .item-header h3 {
+  font-size: 0.85rem;
+}
+
+.item-level--owned {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--accent-blue);
+}
+
+.item-description--ship {
+  font-size: 0.76rem;
+  color: rgba(150, 180, 220, 0.55);
+  line-height: 1.35;
+}
+
+.item-card__actions--ship {
+  margin-top: auto;
+  gap: 0.55rem;
+}
+
+.ship-stat-strip {
+  display: flex;
+  justify-content: space-around;
+  padding: 0.5rem 0;
+  border-top: 1px solid rgba(40, 60, 120, 0.25);
+  border-bottom: 1px solid rgba(40, 60, 120, 0.25);
+}
+
+.ship-stat-chip {
+  display: flex;
+  min-width: 48px;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.ship-stat-chip__value {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.ship-stat-chip__value--attack {
+  color: #f87171;
+}
+
+.ship-stat-chip__value--shield {
+  color: #60a5fa;
+}
+
+.ship-stat-chip__value--hull {
+  color: #c8e0ff;
+}
+
+.ship-stat-chip__value--cargo {
+  color: #34d399;
+}
+
+.ship-stat-chip__value--speed {
+  color: #f0a832;
+}
+
+.ship-stat-chip__label {
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(150, 180, 220, 0.45);
+}
+
+.ship-cost-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: auto;
+}
+
+.ship-cost-row__time {
+  margin-left: auto;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: rgba(150, 180, 220, 0.4);
+}
+
+.ship-build-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ship-build-row .quantity-input {
+  width: 64px;
+  max-width: 64px;
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+  background: rgba(8, 12, 30, 0.9);
+  color: #c8e0ff;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+}
+
+.item-action--ship {
+  flex: 1;
+  padding: 0.38rem 0.6rem;
+  font-size: 0.8rem;
+}
+
+.ship-max-button {
+  padding: 0.25rem 0.6rem;
+  border: 1px solid rgba(60, 80, 120, 0.4);
+  border-radius: 6px;
+  background: transparent;
+  color: rgba(150, 180, 220, 0.55);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  transition: border-color 150ms ease, color 150ms ease, background 150ms ease;
+}
+
+.ship-max-button:hover:not(:disabled) {
+  border-color: rgba(77, 143, 255, 0.35);
+  color: rgba(200, 224, 255, 0.72);
+  background: rgba(14, 20, 40, 0.45);
+}
+
+.ship-max-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
 .item-header {
   display: flex;
   justify-content: space-between;

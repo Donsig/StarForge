@@ -7,6 +7,7 @@ export type PanelImageId =
   | 'buildings'
   | 'research'
   | 'galaxy'
+  | 'shipyard'
   | 'statistics';
 
 export function getPlanetType(maxTemperature: number): PlanetType {
@@ -98,5 +99,6 @@ export const PANEL_IMAGES: Record<PanelImageId, string> = {
   buildings: '/assets/panels/buildings.webp',
   research: '/assets/panels/research.webp',
   galaxy: '/assets/panels/galaxy.webp',
+  shipyard: '/assets/panels/shipyard.webp',
   statistics: '/assets/panels/statistics.webp',
 };

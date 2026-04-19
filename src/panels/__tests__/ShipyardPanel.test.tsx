@@ -57,7 +57,7 @@ describe('ShipyardPanel', () => {
 
     const lightFighterCard = getShipCard('Light Fighter');
     expect(
-      within(lightFighterCard).getByRole('button', { name: 'Queue Build' }),
+      within(lightFighterCard).getByRole('button', { name: /^Build 1$/ }),
     ).toBeEnabled();
     expect(within(lightFighterCard).getByRole('spinbutton')).toBeInTheDocument();
   });
@@ -144,7 +144,7 @@ describe('ShipyardPanel', () => {
 
     await user.clear(quantityInput);
     await user.type(quantityInput, '4');
-    await user.click(within(lightFighterCard).getByRole('button', { name: 'Queue Build' }));
+    await user.click(within(lightFighterCard).getByRole('button', { name: /^Build 4$/ }));
 
     expect(buildShips).toHaveBeenCalledWith('lightFighter', 4);
   });
@@ -177,7 +177,7 @@ describe('ShipyardPanel', () => {
     await user.type(quantityInput, '2');
 
     expect(
-      within(lightFighterCard).getByRole('button', { name: 'Queue Build' }),
+      within(lightFighterCard).getByRole('button', { name: /^Build 2$/ }),
     ).toBeDisabled();
     expect(
       within(lightFighterCard).getByText('Insufficient resources'),
@@ -191,7 +191,7 @@ describe('ShipyardPanel', () => {
       },
     });
 
-    const images = document.querySelectorAll('.card-banner img');
+    const images = document.querySelectorAll('.card-image img');
     expect(images.length).toBeGreaterThan(0);
     const srcs = Array.from(images).map((image) => (image as HTMLImageElement).src);
     expect(srcs.some((src) => src.includes('lightFighter.webp'))).toBe(true);
