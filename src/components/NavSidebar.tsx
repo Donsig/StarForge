@@ -1,4 +1,5 @@
 import type { ActivePanel } from '../models/types.ts';
+import { useGame } from '../context/GameContext.tsx';
 
 interface NavSidebarProps {
   activePanel: ActivePanel;
@@ -25,9 +26,20 @@ const ADMIN_NAV_ITEM: { id: ActivePanel; label: string } = {
 };
 
 export function NavSidebar({ activePanel, onNavigate, unreadMessageCount }: NavSidebarProps) {
+  const { gameState } = useGame();
+  const planet = gameState.planets[gameState.activePlanetIndex];
+  const coords = planet?.coordinates;
+
   return (
     <aside className="nav-sidebar">
-      <div className="sidebar-title">Star Forge</div>
+      <div className="sidebar-header">
+        <div className="sidebar-title">STARFORGE</div>
+        {coords && (
+          <div className="sidebar-coords">
+            {coords.galaxy}:{coords.system}:{coords.slot} · {planet.name}
+          </div>
+        )}
+      </div>
       <nav className="nav-list">
         {MAIN_NAV_ITEMS.map((item) => (
           <button
@@ -36,7 +48,7 @@ export function NavSidebar({ activePanel, onNavigate, unreadMessageCount }: NavS
             className={`nav-button ${activePanel === item.id ? 'active' : ''}`}
             onClick={() => onNavigate(item.id)}
           >
-            {item.label}
+            <span>{item.label}</span>
             {item.id === 'messages' && unreadMessageCount > 0 && (
               <span className="nav-badge">{unreadMessageCount}</span>
             )}
@@ -48,7 +60,7 @@ export function NavSidebar({ activePanel, onNavigate, unreadMessageCount }: NavS
           className={`nav-button nav-button-admin ${activePanel === ADMIN_NAV_ITEM.id ? 'active' : ''}`}
           onClick={() => onNavigate(ADMIN_NAV_ITEM.id)}
         >
-          {ADMIN_NAV_ITEM.label}
+          <span>{ADMIN_NAV_ITEM.label}</span>
         </button>
       </nav>
     </aside>

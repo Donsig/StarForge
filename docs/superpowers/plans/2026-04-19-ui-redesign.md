@@ -440,7 +440,7 @@ git commit -m "feat(ui): add PanelBanner, CardImage, LevelRing shared components
 - Modify: `src/components/CostDisplay.tsx`
 - Modify: `src/styles.css` (update `.cost-display`, `.cost-item`)
 
-- [ ] **Step 1: Update CostDisplay component**
+- [x] **Step 1: Update CostDisplay component**
 
 Replace `src/components/CostDisplay.tsx` entirely:
 
@@ -475,7 +475,7 @@ export function CostDisplay({ cost, available }: CostDisplayProps) {
 Note: Uses `formatCompact` (not `formatNumber`) to produce abbreviated output like `M 1.2M`, `C 308K`, `D 0` as required by the design spec.
 ```
 
-- [ ] **Step 2: Update CSS for cost pills**
+- [x] **Step 2: Update CSS for cost pills**
 
 Replace existing `.cost-display` and `.cost-item` rules with:
 
@@ -504,11 +504,11 @@ Replace existing `.cost-display` and `.cost-item` rules with:
 }
 ```
 
-- [ ] **Step 3: Verify**
+- [x] **Step 3: Verify**
 
 Run `npm run dev`, navigate to Buildings panel. Cost pills should show abbreviated values with resource-coloured text, red background when unaffordable.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/components/CostDisplay.tsx src/styles.css
