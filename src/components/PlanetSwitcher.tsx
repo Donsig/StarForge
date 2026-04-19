@@ -94,6 +94,9 @@ export function PlanetSwitcher() {
               </button>
             );
           })}
+          <div className="planet-switcher__footer">
+            Build Colony Ship to expand
+          </div>
         </div>
       )}
     </div>

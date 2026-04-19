@@ -1310,12 +1310,19 @@ body::before {
   height: 28px;
 }
 
-.planet-switcher__summary,
+.planet-switcher__summary {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+}
+
 .planet-switcher__details {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   min-width: 0;
+  flex: 1;
 }
 
 .planet-switcher__name,
@@ -1356,7 +1363,7 @@ body::before {
   top: calc(100% + 6px);
   left: 0;
   z-index: 100;
-  min-width: 260px;
+  min-width: 240px;
   border: 1px solid rgba(40, 60, 120, 0.4);
   border-radius: 10px;
   background: rgba(5, 8, 20, 0.98);
@@ -1410,6 +1417,14 @@ body::before {
   color: #4d8fff;
   font-size: 0.7rem;
   line-height: 1;
+}
+
+.planet-switcher__footer {
+  padding: 0.5rem 0.8rem;
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  color: rgba(100,130,180,0.4);
+  text-align: center;
 }
 
 /* Admin panel */
