@@ -27,7 +27,7 @@ function ActivePanelContent({
 }) {
   switch (activePanel) {
     case 'overview':
-      return <OverviewPanel />;
+      return <OverviewPanel onNavigate={onNavigate} />;
     case 'buildings':
       return <BuildingsPanel />;
     case 'research':
@@ -49,7 +49,7 @@ function ActivePanelContent({
     case 'admin':
       return <AdminPanel />;
     default:
-      return <OverviewPanel />;
+      return <OverviewPanel onNavigate={onNavigate} />;
   }
 }
 

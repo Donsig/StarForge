@@ -73,8 +73,7 @@ describe('OverviewPanel planet rename', () => {
       },
     });
 
-    const portrait = document.querySelector('.planet-portrait img') as HTMLImageElement | null;
-    expect(portrait).toBeTruthy();
-    expect(portrait?.src).toContain('hot.webp');
+    const portrait = screen.getByRole('img', { name: 'Homeworld' }) as HTMLImageElement;
+    expect(portrait.src).toContain('hot.webp');
   });
 });

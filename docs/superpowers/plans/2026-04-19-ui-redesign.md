@@ -938,27 +938,27 @@ git commit -m "feat(ui): redesign DefencePanel with amber accents, summary bar, 
 
 This is the most complex panel rewrite. Multiple new sections.
 
-- [ ] **Step 1: Planet Hero section**
+- [x] **Step 1: Planet Hero section**
 
 200px hero with planet image right-aligned, left-to-right gradient reveal, planet name + coords + temperature, field usage ring (72x72 SVG donut).
 
 Reference `handoff/design_handoff/sf-overview.jsx` lines 197-225.
 
-- [ ] **Step 2: Incoming Threats section**
+- [x] **Step 2: Incoming Threats section**
 
 Red pulsing dot + alert cards. Only shown when incoming enemy attacks exist. Uses CSS animation `alertPulse`.
 
-- [ ] **Step 3: Resource Production section**
+- [x] **Step 3: Resource Production section**
 
 Full-width card with production bars. Grid: `80px label | 1fr bar | 72px amount | 70px rate`. Bar: 6px height with near-cap glow (amber gradient when >88%).
 
 Reference `sf-overview.jsx` lines 238-263.
 
-- [ ] **Step 4: Stat Cards grid**
+- [x] **Step 4: Stat Cards grid**
 
 6-card responsive grid: Fleet Ships, Fleet Power, Defence Power, Metal Mine Lv, Crystal Mine Lv, Shipyard Lv. Value in JetBrains Mono 1.4rem.
 
-- [ ] **Step 5: Active Missions Summary**
+- [x] **Step 5: Active Missions Summary**
 
 Compact list with type badge + route + mini progress bar + ETA. On hover, show a **cursor-following tooltip** (via `CursorTooltip` portal — NOT `HoverPortal`) displaying: mission type header, full route, status, ETA, ship manifest, and cargo. Track mouse position via `onMouseMove`, clamp tooltip to viewport bounds.
 
@@ -966,7 +966,7 @@ State: `hoveredMission` (mission ID or null) + `missionHoverPos` ({ x, y }).
 
 Reference `sf-overview.jsx` lines 276-362.
 
-- [ ] **Step 6: Recent Activity Feed**
+- [x] **Step 6: Recent Activity Feed**
 
 Clickable-to-expand list of recent combat/espionage/fleet events.
 
@@ -979,7 +979,7 @@ Clickable-to-expand list of recent combat/espionage/fleet events.
 
 Reference `sf-overview.jsx` lines 52-139 for ActivityEntry component.
 
-- [ ] **Step 7: Verify and commit**
+- [x] **Step 7: Verify and commit**
 
 ```bash
 git add src/panels/OverviewPanel.tsx src/styles.css

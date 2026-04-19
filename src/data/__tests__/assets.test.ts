@@ -58,8 +58,9 @@ describe('asset maps', () => {
     expect(Object.keys(RESEARCH_IMAGES)).toHaveLength(15);
   });
 
-  it('PANEL_IMAGES has all 6 panels', () => {
-    expect(Object.keys(PANEL_IMAGES)).toHaveLength(6);
+  it('PANEL_IMAGES has all 7 panels', () => {
+    expect(Object.keys(PANEL_IMAGES)).toHaveLength(7);
     expect(PANEL_IMAGES.fleet).toBe('/assets/panels/fleet.webp');
+    expect(PANEL_IMAGES.shipyard).toBe('/assets/panels/shipyard.webp');
   });
 });

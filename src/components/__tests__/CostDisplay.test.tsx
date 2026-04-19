@@ -35,9 +35,9 @@ describe('CostDisplay', () => {
       />,
     );
 
-    expect(screen.getByText('M 100')).toHaveClass('insufficient');
-    expect(screen.getByText('C 200')).toHaveClass('insufficient');
-    expect(screen.getByText('D 300')).toHaveClass('insufficient');
+    expect(screen.getByText('M 100')).toHaveClass('cost-pill--insufficient');
+    expect(screen.getByText('C 200')).toHaveClass('cost-pill--insufficient');
+    expect(screen.getByText('D 300')).toHaveClass('cost-pill--insufficient');
   });
 
   it('does not mark cost values as insufficient when the player can afford them', () => {
@@ -54,9 +54,9 @@ describe('CostDisplay', () => {
       />,
     );
 
-    expect(screen.getByText('M 100')).not.toHaveClass('insufficient');
-    expect(screen.getByText('C 200')).not.toHaveClass('insufficient');
-    expect(screen.getByText('D 300')).not.toHaveClass('insufficient');
+    expect(screen.getByText('M 100')).not.toHaveClass('cost-pill--insufficient');
+    expect(screen.getByText('C 200')).not.toHaveClass('cost-pill--insufficient');
+    expect(screen.getByText('D 300')).not.toHaveClass('cost-pill--insufficient');
   });
 
   it('styles mixed affordability per resource independently', () => {
@@ -73,8 +73,8 @@ describe('CostDisplay', () => {
       />,
     );
 
-    expect(screen.getByText('M 100')).not.toHaveClass('insufficient');
-    expect(screen.getByText('C 200')).toHaveClass('insufficient');
-    expect(screen.getByText('D 300')).not.toHaveClass('insufficient');
+    expect(screen.getByText('M 100')).not.toHaveClass('cost-pill--insufficient');
+    expect(screen.getByText('C 200')).toHaveClass('cost-pill--insufficient');
+    expect(screen.getByText('D 300')).not.toHaveClass('cost-pill--insufficient');
   });
 });
