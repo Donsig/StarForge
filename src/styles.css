@@ -1,17 +1,35 @@
 :root {
-  --bg-dark: #0a0e17;
-  --bg-panel: #121a2b;
-  --bg-panel-hover: #1a2540;
-  --border: #1e2d4a;
-  --text: #c8d6e5;
-  --text-dim: #6b7b8d;
+  --bg-void: #050810;
+  --bg-panel: rgba(8,12,28,0.85);
+  --bg-panel-dark: rgba(5,8,20,0.97);
+  --bg-hover: rgba(255,255,255,0.03);
+  --border: rgba(40,60,120,0.3);
+  --border-hover: rgba(77,143,255,0.45);
   --metal: #9ca3af;
   --crystal: #60a5fa;
   --deuterium: #34d399;
   --energy: #fbbf24;
-  --accent: #3b82f6;
-  --danger: #ef4444;
-  --success: #22c55e;
+  --accent: #4d8fff;
+  --accent-blue: #4d8fff;
+  --accent-teal: #30d5c8;
+  --accent-amber: #f0a832;
+  --accent-purple: #818cf8;
+  --accent-violet: #a78bfa;
+  --danger: #f87171;
+  --success: #34d399;
+  --text: #c8e0ff;
+  --text-dim: rgba(150,180,220,0.55);
+  --text-muted: rgba(120,150,200,0.4);
+  --font-display: 'Orbitron', sans-serif;
+  --font-body: 'Space Grotesk', 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Consolas', 'Courier New', monospace;
+  --card-radius: 10px;
+  --panel-radius: 12px;
+  --btn-radius: 6px;
+  --card-padding: 0.85rem 1rem;
+  --grid-gap: 0.75rem;
+  --card-shadow: 0 2px 12px rgba(0,0,0,0.4);
+  --card-shadow-hover: 0 0 24px rgba(77,143,255,0.12);
 }
 
 * {
@@ -27,15 +45,23 @@ body,
 body {
   margin: 0;
   color: var(--text);
-  font-family: 'Rajdhani', 'Trebuchet MS', 'Segoe UI', sans-serif;
+  font-family: var(--font-body);
+  background: #050810;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
   background:
-    radial-gradient(circle at 15% -20%, #1f2f52, transparent 45%),
-    radial-gradient(circle at 90% 10%, #102031, transparent 35%),
-    var(--bg-dark);
+    radial-gradient(ellipse 60% 50% at 15% 20%, rgba(60,40,120,0.18) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 40% at 85% 75%, rgba(20,60,120,0.15) 0%, transparent 70%);
 }
 
 .number {
-  font-family: 'Roboto Mono', 'Consolas', 'Courier New', monospace;
+  font-family: var(--font-mono);
 }
 
 .app-shell {
@@ -191,7 +217,7 @@ body {
 }
 
 .nav-button:hover {
-  background: var(--bg-panel-hover);
+  background: var(--bg-hover);
   border-color: #2c406b;
 }
 
@@ -414,7 +440,7 @@ body {
 }
 
 .btn:hover {
-  background: var(--bg-panel-hover);
+  background: var(--bg-hover);
 }
 
 .btn:disabled {
@@ -1565,6 +1591,16 @@ body {
   height: 100%;
   object-fit: cover;
   display: block;
+}
+
+@keyframes alertPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
 }
 
 @media (max-width: 900px) {

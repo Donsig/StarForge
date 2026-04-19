@@ -15,6 +15,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Codex only implements after user approval.** Present the plan or feature table first, get a "yes", then dispatch to Codex.
 - **Always use the `codex-agent` skill** before invoking any Codex MCP tool or Bash codex command. The skill defines the correct invocation patterns for this project.
 
+## Active Plan Tracking
+
+- **Current plan:** `docs/superpowers/plans/2026-04-19-ui-redesign.md` — full UI redesign (17 tasks)
+- **After completing each task:** update the plan file to check off completed steps (`- [ ]` → `- [x]`), and note any deviations or issues discovered during implementation.
+- **On session resume:** read the plan file first to see which tasks are done and which is next. The checkboxes are the source of truth for progress.
+
 ## Purpose
 
 Single-player OGame-inspired idle browser game called "Star Forge." Real-time resource production, building upgrades, research tree, ship construction, planetary defences, galaxy exploration, fleet combat, espionage, and transport missions. No backend — all state in localStorage. See `PLAN.md` for roadmap and current phase status.
