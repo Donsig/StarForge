@@ -771,11 +771,11 @@ git commit -m "feat(ui): redesign FleetMovementsBar with collapsible header, pro
 - Modify: `src/panels/BuildingsPanel.tsx`
 - Modify: `src/styles.css`
 
-- [ ] **Step 1: Add PanelBanner to BuildingsPanel**
+- [x] **Step 1: Add PanelBanner to BuildingsPanel**
 
 Import and add `<PanelBanner panel="buildings" title="Buildings" subtitle="Construct and upgrade structures that power your economy." />` at the top of the panel.
 
-- [ ] **Step 2: Rewrite building cards**
+- [x] **Step 2: Rewrite building cards**
 
 Each building card gets:
 - `CardImage` at top (110px, uses `BUILDING_IMAGES[id]` with fallback)
@@ -787,13 +787,13 @@ Each building card gets:
 
 Reference `handoff/design_handoff/sf-panels-a.jsx` lines 80-125 for BuildingCard.
 
-- [ ] **Step 3: Add category section headers**
+- [x] **Step 3: Add category section headers**
 
 Category headers: icon + Orbitron label + horizontal rule. Resource Buildings (⬡), Facilities (◈), Storage (▣).
 
 Reference `sf-panels-a.jsx` lines 145-160.
 
-- [ ] **Step 4: Update CSS for item cards**
+- [x] **Step 4: Update CSS for item cards**
 
 Replace existing `.item-card`, `.item-header`, `.item-level`, etc. with new card styling:
 - Border: `1px solid rgba(40,60,120,0.35)` → hover `rgba(77,143,255,0.45)`
@@ -803,11 +803,11 @@ Replace existing `.item-card`, `.item-header`, `.item-level`, etc. with new card
 - Upgrade button: blue gradient `linear-gradient(135deg, rgba(77,143,255,0.3), rgba(30,80,200,0.55))`, border `rgba(77,143,255,0.6)`. Disabled: `rgba(40,40,60,0.4)` bg, `rgba(80,80,120,0.3)` border, muted text
 - Quantity input: `rgba(8,12,30,0.9)` bg, `rgba(40,60,120,0.4)` border, JetBrains Mono font
 
-- [ ] **Step 5: Verify**
+- [x] **Step 5: Verify**
 
 Buildings panel should show banner image → construction queue → category sections with cards showing image placeholder, level ring, costs, and hover effects.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/panels/BuildingsPanel.tsx src/styles.css

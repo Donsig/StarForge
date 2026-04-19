@@ -30,7 +30,9 @@ describe('BuildingsPanel', () => {
 
     for (const buildingId of BUILDING_ORDER) {
       const card = getBuildingCard(BUILDINGS[buildingId].name);
-      expect(within(card).getByText('Lv 0')).toBeInTheDocument();
+      expect(
+        within(card).getByText('0', { selector: '.level-ring__value' }),
+      ).toBeInTheDocument();
       expect(
         within(card).getByRole('button', { name: /Upgrade to Lv 1/i }),
       ).toBeInTheDocument();
@@ -110,7 +112,7 @@ describe('BuildingsPanel', () => {
       },
     });
 
-    expect(screen.getByRole('button', { name: 'Queue Lv 8' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Queue → Lv 8' })).toBeInTheDocument();
   });
 
   it('calls upgradeBuilding with the correct building ID', async () => {
@@ -245,7 +247,7 @@ describe('BuildingsPanel', () => {
   it('renders a card banner img with correct src for each building', () => {
     renderWithGame(<BuildingsPanel />);
 
-    const images = document.querySelectorAll('.card-banner img');
+    const images = document.querySelectorAll('.card-image__img');
     const srcs = Array.from(images).map((image) => (image as HTMLImageElement).src);
     expect(srcs.some((src) => src.includes('metalMine.webp'))).toBe(true);
   });

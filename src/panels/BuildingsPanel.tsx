@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BUILDING_IMAGES, PANEL_IMAGES, SHIP_IMAGES } from '../data/assets.ts';
+import { BUILDING_IMAGES, SHIP_IMAGES } from '../data/assets.ts';
 import { BUILDINGS, BUILDING_ORDER, type BuildingCategory } from '../data/buildings.ts';
 import { RESEARCH } from '../data/research.ts';
 import { SHIPS } from '../data/ships.ts';
@@ -10,6 +10,9 @@ import {
 } from '../engine/BuildQueue.ts';
 import { buildingCostAtLevel, buildingTime } from '../engine/FormulasEngine.ts';
 import { useGame } from '../context/GameContext';
+import { PanelBanner } from '../components/PanelBanner';
+import { CardImage } from '../components/CardImage';
+import { LevelRing } from '../components/LevelRing';
 import { CostDisplay } from '../components/CostDisplay';
 import { QueueRow, getQueuedItemDuration } from '../components/QueueRow';
 import { formatDuration } from '../utils/time.ts';
@@ -21,12 +24,18 @@ import type {
   ResourceCost,
 } from '../models/types.ts';
 
-const CATEGORY_ORDER: BuildingCategory[] = ['resource', 'storage', 'facility'];
+const CATEGORY_ORDER: BuildingCategory[] = ['resource', 'facility', 'storage'];
 
 const CATEGORY_LABELS: Record<BuildingCategory, string> = {
   resource: 'Resource Buildings',
-  storage: 'Storage Buildings',
   facility: 'Facilities',
+  storage: 'Storage',
+};
+
+const CATEGORY_ICONS: Record<BuildingCategory, string> = {
+  resource: '⬡',
+  facility: '◈',
+  storage: '▣',
 };
 
 function requirementMet(prerequisite: Prerequisite, buildingState: GameState): boolean {
@@ -76,26 +85,15 @@ export function BuildingsPanel() {
 
   return (
     <section className="panel">
-      <div className="panel-banner">
-        <img
-          src={PANEL_IMAGES.buildings}
-          alt=""
-          onLoad={(event) => {
-            event.currentTarget.parentElement?.classList.add('panel-banner--loaded');
-          }}
-          onError={(event) => {
-            event.currentTarget.remove();
-          }}
-        />
-      </div>
-      <h1 className="panel-title">Buildings</h1>
-      <p className="panel-subtitle">
-        Construct and upgrade structures that power your economy and unlock advanced capabilities.
-      </p>
+      <PanelBanner
+        panel="buildings"
+        title="Buildings"
+        subtitle="Construct and upgrade structures that power your economy."
+      />
 
       {planet.buildingQueue.length > 0 && (
-        <div className="panel-card">
-          <h2 className="section-title">Building Queue</h2>
+        <div className="construction-queue">
+          <div className="construction-queue__title">Construction Queue</div>
           {planet.buildingQueue.map((item, index) => (
             <QueueRow
               key={`${item.id}-${item.targetLevel}-${index}`}
@@ -119,7 +117,14 @@ export function BuildingsPanel() {
 
       {CATEGORY_ORDER.map((category) => (
         <section key={category} className="panel-group">
-          <h2 className="section-title">{CATEGORY_LABELS[category]}</h2>
+          <div className="category-header">
+            <span className="category-header__icon" aria-hidden="true">
+              {CATEGORY_ICONS[category]}
+            </span>
+            <h2 className="category-header__label">{CATEGORY_LABELS[category]}</h2>
+            <div className="category-header__rule" />
+          </div>
+
           <div className="items-grid">
             {BUILDING_ORDER.filter((buildingId) => BUILDINGS[buildingId].category === category).map(
               (buildingId) => {
@@ -149,152 +154,148 @@ export function BuildingsPanel() {
 
                 return (
                   <article key={buildingId} className="item-card">
-                    <div className="card-banner">
-                      <img
-                        src={BUILDING_IMAGES[buildingId]}
-                        alt=""
-                        onLoad={(event) => {
-                          event.currentTarget.parentElement?.classList.add('card-banner--loaded');
-                        }}
-                        onError={(event) => {
-                          event.currentTarget.remove();
-                        }}
-                      />
-                    </div>
-                    <div className="item-header">
-                      <h3>{definition.name}</h3>
-                      <span className="item-level number">Lv {currentLevel}</span>
-                    </div>
-
-                    <p className="item-description">{definition.description}</p>
-
-                    <div className="item-meta">
-                      <span className="label">Upgrade Cost</span>
-                      <CostDisplay cost={cost} available={planet.resources} />
-                    </div>
-
-                    <div className="item-meta">
-                      <span className="label">Build Time</span>
-                      <span className="number">{formatDuration(timeSeconds)}</span>
-                    </div>
-
-                    {definition.requires.length > 0 && (
-                      <div className="requirements">
-                        {definition.requires.map((prerequisite) => (
-                          <span
-                            key={`${buildingId}-${prerequisite.type}-${prerequisite.id}`}
-                            className={`requirement ${
-                              requirementMet(prerequisite, gameState) ? 'met' : 'unmet'
-                            }`}
-                          >
-                            {requirementLabel(prerequisite)}
-                          </span>
-                        ))}
+                    <CardImage
+                      src={BUILDING_IMAGES[buildingId]}
+                      label={buildingId}
+                      height={110}
+                    />
+                    <div className="item-card__content">
+                      <div className="item-header">
+                        <h3>{definition.name}</h3>
+                        <div className="item-level">
+                          <LevelRing level={currentLevel} />
+                        </div>
                       </div>
-                    )}
 
-                    <div className="item-footer">
-                      <button
-                        type="button"
-                        className="btn btn-primary"
-                        disabled={disabled}
-                        onClick={() => {
-                          upgradeBuilding(buildingId);
-                        }}
-                      >
-                        {inQueue ? `Queue Lv ${nextLevel}` : `Upgrade to Lv ${nextLevel}`}
-                      </button>
-                      {maxFieldsReached && (
-                        <span className="hint danger">No free fields available</span>
-                      )}
+                      <p className="item-description">{definition.description}</p>
+
+                      <div className="item-card__actions">
+                        <div className="item-meta">
+                          <span className="label">Upgrade Cost</span>
+                          <span className="number">{formatDuration(timeSeconds)}</span>
+                        </div>
+                        <CostDisplay cost={cost} available={planet.resources} />
+
+                        {definition.requires.length > 0 && (
+                          <div className="requirements">
+                            {definition.requires.map((prerequisite) => (
+                              <span
+                                key={`${buildingId}-${prerequisite.type}-${prerequisite.id}`}
+                                className={`requirement ${
+                                  requirementMet(prerequisite, gameState) ? 'met' : 'unmet'
+                                }`}
+                              >
+                                {requirementLabel(prerequisite)}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="item-footer">
+                          <button
+                            type="button"
+                            className="item-action"
+                            disabled={disabled}
+                            onClick={() => {
+                              upgradeBuilding(buildingId);
+                            }}
+                          >
+                            {inQueue ? `Queue → Lv ${nextLevel}` : `Upgrade to Lv ${nextLevel}`}
+                          </button>
+                          {maxFieldsReached && (
+                            <span className="hint danger">No free fields available</span>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </article>
                 );
               },
             )}
           </div>
+
           {category === 'resource' && (
             <>
               <h3 className="section-title">Energy</h3>
               <div className="items-grid">
                 <article className="item-card">
-                  <div className="card-banner">
-                    <img
-                      src={SHIP_IMAGES.solarSatellite}
-                      alt=""
-                      onLoad={(event) => {
-                        event.currentTarget.parentElement?.classList.add('card-banner--loaded');
-                      }}
-                      onError={(event) => {
-                        event.currentTarget.remove();
-                      }}
-                    />
-                  </div>
-                  <div className="item-header">
-                    <h3>Solar Satellites</h3>
-                    <span className="item-level number">
-                      Owned: {planet.ships.solarSatellite}
-                    </span>
-                  </div>
+                  <CardImage
+                    src={SHIP_IMAGES.solarSatellite}
+                    label="solarSatellite"
+                    height={110}
+                  />
+                  <div className="item-card__content">
+                    <div className="item-header">
+                      <h3>Solar Satellites</h3>
+                      <span className="item-level number">
+                        Owned: {planet.ships.solarSatellite}
+                      </span>
+                    </div>
 
-                  <p className="item-description">{satelliteDefinition.description}</p>
+                    <p className="item-description">{satelliteDefinition.description}</p>
 
-                  <div className="item-meta">
-                    <span className="label">Cost per Satellite</span>
-                    <CostDisplay cost={satelliteDefinition.cost} available={planet.resources} />
-                  </div>
+                    <div className="item-card__actions">
+                      <div className="item-meta">
+                        <span className="label">Cost per Satellite</span>
+                        <CostDisplay cost={satelliteDefinition.cost} available={planet.resources} />
+                      </div>
 
-                  <div className="item-meta">
-                    <span className="label">Energy per Satellite</span>
-                    <span className="number">{satelliteEnergyPerUnit}</span>
-                  </div>
+                      <div className="item-meta">
+                        <span className="label">Energy per Satellite</span>
+                        <span className="number">{satelliteEnergyPerUnit}</span>
+                      </div>
 
-                  <div className="item-meta">
-                    <span className="label">Build Quantity</span>
-                    <input
-                      className="input quantity-input number"
-                      type="number"
-                      min={1}
-                      step={1}
-                      value={satelliteQuantityInput}
-                      onChange={(event) => {
-                        setSatelliteQuantityInput(event.target.value);
-                      }}
-                    />
-                  </div>
+                      <div className="item-meta">
+                        <label className="label" htmlFor="solar-satellite-quantity">
+                          Build Quantity
+                        </label>
+                        <input
+                          id="solar-satellite-quantity"
+                          className="input quantity-input number"
+                          type="number"
+                          min={1}
+                          step={1}
+                          value={satelliteQuantityInput}
+                          onChange={(event) => {
+                            setSatelliteQuantityInput(event.target.value);
+                          }}
+                        />
+                      </div>
 
-                  <div className="item-meta">
-                    <span className="label">Batch Cost</span>
-                    <CostDisplay cost={satelliteTotalCost} available={planet.resources} />
-                  </div>
+                      <div className="item-meta">
+                        <span className="label">Batch Cost</span>
+                        <CostDisplay cost={satelliteTotalCost} available={planet.resources} />
+                      </div>
 
-                  <div className="requirements">
-                    <span className={`requirement ${satelliteUnlocked ? 'met' : 'unmet'}`}>
-                      Shipyard 1
-                    </span>
-                  </div>
+                      <div className="requirements">
+                        <span className={`requirement ${satelliteUnlocked ? 'met' : 'unmet'}`}>
+                          Shipyard 1
+                        </span>
+                      </div>
 
-                  <div className="item-footer">
-                    <button
-                      type="button"
-                      className="btn btn-primary"
-                      disabled={!canBuildSatellites}
-                      onClick={() => {
-                        if (satelliteQuantity > 0) {
-                          buildShips('solarSatellite', satelliteQuantity);
-                        }
-                      }}
-                    >
-                      {satelliteUnlocked ? 'Build' : 'Locked'}
-                    </button>
-                    {satelliteQuantity <= 0 && (
-                      <span className="hint danger">Enter a valid quantity</span>
-                    )}
-                    {satelliteQuantity > 0 &&
-                      satelliteUnlocked &&
-                      !canAfford(satelliteTotalCost, gameState) && (
-                        <span className="hint danger">Insufficient resources</span>
-                      )}
+                      <div className="item-footer">
+                        <button
+                          type="button"
+                          className="item-action"
+                          disabled={!canBuildSatellites}
+                          onClick={() => {
+                            if (satelliteQuantity > 0) {
+                              buildShips('solarSatellite', satelliteQuantity);
+                            }
+                          }}
+                        >
+                          {satelliteUnlocked ? 'Build' : 'Locked'}
+                        </button>
+                        {satelliteQuantity <= 0 && (
+                          <span className="hint danger">Enter a valid quantity</span>
+                        )}
+                        {satelliteQuantity > 0 &&
+                          satelliteUnlocked &&
+                          !canAfford(satelliteTotalCost, gameState) && (
+                            <span className="hint danger">Insufficient resources</span>
+                          )}
+                      </div>
+                    </div>
                   </div>
                 </article>
               </div>
@@ -302,7 +303,6 @@ export function BuildingsPanel() {
           )}
         </section>
       ))}
-
     </section>
   );
 }
