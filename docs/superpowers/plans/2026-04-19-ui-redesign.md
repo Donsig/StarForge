@@ -1318,3 +1318,11 @@ Use these exact values for fleet mission type styling across FleetMovementsBar, 
 | colonise | `rgba(60,0,100,0.9)` | `#cc88ff` | `rgba(100,0,160,0.5)` |
 
 **Status colours:** outbound `#4d8fff` · returning `#34d399` · at_target `#f0a832`
+
+---
+
+## Task 18: Post-redesign polish
+
+- [x] Part A: Redesigned `QueueDisplay`, hid duplicate queue ownership on Buildings/Research/Shipyard, and added in-panel Cancel actions for the corresponding queue cards.
+- [x] Part B: Converted the queue bar to fixed positioning, introduced runtime `--queue-bar-height` measurement, and stacked it correctly beneath the Fleet Movements bar with updated main-content padding.
+- [x] Part C: Added mobile nav tab auto-scroll, hid the sidebar header at `<=900px`, tightened the Galaxy navigator row for very narrow widths, and right-aligned settings toggles on mobile.
