@@ -263,7 +263,7 @@ function resolveAttackAtTarget(state: GameState, mission: FleetMission, now: num
     resultWithLoot.defenderEnd.defences,
   );
   colony.currentShips = applyNpcLosses(colony.baseShips, resultWithLoot.defenderEnd.ships);
-  colony.resourcesAtLastRaid = {
+  colony.resources = {
     metal: Math.max(0, Math.floor(availableResources.metal - loot.metal)),
     crystal: Math.max(0, Math.floor(availableResources.crystal - loot.crystal)),
     deuterium: Math.max(0, Math.floor(availableResources.deuterium - loot.deuterium)),

@@ -3,7 +3,7 @@ import type { NPCSpecialty } from '../models/Galaxy.ts';
 import { createNewGameState } from '../models/GameState.ts';
 import { GAME_CONSTANTS } from '../models/types.ts';
 import type { PlanetState } from '../models/Planet.ts';
-import { accumulateBulk } from './ResourceEngine.ts';
+import { accumulateBulk, calculateProduction } from './ResourceEngine.ts';
 import { effectiveResearchLabLevel, getCompletionEvents } from './BuildQueue.ts';
 import type { BuildingId, DefenceId, ResearchId, ShipId } from '../models/types.ts';
 import { DEFENCES } from '../data/defences.ts';
@@ -18,7 +18,11 @@ import {
   researchTime,
   shipBuildTime,
 } from './FormulasEngine.ts';
-import { generateNPCColonies, planetStatsForSlot } from './GalaxyEngine.ts';
+import {
+  accrueNpcResources,
+  generateNPCColonies,
+  planetStatsForSlot,
+} from './GalaxyEngine.ts';
 import { processTick as processFleetTick } from './FleetEngine.ts';
 import { processUpgrades as processNPCUpgrades } from './NPCUpgradeEngine.ts';
 
@@ -60,6 +64,16 @@ interface LegacyPlanetState {
 
 interface LegacyNPCColony extends Omit<GameState['galaxy']['npcColonies'][number], 'temperature'> {
   temperature?: number;
+  resourcesAtLastRaid?: {
+    metal?: number;
+    crystal?: number;
+    deuterium?: number;
+  };
+  resources?: {
+    metal?: number;
+    crystal?: number;
+    deuterium?: number;
+  };
 }
 
 interface LegacyGameState
@@ -98,6 +112,138 @@ function createDefaultNotificationSettings(): GameState['settings']['notificatio
     combat: true,
     fleet: true,
     espionage: true,
+  };
+}
+
+const LEGACY_NPC_RESOURCE_CAP_HOURS = 48;
+const LEGACY_NPC_RESEARCH_LEVELS: GameState['research'] = {
+  energyTechnology: 0,
+  laserTechnology: 0,
+  ionTechnology: 0,
+  plasmaTechnology: 0,
+  espionageTechnology: 0,
+  computerTechnology: 0,
+  weaponsTechnology: 0,
+  shieldingTechnology: 0,
+  armourTechnology: 0,
+  combustionDrive: 0,
+  impulseDrive: 0,
+  hyperspaceDrive: 0,
+  hyperspaceTechnology: 0,
+  astrophysicsTechnology: 0,
+  intergalacticResearchNetwork: 0,
+};
+
+function createLegacyNpcProductionPlanet(colony: LegacyNPCColony): PlanetState {
+  return {
+    name: colony.name,
+    coordinates: { ...colony.coordinates },
+    maxTemperature: colony.temperature ?? 0,
+    maxFields: 0,
+    fieldCount: 0,
+    buildings: {
+      metalMine: colony.buildings.metalMine ?? 0,
+      crystalMine: colony.buildings.crystalMine ?? 0,
+      deuteriumSynthesizer: colony.buildings.deuteriumSynthesizer ?? 0,
+      solarPlant: colony.buildings.solarPlant ?? 0,
+      fusionReactor: colony.buildings.fusionReactor ?? 0,
+      metalStorage: colony.buildings.metalStorage ?? 0,
+      crystalStorage: colony.buildings.crystalStorage ?? 0,
+      deuteriumTank: colony.buildings.deuteriumTank ?? 0,
+      roboticsFactory: colony.buildings.roboticsFactory ?? 0,
+      naniteFactory: colony.buildings.naniteFactory ?? 0,
+      shipyard: colony.buildings.shipyard ?? 0,
+      researchLab: colony.buildings.researchLab ?? 0,
+    },
+    ships: {
+      lightFighter: 0,
+      heavyFighter: 0,
+      cruiser: 0,
+      battleship: 0,
+      smallCargo: 0,
+      largeCargo: 0,
+      colonyShip: 0,
+      recycler: 0,
+      espionageProbe: 0,
+      bomber: 0,
+      destroyer: 0,
+      battlecruiser: 0,
+      solarSatellite: colony.currentShips.solarSatellite ?? 0,
+    },
+    defences: {
+      rocketLauncher: 0,
+      lightLaser: 0,
+      heavyLaser: 0,
+      gaussCannon: 0,
+      ionCannon: 0,
+      plasmaTurret: 0,
+      smallShieldDome: 0,
+      largeShieldDome: 0,
+    },
+    resources: {
+      metal: 0,
+      crystal: 0,
+      deuterium: 0,
+      energyProduction: 0,
+      energyConsumption: 0,
+    },
+    buildingQueue: [],
+    shipyardQueue: [],
+  };
+}
+
+function legacyGetNpcResources(
+  colony: LegacyNPCColony,
+  now: number,
+  gameSpeed: number,
+): { metal: number; crystal: number; deuterium: number } {
+  if (colony.abandonedAt !== undefined) {
+    return { metal: 0, crystal: 0, deuterium: 0 };
+  }
+
+  const productionPlanet = createLegacyNpcProductionPlanet(colony);
+  const production = calculateProduction(productionPlanet, LEGACY_NPC_RESEARCH_LEVELS);
+  const elapsedMs = Math.max(0, now - (colony.lastRaidedAt || 0));
+  const elapsedHours = (elapsedMs * Math.max(0, gameSpeed)) / 3_600_000;
+  const stockpileCap = {
+    metal: production.metalPerHour * LEGACY_NPC_RESOURCE_CAP_HOURS,
+    crystal: production.crystalPerHour * LEGACY_NPC_RESOURCE_CAP_HOURS,
+    deuterium: production.deuteriumPerHour * LEGACY_NPC_RESOURCE_CAP_HOURS,
+  };
+  const baseline = colony.resourcesAtLastRaid ?? {
+    metal: 0,
+    crystal: 0,
+    deuterium: 0,
+  };
+
+  return {
+    metal: Math.max(
+      0,
+      Math.floor(
+        Math.min(
+          stockpileCap.metal,
+          (baseline.metal ?? 0) + production.metalPerHour * elapsedHours,
+        ),
+      ),
+    ),
+    crystal: Math.max(
+      0,
+      Math.floor(
+        Math.min(
+          stockpileCap.crystal,
+          (baseline.crystal ?? 0) + production.crystalPerHour * elapsedHours,
+        ),
+      ),
+    ),
+    deuterium: Math.max(
+      0,
+      Math.floor(
+        Math.min(
+          stockpileCap.deuterium,
+          (baseline.deuterium ?? 0) + production.deuteriumPerHour * elapsedHours,
+        ),
+      ),
+    ),
   };
 }
 
@@ -347,6 +493,7 @@ function migrate(state: GameState): GameState {
     }
 
     for (const colony of state.galaxy.npcColonies) {
+      const legacyColony = colony as LegacyNPCColony;
       const safeTier = Math.max(1, Math.min(10, Math.floor(colony.tier ?? 1)));
       const defaultMaxTier = safeTier <= 3 ? 5 : safeTier <= 6 ? 8 : 10;
       const defaultIntervalMs =
@@ -382,13 +529,13 @@ function migrate(state: GameState): GameState {
       if (!Array.isArray(colony.recentRaidTimestamps)) {
         colony.recentRaidTimestamps = [];
       }
-      if (colony.resourcesAtLastRaid === undefined) {
-        colony.resourcesAtLastRaid = { metal: 0, crystal: 0, deuterium: 0 };
+      if (legacyColony.resourcesAtLastRaid === undefined) {
+        legacyColony.resourcesAtLastRaid = { metal: 0, crystal: 0, deuterium: 0 };
       }
-      colony.resourcesAtLastRaid = {
-        metal: Math.max(0, Math.floor(colony.resourcesAtLastRaid.metal ?? 0)),
-        crystal: Math.max(0, Math.floor(colony.resourcesAtLastRaid.crystal ?? 0)),
-        deuterium: Math.max(0, Math.floor(colony.resourcesAtLastRaid.deuterium ?? 0)),
+      legacyColony.resourcesAtLastRaid = {
+        metal: Math.max(0, Math.floor(legacyColony.resourcesAtLastRaid.metal ?? 0)),
+        crystal: Math.max(0, Math.floor(legacyColony.resourcesAtLastRaid.crystal ?? 0)),
+        deuterium: Math.max(0, Math.floor(legacyColony.resourcesAtLastRaid.deuterium ?? 0)),
       };
     }
 
@@ -514,7 +661,40 @@ function migrate(state: GameState): GameState {
     state.version = 17;
   }
 
+  if (state.version < 18) {
+    const now = Date.now();
+    for (const colony of state.galaxy.npcColonies) {
+      const legacyColony = colony as LegacyNPCColony;
+      if (legacyColony.resources === undefined) {
+        legacyColony.resources = legacyGetNpcResources(
+          legacyColony,
+          now,
+          state.settings.gameSpeed,
+        );
+      }
+
+      legacyColony.resources = {
+        metal: Math.max(0, Math.floor(legacyColony.resources.metal ?? 0)),
+        crystal: Math.max(0, Math.floor(legacyColony.resources.crystal ?? 0)),
+        deuterium: Math.max(0, Math.floor(legacyColony.resources.deuterium ?? 0)),
+      };
+
+      delete legacyColony.resourcesAtLastRaid;
+    }
+    state.version = 18;
+  }
+
   return state;
+}
+
+function accrueNpcResourcesForState(state: GameState, elapsedMs: number): void {
+  if (elapsedMs <= 0) {
+    return;
+  }
+
+  for (const colony of state.galaxy.npcColonies) {
+    accrueNpcResources(colony, elapsedMs, state.settings.gameSpeed);
+  }
 }
 
 /**
@@ -599,6 +779,7 @@ export function processOfflineTime(state: GameState): { elapsedSeconds: number }
     const segmentSeconds = Math.floor((event.time - currentTime) / 1000);
     if (segmentSeconds > 0) {
       accumulateBulk(state, segmentSeconds * state.settings.gameSpeed);
+      accrueNpcResourcesForState(state, segmentSeconds * 1000);
     }
     currentTime = event.time;
 
@@ -727,6 +908,7 @@ export function processOfflineTime(state: GameState): { elapsedSeconds: number }
   const remainingSeconds = Math.floor((endTime - currentTime) / 1000);
   if (remainingSeconds > 0) {
     accumulateBulk(state, remainingSeconds * state.settings.gameSpeed);
+    accrueNpcResourcesForState(state, remainingSeconds * 1000);
   }
 
   processNPCUpgrades(state, endTime, state.playerScores?.total ?? 0);

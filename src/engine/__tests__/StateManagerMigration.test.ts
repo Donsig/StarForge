@@ -274,8 +274,7 @@ describe('StateManager migration v16 → v17', () => {
 
     const state = loadState();
     expect(state).not.toBeNull();
-    // After migration the version must be 17 (new STATE_VERSION)
-    expect(state!.version).toBe(17);
+    expect(state!.version).toBe(GAME_CONSTANTS.STATE_VERSION);
 
     const settings = state!.settings as unknown as GameSettingsV17;
     expect(settings.notifications).toBeDefined();
@@ -308,13 +307,13 @@ describe('StateManager migration v16 → v17', () => {
 
     const firstPass = loadState();
     expect(firstPass).not.toBeNull();
-    expect(firstPass!.version).toBe(17);
+    expect(firstPass!.version).toBe(GAME_CONSTANTS.STATE_VERSION);
 
-    // Save the already-migrated state then load again — should still be v17
+    // Save the already-migrated state then load again — should stay on the current version
     saveState(firstPass!);
     const secondPass = loadState();
     expect(secondPass).not.toBeNull();
-    expect(secondPass!.version).toBe(17);
+    expect(secondPass!.version).toBe(GAME_CONSTANTS.STATE_VERSION);
 
     const s1 = firstPass!.settings as unknown as GameSettingsV17;
     const s2 = secondPass!.settings as unknown as GameSettingsV17;

@@ -40,7 +40,7 @@ function makeStateWithColony() {
     currentDefences: {},
     currentShips: {},
     lastRaidedAt: 0,
-    resourcesAtLastRaid: { metal: 0, crystal: 0, deuterium: 0 },
+    resources: { metal: 10_000_000, crystal: 10_000_000, deuterium: 10_000_000 },
   }];
   return state;
 }
@@ -139,14 +139,14 @@ describe('catch-up upgrade mode', () => {
 });
 
 describe('getNPCResources post-raid state', () => {
-  it('respects resourcesAtLastRaid instead of snapping back to a tier floor', () => {
+  it('respects the stored running balance instead of snapping back to a tier floor', () => {
     const now = Date.now();
     const baseline = { metal: 1_000, crystal: 500, deuterium: 0 };
     const colony = {
       ...makeStateWithColony().galaxy.npcColonies[0]!,
       tier: 4,
       lastRaidedAt: now,
-      resourcesAtLastRaid: baseline,
+      resources: baseline,
     };
 
     const resources = getNPCResources(colony, now, 1);

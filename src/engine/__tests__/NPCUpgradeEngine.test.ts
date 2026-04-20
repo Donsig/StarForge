@@ -63,7 +63,7 @@ function createColony(
       solarSatellite: 0,
     },
     lastRaidedAt: 0,
-    resourcesAtLastRaid: { metal: 0, crystal: 0, deuterium: 0 },
+    resources: { metal: 10_000_000, crystal: 10_000_000, deuterium: 10_000_000 },
     targetTier: 6,
     catchUpUpgradeIntervalMs: 2_500,
     catchUpProgressTicks: 0,
@@ -178,7 +178,8 @@ describe('NPCUpgradeEngine', () => {
       expect(colony.lastUpgradeAt).toBe(30_000);
       expect(colony.buildings.metalMine).toBe(2);
       expect(colony.buildings.crystalMine).toBe(2);
-      expect(colony.buildings.deuteriumSynthesizer).toBe(2);
+      expect(colony.buildings.deuteriumSynthesizer).toBe(1);
+      expect(colony.baseShips.solarSatellite).toBeGreaterThan(0);
     });
 
     it('removes expired abandoning colonies and recalls missions to target coordinates', () => {

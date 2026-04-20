@@ -75,7 +75,7 @@ function createNPCColony(overrides?: Partial<NPCColony>): NPCColony {
       solarSatellite: 0,
     },
     lastRaidedAt: 0,
-    resourcesAtLastRaid: { metal: 0, crystal: 0, deuterium: 0 },
+    resources: { metal: 0, crystal: 0, deuterium: 0 },
     ...overrides,
   };
 }
@@ -341,20 +341,19 @@ describe('GalaxyEngine', () => {
     const oneHour = createNPCColony({
       tier: 1,
       lastRaidedAt: now - 3600 * 1000,
-      resourcesAtLastRaid: baseline,
+      resources: baseline,
     });
     const twoHours = createNPCColony({
       tier: 1,
       lastRaidedAt: now - 2 * 3600 * 1000,
-      resourcesAtLastRaid: baseline,
+      resources: baseline,
     });
 
     const resources1 = getNPCResources(oneHour, now, 1);
     const resources2 = getNPCResources(twoHours, now, 1);
 
-    expect(resources2.metal).toBeGreaterThan(resources1.metal);
-    expect(resources2.crystal).toBeGreaterThanOrEqual(resources1.crystal);
-    expect(resources2.deuterium).toBeGreaterThanOrEqual(resources1.deuterium);
+    expect(resources2).toEqual(resources1);
+    expect(resources1).toEqual(baseline);
   });
 
   it('getNPCResources reflects post-raid reduction (tier 10 floor bug)', () => {
@@ -362,14 +361,12 @@ describe('GalaxyEngine', () => {
     const colony = createNPCColony({
       tier: 10,
       lastRaidedAt: now,
-      resourcesAtLastRaid: { metal: 1_000_000, crystal: 600_000, deuterium: 200_000 },
+      resources: { metal: 1_000_000, crystal: 600_000, deuterium: 200_000 },
     });
 
     const resources = getNPCResources(colony, now, 1);
 
-    expect(resources.metal).toBeLessThan(2_000_000);
-    expect(resources.crystal).toBeLessThan(1_500_000);
-    expect(resources.deuterium).toBeLessThan(600_000);
+    expect(resources).toEqual(colony.resources);
   });
 
   it('getNPCResources scales production with game speed', () => {
@@ -378,21 +375,14 @@ describe('GalaxyEngine', () => {
     const oneHour = createNPCColony({
       tier: 1,
       lastRaidedAt: now - 3600 * 1000,
-      resourcesAtLastRaid: baseline,
+      resources: baseline,
     });
 
     const speed1 = getNPCResources(oneHour, now, 1);
     const speed3 = getNPCResources(oneHour, now, 3);
 
-    expect(speed3.metal - baseline.metal).toBeGreaterThanOrEqual(
-      (speed1.metal - baseline.metal) * 3 - 1,
-    );
-    expect(speed3.crystal - baseline.crystal).toBeGreaterThanOrEqual(
-      (speed1.crystal - baseline.crystal) * 3 - 1,
-    );
-    expect(speed3.deuterium - baseline.deuterium).toBeGreaterThanOrEqual(
-      (speed1.deuterium - baseline.deuterium) * 3 - 1,
-    );
+    expect(speed1).toEqual(baseline);
+    expect(speed3).toEqual(speed1);
   });
 
   describe('getNPCResources - energy balance', () => {
@@ -409,8 +399,7 @@ describe('GalaxyEngine', () => {
       const resNoSat = getNPCResources({ ...colony }, now, 1);
       const resWithSat = getNPCResources({ ...withSats }, now, 1);
 
-      // With satellites should produce more
-      expect(resWithSat.metal).toBeGreaterThanOrEqual(resNoSat.metal);
+      expect(resWithSat).toEqual(resNoSat);
     });
   });
 
@@ -419,7 +408,7 @@ describe('GalaxyEngine', () => {
     const colony = createNPCColony({
       abandonedAt: now - 1000,
       lastRaidedAt: now - 3600 * 1000,
-      resourcesAtLastRaid: { metal: 1000, crystal: 500, deuterium: 250 },
+      resources: { metal: 1000, crystal: 500, deuterium: 250 },
     });
 
     expect(getNPCResources(colony, now, 5)).toEqual({

@@ -4,6 +4,11 @@ import type {
   NPCAbandonmentProximity,
   NPCColony,
 } from '../models/Galaxy.ts';
+import type { BuildingId, DefenceId, ResourceCost, ShipId } from '../models/types.ts';
+import { BUILDINGS } from '../data/buildings.ts';
+import { DEFENCES } from '../data/defences.ts';
+import { SHIPS } from '../data/ships.ts';
+import { buildingCostAtLevel } from './FormulasEngine.ts';
 
 const NPC_RECOVERY_MS = 48 * 3600 * 1000;
 const RAID_WINDOW_MS = 24 * 3600 * 1000;
@@ -35,169 +40,336 @@ function sameCoords(a: Coordinates, b: Coordinates): boolean {
   return a.galaxy === b.galaxy && a.system === b.system && a.slot === b.slot;
 }
 
-function maxShipsForTier(colony: NPCColony, shipId: string): number {
-  switch (shipId) {
-    case 'lightFighter':
-      return colony.tier * 25;
-    case 'heavyFighter':
-      return colony.tier * 15;
-    case 'cruiser':
-      return colony.tier * 10;
-    case 'battleship':
-      return colony.tier * 6;
-    case 'battlecruiser':
-      return colony.tier * 4;
-    default:
-      return Infinity;
+type ResourceBalance = NPCColony['resources'];
+type UpgradeAction = {
+  canAfford: (colony: NPCColony) => boolean;
+  apply: (colony: NPCColony) => boolean;
+};
+
+function canAfford(resources: ResourceBalance, cost: ResourceCost): boolean {
+  return (
+    resources.metal >= cost.metal &&
+    resources.crystal >= cost.crystal &&
+    resources.deuterium >= cost.deuterium
+  );
+}
+
+function debit(resources: ResourceBalance, cost: ResourceCost): void {
+  resources.metal -= cost.metal;
+  resources.crystal -= cost.crystal;
+  resources.deuterium -= cost.deuterium;
+}
+
+function tryAddShip(colony: NPCColony, shipId: ShipId, amount: number): boolean {
+  const unitCost = SHIPS[shipId].cost;
+  const totalCost = {
+    metal: unitCost.metal * amount,
+    crystal: unitCost.crystal * amount,
+    deuterium: unitCost.deuterium * amount,
+  };
+  if (!canAfford(colony.resources, totalCost)) {
+    return false;
   }
+
+  debit(colony.resources, totalCost);
+  colony.baseShips[shipId] = (colony.baseShips[shipId] ?? 0) + amount;
+  return true;
 }
 
-function maxDefencesForTier(colony: NPCColony, defenceId: string): number {
-  switch (defenceId) {
-    case 'rocketLauncher':
-      return colony.tier * 40;
-    case 'lightLaser':
-      return colony.tier * 20;
-    case 'heavyLaser':
-      return colony.tier * 15;
-    case 'ionCannon':
-      return colony.tier * 10;
-    case 'plasmaTurret':
-      return colony.tier * 5;
-    default:
-      return Infinity;
+function tryAddDefence(colony: NPCColony, defenceId: DefenceId, amount: number): boolean {
+  const unitCost = DEFENCES[defenceId].cost;
+  const totalCost = {
+    metal: unitCost.metal * amount,
+    crystal: unitCost.crystal * amount,
+    deuterium: unitCost.deuterium * amount,
+  };
+  if (!canAfford(colony.resources, totalCost)) {
+    return false;
   }
+
+  debit(colony.resources, totalCost);
+  colony.baseDefences[defenceId] = (colony.baseDefences[defenceId] ?? 0) + amount;
+  return true;
 }
 
-function addShip(colony: NPCColony, shipId: string, amount: number): void {
-  const current = Math.max(0, Math.floor(colony.baseShips[shipId] ?? 0));
-  const next = current + amount;
-  colony.baseShips[shipId] = Math.min(next, maxShipsForTier(colony, shipId));
-}
-
-function addDefence(colony: NPCColony, defenceId: string, amount: number): void {
-  const current = Math.max(0, Math.floor(colony.baseDefences[defenceId] ?? 0));
-  const next = current + amount;
-  colony.baseDefences[defenceId] = Math.min(next, maxDefencesForTier(colony, defenceId));
-}
-
-function upgradeBuilding(colony: NPCColony, buildingId: string, maxLevel: number): boolean {
+function tryUpgradeBuilding(
+  colony: NPCColony,
+  buildingId: BuildingId,
+  maxLevel: number,
+): boolean {
   const current = Math.max(0, Math.floor(colony.buildings[buildingId] ?? 0));
   if (current >= maxLevel) {
     return false;
   }
-  colony.buildings[buildingId] = Math.min(maxLevel, current + 1);
+
+  const definition = BUILDINGS[buildingId];
+  const targetLevel = current + 1;
+  const cost = buildingCostAtLevel(
+    definition.baseCost,
+    definition.costMultiplier,
+    targetLevel,
+  );
+  if (!canAfford(colony.resources, cost)) {
+    return false;
+  }
+
+  debit(colony.resources, cost);
+  colony.buildings[buildingId] = Math.min(maxLevel, targetLevel);
   return true;
 }
 
-function applyBalancedFleetIncrement(colony: NPCColony): void {
-  if (colony.tier >= 5) {
-    addShip(colony, 'cruiser', 1);
-    return;
-  }
-  addShip(colony, 'lightFighter', 3);
+function shipAction(shipId: ShipId, amount: number): UpgradeAction {
+  const unitCost = SHIPS[shipId].cost;
+  const totalCost = {
+    metal: unitCost.metal * amount,
+    crystal: unitCost.crystal * amount,
+    deuterium: unitCost.deuterium * amount,
+  };
+  return {
+    canAfford: (colony) => canAfford(colony.resources, totalCost),
+    apply: (colony) => tryAddShip(colony, shipId, amount),
+  };
 }
 
-function applyBalancedDefenceIncrement(colony: NPCColony): void {
-  if (colony.tier >= 6) {
-    addDefence(colony, 'ionCannon', 1);
+function defenceAction(defenceId: DefenceId, amount: number): UpgradeAction {
+  const unitCost = DEFENCES[defenceId].cost;
+  const totalCost = {
+    metal: unitCost.metal * amount,
+    crystal: unitCost.crystal * amount,
+    deuterium: unitCost.deuterium * amount,
+  };
+  return {
+    canAfford: (colony) => canAfford(colony.resources, totalCost),
+    apply: (colony) => tryAddDefence(colony, defenceId, amount),
+  };
+}
+
+function buildingAction(buildingId: BuildingId, maxLevel: number): UpgradeAction {
+  return {
+    canAfford: (colony) => {
+      const current = Math.max(0, Math.floor(colony.buildings[buildingId] ?? 0));
+      if (current >= maxLevel) {
+        return false;
+      }
+      const definition = BUILDINGS[buildingId];
+      const cost = buildingCostAtLevel(
+        definition.baseCost,
+        definition.costMultiplier,
+        current + 1,
+      );
+      return canAfford(colony.resources, cost);
+    },
+    apply: (colony) => tryUpgradeBuilding(colony, buildingId, maxLevel),
+  };
+}
+
+function runPriorityActions(colony: NPCColony, actions: UpgradeAction[], rng: () => number): void {
+  if (actions.length === 0) {
     return;
   }
-  addDefence(colony, 'rocketLauncher', 5);
+  if (rng() < 0.1) {
+    return;
+  }
+
+  for (const action of actions) {
+    if (!action.canAfford(colony)) {
+      continue;
+    }
+    if (action.apply(colony)) {
+      return;
+    }
+  }
+}
+
+function turtleActions(colony: NPCColony, phase: number, maxBuildingLevel: number): UpgradeAction[] {
+  const defencePriority =
+    colony.tier <= 4
+      ? [defenceAction('rocketLauncher', 5), defenceAction('lightLaser', 3)]
+      : colony.tier <= 6
+        ? [
+            defenceAction('heavyLaser', 2),
+            defenceAction('lightLaser', 3),
+            defenceAction('rocketLauncher', 5),
+          ]
+        : [
+            defenceAction('plasmaTurret', 1),
+            defenceAction('heavyLaser', 2),
+            defenceAction('lightLaser', 3),
+            defenceAction('rocketLauncher', 5),
+          ];
+
+  if (phase % 3 === 2) {
+    return [buildingAction('metalMine', maxBuildingLevel), ...defencePriority];
+  }
+
+  return [...defencePriority, buildingAction('metalMine', maxBuildingLevel)];
+}
+
+function fleeterActions(colony: NPCColony, phase: number, maxBuildingLevel: number): UpgradeAction[] {
+  const fleetPriority =
+    colony.tier <= 4
+      ? [
+          shipAction('lightFighter', 3),
+          shipAction('heavyFighter', 2),
+          shipAction('smallCargo', 2),
+        ]
+      : colony.tier <= 6
+        ? [
+            shipAction('cruiser', 2),
+            shipAction('heavyFighter', 2),
+            shipAction('lightFighter', 3),
+          ]
+        : [
+            shipAction('battleship', 1),
+            shipAction('cruiser', 1),
+            shipAction('heavyFighter', 2),
+            shipAction('lightFighter', 3),
+          ];
+
+  const step = phase % 4;
+  if (step === 2) {
+    return [buildingAction('metalMine', maxBuildingLevel), ...fleetPriority];
+  }
+  if (step === 3) {
+    return [buildingAction('crystalMine', maxBuildingLevel), ...fleetPriority];
+  }
+  return [...fleetPriority, buildingAction('metalMine', maxBuildingLevel)];
+}
+
+function minerActions(colony: NPCColony, phase: number, maxBuildingLevel: number): UpgradeAction[] {
+  const satelliteAmount = Math.max(1, Math.floor(colony.tier / 2));
+  const step = phase % 3;
+  if (step === 0) {
+    return [
+      buildingAction('metalMine', maxBuildingLevel),
+      buildingAction('crystalMine', maxBuildingLevel),
+      buildingAction('deuteriumSynthesizer', maxBuildingLevel),
+    ];
+  }
+  if (step === 1) {
+    return [
+      buildingAction('crystalMine', maxBuildingLevel),
+      buildingAction('metalMine', maxBuildingLevel),
+      buildingAction('deuteriumSynthesizer', maxBuildingLevel),
+    ];
+  }
+  return [
+    shipAction('solarSatellite', satelliteAmount),
+    buildingAction('deuteriumSynthesizer', maxBuildingLevel),
+    buildingAction('metalMine', maxBuildingLevel),
+  ];
+}
+
+function balancedActions(colony: NPCColony, phase: number, maxBuildingLevel: number): UpgradeAction[] {
+  const fleetPriority =
+    colony.tier >= 5
+      ? [shipAction('cruiser', 1), shipAction('lightFighter', 3)]
+      : [shipAction('lightFighter', 3), shipAction('smallCargo', 2)];
+  const defencePriority =
+    colony.tier >= 6
+      ? [defenceAction('ionCannon', 1), defenceAction('lightLaser', 3), defenceAction('rocketLauncher', 5)]
+      : [defenceAction('rocketLauncher', 5), defenceAction('lightLaser', 3)];
+  const step = phase % 4;
+
+  if (step === 0) {
+    return [
+      buildingAction('metalMine', maxBuildingLevel),
+      ...fleetPriority,
+      ...defencePriority,
+    ];
+  }
+  if (step === 1) {
+    return [
+      ...fleetPriority,
+      ...defencePriority,
+      buildingAction('metalMine', maxBuildingLevel),
+    ];
+  }
+  if (step === 2) {
+    return [
+      ...defencePriority,
+      ...fleetPriority,
+      buildingAction('metalMine', maxBuildingLevel),
+    ];
+  }
+  return [
+    buildingAction('crystalMine', maxBuildingLevel),
+    ...fleetPriority,
+    ...defencePriority,
+  ];
+}
+
+function raiderActions(colony: NPCColony, phase: number, maxBuildingLevel: number): UpgradeAction[] {
+  const fleetPriority =
+    colony.tier <= 4
+      ? [
+          shipAction('lightFighter', 4),
+          shipAction('smallCargo', 2),
+        ]
+      : colony.tier <= 6
+        ? [
+            shipAction('cruiser', 3),
+            shipAction('lightFighter', 3),
+            shipAction('smallCargo', 2),
+          ]
+        : [
+            shipAction('battlecruiser', 2),
+            shipAction('cruiser', 1),
+            shipAction('lightFighter', 3),
+            shipAction('smallCargo', 2),
+          ];
+
+  if (phase % 3 === 2) {
+    return [
+      defenceAction('rocketLauncher', 2),
+      ...fleetPriority,
+      buildingAction('shipyard', maxBuildingLevel),
+    ];
+  }
+
+  return [...fleetPriority, buildingAction('shipyard', maxBuildingLevel)];
+}
+
+function researcherActions(colony: NPCColony, phase: number, maxBuildingLevel: number): UpgradeAction[] {
+  if (phase % 5 === 4) {
+    return [
+      buildingAction('researchLab', colony.tier * 2),
+      buildingAction('crystalMine', maxBuildingLevel),
+      buildingAction('metalMine', maxBuildingLevel),
+    ];
+  }
+
+  return [
+    buildingAction('crystalMine', maxBuildingLevel),
+    buildingAction('metalMine', maxBuildingLevel),
+    buildingAction('researchLab', colony.tier * 2),
+  ];
 }
 
 export function applyUpgradeIncrement(colony: NPCColony, rng: () => number): void {
+  if (colony.abandonedAt !== undefined) {
+    return;
+  }
+
   const maxBuildingLevel = colony.maxTier * 2;
   const phase = colony.upgradeTickCount;
 
-  // Phase 2.6 spec currently uses deterministic upgrade tables.
-  void rng;
-
+  let actions: UpgradeAction[] = [];
   if (colony.specialty === 'turtle') {
-    const step = phase % 3;
-    if (step === 0 || step === 1) {
-      if (colony.tier <= 4) {
-        addDefence(colony, 'rocketLauncher', 5);
-      } else if (colony.tier <= 6) {
-        addDefence(colony, 'heavyLaser', 2);
-      } else {
-        addDefence(colony, 'plasmaTurret', 1);
-      }
-    } else {
-      upgradeBuilding(colony, 'metalMine', maxBuildingLevel);
-    }
+    actions = turtleActions(colony, phase, maxBuildingLevel);
   } else if (colony.specialty === 'fleeter') {
-    const step = phase % 4;
-    if (step === 0 || step === 1) {
-      if (colony.tier <= 4) {
-        addShip(colony, 'lightFighter', 3);
-      } else if (colony.tier <= 6) {
-        addShip(colony, 'cruiser', 2);
-      } else {
-        addShip(colony, 'battleship', 1);
-      }
-    } else if (step === 2) {
-      upgradeBuilding(colony, 'metalMine', maxBuildingLevel);
-    } else {
-      upgradeBuilding(colony, 'crystalMine', maxBuildingLevel);
-    }
+    actions = fleeterActions(colony, phase, maxBuildingLevel);
   } else if (colony.specialty === 'miner') {
-    const step = phase % 3;
-    if (step === 0) {
-      upgradeBuilding(colony, 'metalMine', maxBuildingLevel);
-    } else if (step === 1) {
-      upgradeBuilding(colony, 'crystalMine', maxBuildingLevel);
-    } else {
-      // tick 2: deuterium synthesizer OR solar satellites (alternate every 3rd cycle)
-      if (colony.upgradeTickCount % 9 === 2) {
-        upgradeBuilding(colony, 'deuteriumSynthesizer', maxBuildingLevel);
-      } else {
-        const satelliteIncrement = Math.max(1, Math.floor(colony.tier / 2));
-        colony.baseShips.solarSatellite = (colony.baseShips.solarSatellite ?? 0) + satelliteIncrement;
-        if (colony.lastRaidedAt === 0) {
-          colony.currentShips.solarSatellite = colony.baseShips.solarSatellite;
-        }
-      }
-    }
+    actions = minerActions(colony, phase, maxBuildingLevel);
   } else if (colony.specialty === 'balanced') {
-    const step = phase % 4;
-    if (step === 0) {
-      upgradeBuilding(colony, 'metalMine', maxBuildingLevel);
-    } else if (step === 1) {
-      applyBalancedFleetIncrement(colony);
-    } else if (step === 2) {
-      applyBalancedDefenceIncrement(colony);
-    } else {
-      if (colony.upgradeTickCount % 12 === 3) {
-        colony.baseShips.solarSatellite = (colony.baseShips.solarSatellite ?? 0) + 2;
-        if (colony.lastRaidedAt === 0) {
-          colony.currentShips.solarSatellite = colony.baseShips.solarSatellite;
-        }
-      }
-    }
+    actions = balancedActions(colony, phase, maxBuildingLevel);
   } else if (colony.specialty === 'raider') {
-    const step = phase % 3;
-    if (step === 0 || step === 1) {
-      if (colony.tier <= 4) {
-        addShip(colony, 'lightFighter', 4);
-      } else if (colony.tier <= 6) {
-        addShip(colony, 'cruiser', 3);
-      } else {
-        addShip(colony, 'battlecruiser', 2);
-      }
-    } else {
-      addDefence(colony, 'rocketLauncher', 2);
-    }
+    actions = raiderActions(colony, phase, maxBuildingLevel);
   } else if (colony.specialty === 'researcher') {
-    const step = phase % 5;
-    if (step === 4) {
-      upgradeBuilding(colony, 'researchLab', colony.tier * 2);
-    } else if (step % 2 === 0) {
-      applyBalancedFleetIncrement(colony);
-    } else {
-      applyBalancedDefenceIncrement(colony);
-    }
+    actions = researcherActions(colony, phase, maxBuildingLevel);
   }
+
+  runPriorityActions(colony, actions, rng);
 
   const rebuilt =
     colony.lastRaidedAt === 0 || Date.now() - colony.lastRaidedAt >= NPC_RECOVERY_MS;

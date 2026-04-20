@@ -227,7 +227,7 @@ describe('FleetEngine', () => {
           currentDefences: {},
           currentShips: {},
           lastRaidedAt: 0,
-          resourcesAtLastRaid: { metal: 0, crystal: 0, deuterium: 0 },
+          resources: { metal: 0, crystal: 0, deuterium: 0 },
         },
       ];
 
@@ -308,7 +308,7 @@ describe('FleetEngine', () => {
           currentDefences: {},
           currentShips: {},
           lastRaidedAt: 0,
-          resourcesAtLastRaid: { metal: 0, crystal: 0, deuterium: 0 },
+          resources: { metal: 0, crystal: 0, deuterium: 0 },
         },
       ];
       const result = dispatch(
@@ -817,7 +817,7 @@ describe('FleetEngine', () => {
       expect(state.fleetMissions[0].returnTime).toBeGreaterThan(now);
     });
 
-    it('sets npc resourcesAtLastRaid to available minus loot after attack', () => {
+    it('sets npc resources to available minus loot after attack', () => {
       const state = createNewGameState();
       const now = 500_000;
       state.settings.gameSpeed = 1;
@@ -852,7 +852,7 @@ describe('FleetEngine', () => {
           currentDefences: {},
           currentShips: {},
           lastRaidedAt: now - 3600 * 1000,
-          resourcesAtLastRaid: { metal: 1000, crystal: 800, deuterium: 600 },
+          resources: { metal: 1000, crystal: 800, deuterium: 600 },
         },
       ];
       const availableBefore = getNPCResources(
@@ -876,7 +876,7 @@ describe('FleetEngine', () => {
 
       const updatedColony = state.galaxy.npcColonies[0];
       const loot = state.fleetMissions[0].cargo;
-      expect(updatedColony.resourcesAtLastRaid).toEqual({
+      expect(updatedColony.resources).toEqual({
         metal: Math.max(0, Math.floor(availableBefore.metal - loot.metal)),
         crystal: Math.max(0, Math.floor(availableBefore.crystal - loot.crystal)),
         deuterium: Math.max(0, Math.floor(availableBefore.deuterium - loot.deuterium)),
@@ -918,7 +918,7 @@ describe('FleetEngine', () => {
           currentDefences: {},
           currentShips: {},
           lastRaidedAt: now - 24 * 3600 * 1000,
-          resourcesAtLastRaid: { metal: 50_000, crystal: 30_000, deuterium: 20_000 },
+          resources: { metal: 50_000, crystal: 30_000, deuterium: 20_000 },
         },
       ] as typeof state.galaxy.npcColonies;
 
@@ -944,11 +944,11 @@ describe('FleetEngine', () => {
       expect(loot.metal + loot.crystal + loot.deuterium).toBeLessThanOrEqual(5000);
 
       // KEY: NPC still has most resources — attacker only took 5000 out of tens of thousands
-      expect(colony.resourcesAtLastRaid.metal).toBeGreaterThan(0);
+      expect(colony.resources.metal).toBeGreaterThan(0);
       const remainingTotal =
-        colony.resourcesAtLastRaid.metal +
-        colony.resourcesAtLastRaid.crystal +
-        colony.resourcesAtLastRaid.deuterium;
+        colony.resources.metal +
+        colony.resources.crystal +
+        colony.resources.deuterium;
       expect(remainingTotal).toBeGreaterThan(availableBefore.metal * 0.4);
 
       // getNPCResources immediately after raid also reflects the remaining resources
@@ -988,7 +988,7 @@ describe('FleetEngine', () => {
           currentDefences: {},
           currentShips: {},
           lastRaidedAt: now - 3000,
-          resourcesAtLastRaid: { metal: 5000, crystal: 3000, deuterium: 1000 },
+          resources: { metal: 5000, crystal: 3000, deuterium: 1000 },
         },
       ] as typeof state.galaxy.npcColonies;
 
@@ -1016,7 +1016,7 @@ describe('FleetEngine', () => {
         mission.arrivalTime = now;
       }
 
-      const savedResourcesAtLastRaid = { ...state.galaxy.npcColonies[0].resourcesAtLastRaid };
+      const savedResources = { ...state.galaxy.npcColonies[0].resources };
 
       processTick(state, now);
 
@@ -1025,8 +1025,8 @@ describe('FleetEngine', () => {
       const returnedMission = state.fleetMissions[0];
       expect(returnedMission.cargo).toEqual({ metal: 0, crystal: 0, deuterium: 0 });
       expect(returnedMission.status).toBe('returning');
-      // Colony resourcesAtLastRaid should NOT be overwritten to {0,0,0}
-      expect(colony.resourcesAtLastRaid).toEqual(savedResourcesAtLastRaid);
+      // Colony resources should NOT be overwritten to {0,0,0}
+      expect(colony.resources).toEqual(savedResources);
     });
 
     it('prunes old fleet notifications using history retention rules', () => {

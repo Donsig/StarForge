@@ -7,7 +7,6 @@ import { calculateProduction } from './ResourceEngine.ts';
 import { activePlanet } from './helpers.ts';
 
 const NPC_RECOVERY_MS = 48 * 3600 * 1000;
-const NPC_RESOURCE_CAP_HOURS = 48;
 
 const NPC_NAME_PREFIXES = [
   'Zorgon',
@@ -47,6 +46,14 @@ const NPC_RESEARCH_LEVELS: GameState['research'] = {
   astrophysicsTechnology: 0,
   intergalacticResearchNetwork: 0,
 };
+
+function emptyNpcResources(): NPCColony['resources'] {
+  return {
+    metal: 0,
+    crystal: 0,
+    deuterium: 0,
+  };
+}
 
 /** Simple seedable PRNG (mulberry32). */
 function mulberry32(seed: number): () => number {
@@ -275,7 +282,7 @@ export function createNPCColonyForTier(
     currentDefences: { ...baseDefences },
     currentShips: { ...baseShips },
     lastRaidedAt: 0,
-    resourcesAtLastRaid: { metal: 0, crystal: 0, deuterium: 0 },
+    resources: emptyNpcResources(),
   };
 }
 
@@ -422,7 +429,7 @@ export function generateNPCColonies(seed: number): NPCColony[] {
         currentDefences: { ...baseDefences },
         currentShips: { ...baseShips },
         lastRaidedAt: 0,
-        resourcesAtLastRaid: { metal: 0, crystal: 0, deuterium: 0 },
+        resources: emptyNpcResources(),
       });
     }
   }
@@ -433,58 +440,35 @@ export function generateNPCColonies(seed: number): NPCColony[] {
 /** Get resources currently stockpiled by an NPC colony from passive production. */
 export function getNPCResources(
   colony: NPCColony,
-  now: number,
-  gameSpeed: number,
+  _now?: number,
+  _gameSpeed?: number,
 ): { metal: number; crystal: number; deuterium: number } {
+  void _now;
+  void _gameSpeed;
   if (colony.abandonedAt !== undefined) {
-    return { metal: 0, crystal: 0, deuterium: 0 };
+    return emptyNpcResources();
+  }
+
+  return { ...colony.resources };
+}
+
+export function accrueNpcResources(
+  colony: NPCColony,
+  elapsedMs: number,
+  gameSpeed: number,
+): void {
+  if (colony.abandonedAt !== undefined) {
+    return;
   }
 
   const productionPlanet = createNPCProductionPlanet(colony);
   const production = calculateProduction(productionPlanet, NPC_RESEARCH_LEVELS);
-  const elapsedMs = Math.max(0, now - (colony.lastRaidedAt || 0));
-  const safeGameSpeed = Math.max(0, gameSpeed);
-  const elapsedHours = (elapsedMs * safeGameSpeed) / 3_600_000;
-  const stockpileCap = {
-    metal: production.metalPerHour * NPC_RESOURCE_CAP_HOURS,
-    crystal: production.crystalPerHour * NPC_RESOURCE_CAP_HOURS,
-    deuterium: production.deuteriumPerHour * NPC_RESOURCE_CAP_HOURS,
-  };
-  const baseline = colony.resourcesAtLastRaid ?? {
-    metal: 0,
-    crystal: 0,
-    deuterium: 0,
-  };
+  const elapsedHours =
+    (Math.max(0, elapsedMs) * Math.max(0, gameSpeed)) / 3_600_000;
 
-  return {
-    metal: Math.max(
-      0,
-      Math.floor(
-        Math.min(
-          stockpileCap.metal,
-          baseline.metal + production.metalPerHour * elapsedHours,
-        ),
-      ),
-    ),
-    crystal: Math.max(
-      0,
-      Math.floor(
-        Math.min(
-          stockpileCap.crystal,
-          baseline.crystal + production.crystalPerHour * elapsedHours,
-        ),
-      ),
-    ),
-    deuterium: Math.max(
-      0,
-      Math.floor(
-        Math.min(
-          stockpileCap.deuterium,
-          baseline.deuterium + production.deuteriumPerHour * elapsedHours,
-        ),
-      ),
-    ),
-  };
+  colony.resources.metal += production.metalPerHour * elapsedHours;
+  colony.resources.crystal += production.crystalPerHour * elapsedHours;
+  colony.resources.deuterium += production.deuteriumPerHour * elapsedHours;
 }
 
 /** Interpolate fleet and defence regeneration from current to base over 48 hours. */

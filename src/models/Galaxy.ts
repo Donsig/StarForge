@@ -47,7 +47,7 @@ export interface NPCColony {
   currentDefences: Record<string, number>;
   currentShips: Record<string, number>;
   lastRaidedAt: number;
-  resourcesAtLastRaid: {
+  resources: {
     metal: number;
     crystal: number;
     deuterium: number;

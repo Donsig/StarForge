@@ -309,7 +309,7 @@ describe('StateManager', () => {
         currentDefences: {},
         currentShips: {},
         lastRaidedAt: 0,
-        resourcesAtLastRaid: { metal: 0, crystal: 0, deuterium: 0 },
+        resources: { metal: 0, crystal: 0, deuterium: 0 },
       },
     ];
     state.fleetMissions = [
@@ -368,7 +368,7 @@ describe('StateManager migration', () => {
 
     const state = loadState();
     expect(state).not.toBeNull();
-    expect(state!.version).toBe(17);
+    expect(state!.version).toBe(GAME_CONSTANTS.STATE_VERSION);
     expect(state!.fleetNotifications).toEqual([]);
     expect(state!.research.intergalacticResearchNetwork).toBe(0);
   });
@@ -412,7 +412,7 @@ describe('StateManager migration', () => {
 
     const state = loadState();
     expect(state).not.toBeNull();
-    expect(state!.version).toBe(17);
+    expect(state!.version).toBe(GAME_CONSTANTS.STATE_VERSION);
     expect(state!.research.intergalacticResearchNetwork).toBe(0);
   });
 

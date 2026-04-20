@@ -42,6 +42,7 @@ import {
   startShipBuild,
 } from '../engine/BuildQueue.ts';
 import {
+  accrueNpcResources,
   adminAddNPC as addNPCToGalaxy,
   addDebris,
   buildNPCBuildingsForTier,
@@ -417,6 +418,8 @@ export function useGameEngine(): GameEngineState {
         ticksThisFrame < MAX_TICKS_PER_FRAME
       ) {
         const now = Date.now();
+        const tickRealMs =
+          GAME_CONSTANTS.TICK_INTERVAL_MS / Math.max(1, currentState.settings.gameSpeed);
         processResourceTick(currentState);
         processQueueTick(currentState, now);
         processFleetTick(currentState, now);
@@ -428,6 +431,9 @@ export function useGameEngine(): GameEngineState {
           fleet: previousScores.fleet ?? 0,
           defence: previousScores.defence ?? 0,
         };
+        for (const colony of currentState.galaxy.npcColonies) {
+          accrueNpcResources(colony, tickRealMs, currentState.settings.gameSpeed);
+        }
         processNPCUpgrades(currentState, now, snapshotScores.total);
         sampleProduction(currentState, now);
         currentState.tickCount += 1;
@@ -853,7 +859,7 @@ export function useGameEngine(): GameEngineState {
       colony.raidCount = 0;
       colony.recentRaidTimestamps = [];
       colony.abandonedAt = undefined;
-      colony.resourcesAtLastRaid = { metal: 0, crystal: 0, deuterium: 0 };
+      colony.resources = { metal: 0, crystal: 0, deuterium: 0 };
       syncReactState();
       saveState(stateRef.current);
     },
@@ -1359,7 +1365,7 @@ export function useGameEngine(): GameEngineState {
         resultWithLoot.defenderEnd.defences,
       );
       colony.currentShips = applyNpcForceResult(colony.baseShips, resultWithLoot.defenderEnd.ships);
-      colony.resourcesAtLastRaid = {
+      colony.resources = {
         metal: Math.max(0, Math.floor(npcResources.metal - resultWithLoot.loot.metal)),
         crystal: Math.max(0, Math.floor(npcResources.crystal - resultWithLoot.loot.crystal)),
         deuterium: Math.max(
