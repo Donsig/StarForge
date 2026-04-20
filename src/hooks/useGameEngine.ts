@@ -86,6 +86,7 @@ import {
   resetGame,
   saveState,
 } from '../engine/StateManager.ts';
+import { sampleProduction } from '../engine/ProductionSampling.ts';
 
 export interface GameEngineState {
   gameState: GameState;
@@ -428,6 +429,7 @@ export function useGameEngine(): GameEngineState {
           defence: previousScores.defence ?? 0,
         };
         processNPCUpgrades(currentState, now, snapshotScores.total);
+        sampleProduction(currentState, now);
         currentState.tickCount += 1;
 
         if (currentState.tickCount % GAME_CONSTANTS.AUTO_SAVE_TICKS === 0) {

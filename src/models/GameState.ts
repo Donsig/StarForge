@@ -26,6 +26,13 @@ export interface GameStatistics {
     firstBattleWon?: number;
     firstEspionage?: number;
   };
+  productionHistory: {
+    metal: number[];
+    crystal: number[];
+    deuterium: number[];
+    lastSampleAt: number;
+  };
+  totalBuilt: Partial<Record<string, number>>;
 }
 
 export interface GameState {
@@ -100,6 +107,8 @@ export function createNewGameState(): GameState {
       combat: { fought: 0, won: 0, lost: 0, drawn: 0, totalLoot: 0, shipsLost: 0 },
       fleet: { sent: {}, totalDistance: 0 },
       milestones: {},
+      productionHistory: { metal: [], crystal: [], deuterium: [], lastSampleAt: 0 },
+      totalBuilt: {},
     },
   };
 }

@@ -397,6 +397,18 @@ function migrate(state: GameState): GameState {
     };
     state.version = 15;
   }
+
+  if (state.version < 16) {
+    const stats = state.statistics as unknown as Record<string, unknown>;
+    if (stats['productionHistory'] === undefined) {
+      stats['productionHistory'] = { metal: [], crystal: [], deuterium: [], lastSampleAt: 0 };
+    }
+    if (stats['totalBuilt'] === undefined) {
+      stats['totalBuilt'] = {};
+    }
+    state.version = 16;
+  }
+
   return state;
 }
 

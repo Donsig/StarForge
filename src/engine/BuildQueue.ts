@@ -452,6 +452,8 @@ export function cancelShipyardAtIndex(state: GameState, index: number): void {
 }
 
 export function processTick(state: GameState, now: number = Date.now()): void {
+  const totalBuilt = state.statistics.totalBuilt;
+
   for (const planet of state.planets) {
     // Building queue
     if (planet.buildingQueue.length > 0 && now >= planet.buildingQueue[0].completesAt) {
@@ -464,6 +466,9 @@ export function processTick(state: GameState, now: number = Date.now()): void {
         item.targetLevel!,
       );
       addAccumulatedScore(state, 'buildings', buildingCost);
+      if (totalBuilt !== undefined) {
+        totalBuilt[item.id] = (totalBuilt[item.id] ?? 0) + 1;
+      }
       planet.buildingQueue.shift();
 
       const nextItem = planet.buildingQueue[0];
@@ -490,6 +495,7 @@ export function processTick(state: GameState, now: number = Date.now()): void {
     if (planet.shipyardQueue.length > 0) {
       const item = planet.shipyardQueue[0];
       if (now >= item.completesAt) {
+        const prevCompletesAt = item.completesAt;
         item.completed = (item.completed ?? 0) + 1;
         if (item.type === 'defence') {
           planet.defences[item.id as DefenceId] += 1;
@@ -499,11 +505,17 @@ export function processTick(state: GameState, now: number = Date.now()): void {
           addAccumulatedScore(state, 'fleet', SHIPS[item.id as ShipId].cost);
         }
 
+        if (totalBuilt !== undefined) {
+          totalBuilt[item.id] = (totalBuilt[item.id] ?? 0) + 1;
+        }
         if (item.completed >= item.quantity!) {
           // Batch done, remove from queue
           planet.shipyardQueue.shift();
         } else {
-          // Start next unit
+          // Advance completesAt for the next unit.
+          // If the batch was already overdue (completesAt < now), advance by 1ms so the
+          // next unit can complete on the following tick without stalling indefinitely.
+          // Otherwise advance by the full per-unit build time from the current time.
           const perUnitSeconds =
             item.type === 'defence'
               ? defenceBuildTime(
@@ -518,7 +530,10 @@ export function processTick(state: GameState, now: number = Date.now()): void {
                   planet.buildings.naniteFactory,
                   state.settings.gameSpeed,
                 );
-          item.completesAt = now + perUnitSeconds * 1000;
+          item.completesAt =
+            prevCompletesAt < now
+              ? prevCompletesAt + 1
+              : now + perUnitSeconds * 1000;
         }
       }
     }
