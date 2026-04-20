@@ -1331,3 +1331,9 @@ Use these exact values for fleet mission type styling across FleetMovementsBar, 
 
 - [x] Added `simulatePreview()` and `CombatPreview` in `src/engine/CombatEngine.ts` to aggregate deterministic multi-trial combat forecasts.
 - [x] Replaced FleetPanel's attack power-ratio estimate with a simulation-backed preview showing tone, win probability, and expected attacker losses from the latest combat intel.
+
+## Task 20: NPC running resource balance
+
+- [x] Replaced the old 48-hour NPC stockpile snapshot with a persistent `resources` balance carried by each colony and migrated existing saves from v17 to v18.
+- [x] Added continuous NPC resource accrual in the live tick loop and offline catch-up flow, and debited raid loot directly from the running balance.
+- [x] Reworked NPC upgrades to be economy-gated with specialty-specific fallback priorities, removing the old tier-based ship/defence caps.
