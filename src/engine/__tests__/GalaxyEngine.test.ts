@@ -461,3 +461,92 @@ describe('GalaxyEngine', () => {
     });
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// getNPCResources – v18 simplified contract (Task 20)
+//
+// After Task 20 ships, getNPCResources(colony) returns colony.resources directly
+// (no time-based computation). The tests below will FAIL against the current
+// 3-arg time-based implementation.
+//
+// The old tests above (e.g. "getNPCResources caps stockpile growth to 48 hours")
+// use the 3-arg signature:  getNPCResources(colony, now, gameSpeed).
+// If the new function keeps those args as optional/ignored, those old tests will
+// continue to compile but will now FAIL because the computed values will differ
+// from what colony.resources holds. Those failures are expected and document the
+// semantic change. They should be REMOVED or updated when the old tests are
+// retired as part of the Task 20 implementation commit.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('getNPCResources – v18 simplified (Task 20)', () => {
+  // Build a colony in the new v18 shape (resources field instead of resourcesAtLastRaid).
+  // We use `as any` to bypass the current v17 NPCColony type.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function makeV18NPC(resources: { metal: number; crystal: number; deuterium: number }): any {
+    const base = createNPCColony();
+    const colony = base as Record<string, unknown>;
+    delete colony['resourcesAtLastRaid'];
+    colony['resources'] = { ...resources };
+    return colony;
+  }
+
+  it('returns the running balance directly without time-based computation', () => {
+    const stored = { metal: 77_000, crystal: 33_000, deuterium: 9_500 };
+    const colony = makeV18NPC(stored);
+
+    // Call with no time args (new minimal signature)
+    const result = getNPCResources(colony);
+
+    // Must equal the stored balance exactly — no production formula applied
+    expect(result.metal).toBe(77_000);
+    expect(result.crystal).toBe(33_000);
+    expect(result.deuterium).toBe(9_500);
+  });
+
+  it('returns zero for an abandoned colony regardless of stored resources', () => {
+    const colony = makeV18NPC({ metal: 50_000, crystal: 25_000, deuterium: 8_000 });
+    colony.abandonedAt = Date.now() - 1000;
+
+    const result = getNPCResources(colony);
+
+    expect(result).toEqual({ metal: 0, crystal: 0, deuterium: 0 });
+  });
+
+  it('ignores now and gameSpeed arguments when provided — result equals colony.resources', () => {
+    // Verifies simplified contract: extra args are accepted for call-site compat
+    // but must not affect the output.
+    const stored = { metal: 12_345, crystal: 6_789, deuterium: 2_222 };
+    const colony = makeV18NPC(stored);
+
+    const resultA = getNPCResources(colony, 0, 1);
+    const resultB = getNPCResources(colony, 9_999_999_999, 50);
+
+    // Both must match the stored resources exactly
+    expect(resultA).toEqual(stored);
+    expect(resultB).toEqual(stored);
+    // And they must be equal to each other
+    expect(resultA).toEqual(resultB);
+  });
+
+  it('does not mutate colony.resources when called', () => {
+    const stored = { metal: 5_000, crystal: 2_500, deuterium: 750 };
+    const colony = makeV18NPC(stored);
+
+    getNPCResources(colony);
+
+    expect(colony.resources.metal).toBe(5_000);
+    expect(colony.resources.crystal).toBe(2_500);
+    expect(colony.resources.deuterium).toBe(750);
+  });
+
+  it('returns a copy — mutating the result does not affect colony.resources', () => {
+    const stored = { metal: 10_000, crystal: 5_000, deuterium: 1_000 };
+    const colony = makeV18NPC(stored);
+
+    const result = getNPCResources(colony);
+    result.metal += 99_999_999; // mutate the returned object
+
+    // Colony must be unchanged
+    expect(colony.resources.metal).toBe(10_000);
+  });
+});

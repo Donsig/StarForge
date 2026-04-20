@@ -360,3 +360,286 @@ describe('StateManager migration v16 → v17', () => {
     expect(settings.notifications.espionage).toBe(true);
   });
 });
+
+// ─── v17 → v18 migration: NPCColony.resources running balance ────────────────
+//
+// These tests FAIL against current production code (v17). They drive:
+//   • STATE_VERSION bump 17 → 18 in src/models/types.ts
+//   • NPCColony.resources field (replaces resourcesAtLastRaid) in src/models/Galaxy.ts
+//   • v17→v18 migrator in src/engine/StateManager.ts
+
+// Local types mirror the upcoming v18 NPCColony shape.
+// Delete these when Galaxy.ts ships v18.
+interface NPCColonyV18Shape {
+  coordinates: { galaxy: number; system: number; slot: number };
+  name: string;
+  temperature: number;
+  tier: number;
+  specialty: string;
+  maxTier: number;
+  initialUpgradeIntervalMs: number;
+  currentUpgradeIntervalMs: number;
+  targetTier: number;
+  catchUpUpgradeIntervalMs: number;
+  catchUpProgressTicks: number;
+  lastUpgradeAt: number;
+  upgradeTickCount: number;
+  raidCount: number;
+  recentRaidTimestamps: number[];
+  abandonedAt?: number;
+  buildings: Record<string, number>;
+  baseDefences: Record<string, number>;
+  baseShips: Record<string, number>;
+  currentDefences: Record<string, number>;
+  currentShips: Record<string, number>;
+  lastRaidedAt: number;
+  // v18 field — resourcesAtLastRaid is gone, replaced by resources
+  resources?: { metal: number; crystal: number; deuterium: number };
+  // v17 field — will be removed in v18
+  resourcesAtLastRaid?: { metal: number; crystal: number; deuterium: number };
+}
+
+function makeMinimalNPCColony(
+  overrides: Partial<NPCColonyV18Shape> = {},
+): NPCColonyV18Shape {
+  return {
+    coordinates: { galaxy: 1, system: 3, slot: 7 },
+    name: 'Test NPC',
+    temperature: 50,
+    tier: 4,
+    specialty: 'balanced',
+    maxTier: 8,
+    initialUpgradeIntervalMs: 10_800_000,
+    currentUpgradeIntervalMs: 10_800_000,
+    targetTier: 4,
+    catchUpUpgradeIntervalMs: 2_700_000,
+    catchUpProgressTicks: 0,
+    lastUpgradeAt: 0,
+    upgradeTickCount: 0,
+    raidCount: 0,
+    recentRaidTimestamps: [],
+    abandonedAt: undefined,
+    buildings: {
+      metalMine: 8,
+      crystalMine: 6,
+      deuteriumSynthesizer: 5,
+      solarPlant: 10,
+      fusionReactor: 0,
+      metalStorage: 2,
+      crystalStorage: 2,
+      deuteriumTank: 1,
+      roboticsFactory: 1,
+      naniteFactory: 0,
+      shipyard: 2,
+      researchLab: 0,
+    },
+    baseDefences: { rocketLauncher: 32, lightLaser: 12 },
+    baseShips: { smallCargo: 8, lightFighter: 20, solarSatellite: 6 },
+    currentDefences: { rocketLauncher: 32, lightLaser: 12 },
+    currentShips: { smallCargo: 8, lightFighter: 20, solarSatellite: 6 },
+    lastRaidedAt: 0,
+    resourcesAtLastRaid: { metal: 0, crystal: 0, deuterium: 0 },
+    ...overrides,
+  };
+}
+
+function makeV17Save(colonies: NPCColonyV18Shape[] = []) {
+  return {
+    version: 17,
+    lastSaveTimestamp: Date.now(),
+    tickCount: 0,
+    planets: [],
+    activePlanetIndex: 0,
+    galaxy: { seed: 42, npcColonies: colonies },
+    debrisFields: [],
+    fleetMissions: [],
+    combatLog: [],
+    espionageReports: [],
+    fleetNotifications: [],
+    research: {
+      energyTechnology: 0,
+      laserTechnology: 0,
+      ionTechnology: 0,
+      plasmaTechnology: 0,
+      espionageTechnology: 0,
+      computerTechnology: 0,
+      weaponsTechnology: 0,
+      shieldingTechnology: 0,
+      armourTechnology: 0,
+      combustionDrive: 0,
+      impulseDrive: 0,
+      hyperspaceDrive: 0,
+      hyperspaceTechnology: 0,
+      astrophysicsTechnology: 0,
+      intergalacticResearchNetwork: 0,
+    },
+    researchQueue: [],
+    settings: {
+      gameSpeed: 1,
+      godMode: false,
+      maxProbeCount: 10,
+      notifications: { enabled: true, combat: true, fleet: true, espionage: true },
+    },
+    playerScores: { military: 0, economy: 0, research: 0, buildings: 0, fleet: 0, defence: 0, total: 0 },
+    statistics: {
+      resourcesMined: { metal: 0, crystal: 0, deuterium: 0 },
+      combat: { fought: 0, won: 0, lost: 0, drawn: 0, totalLoot: 0, shipsLost: 0 },
+      fleet: { sent: {}, totalDistance: 0 },
+      milestones: {},
+      productionHistory: { metal: [], crystal: [], deuterium: [], lastSampleAt: 0 },
+      totalBuilt: {},
+    },
+  };
+}
+
+describe('StateManager migration v17 → v18', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.resetModules();
+  });
+
+  it('migrates v17 to v18 renaming resourcesAtLastRaid to resources with formula continuity', async () => {
+    // This test will FAIL until STATE_VERSION is bumped to 18 and the v17→v18
+    // migrator is added to StateManager.ts.
+    const { loadState } = await import('../StateManager.ts');
+
+    const colony = makeMinimalNPCColony({
+      // A colony that was raided 1 hour ago, with resources set at that raid
+      lastRaidedAt: Date.now() - 3_600_000,
+      resourcesAtLastRaid: { metal: 100, crystal: 50, deuterium: 10 },
+    });
+
+    const v17Save = makeV17Save([colony]);
+    localStorage.setItem(GAME_CONSTANTS.STORAGE_KEY, JSON.stringify(v17Save));
+
+    const state = loadState();
+    expect(state).not.toBeNull();
+    // Must be migrated to v18
+    expect(state!.version).toBe(18);
+
+    const migratedColony = (state!.galaxy.npcColonies[0] as unknown as NPCColonyV18Shape);
+
+    // v18: must have `resources` field
+    expect(migratedColony.resources).toBeDefined();
+    // The legacy formula computed: baseline + production * elapsed, capped at 48h.
+    // After migration the balance must be >= the old resourcesAtLastRaid baseline.
+    expect(migratedColony.resources!.metal).toBeGreaterThanOrEqual(100);
+    expect(migratedColony.resources!.crystal).toBeGreaterThanOrEqual(50);
+    expect(migratedColony.resources!.deuterium).toBeGreaterThanOrEqual(10);
+  });
+
+  it('preserves colony.resources if already present (idempotent on repeated migration)', async () => {
+    // A colony that already has `resources` (v18 shape) — the migrator must not
+    // overwrite it if the field already exists.
+    const { loadState, saveState } = await import('../StateManager.ts');
+
+    const colony = makeMinimalNPCColony();
+    // Inject v18-style resources field
+    (colony as Record<string, unknown>)['resources'] = { metal: 999, crystal: 888, deuterium: 777 };
+    delete colony.resourcesAtLastRaid;
+
+    const v17Save = makeV17Save([colony]);
+    localStorage.setItem(GAME_CONSTANTS.STORAGE_KEY, JSON.stringify(v17Save));
+
+    const firstPass = loadState();
+    expect(firstPass).not.toBeNull();
+    expect(firstPass!.version).toBe(18);
+
+    const c1 = firstPass!.galaxy.npcColonies[0] as unknown as NPCColonyV18Shape;
+    expect(c1.resources!.metal).toBe(999);
+    expect(c1.resources!.crystal).toBe(888);
+    expect(c1.resources!.deuterium).toBe(777);
+
+    // Save and reload — idempotency
+    saveState(firstPass!);
+    const secondPass = loadState();
+    expect(secondPass).not.toBeNull();
+    expect(secondPass!.version).toBe(18);
+
+    const c2 = secondPass!.galaxy.npcColonies[0] as unknown as NPCColonyV18Shape;
+    expect(c2.resources!.metal).toBe(999);
+    expect(c2.resources!.crystal).toBe(888);
+    expect(c2.resources!.deuterium).toBe(777);
+  });
+
+  it('handles multiple colonies in v17 → v18 migration', async () => {
+    const { loadState } = await import('../StateManager.ts');
+
+    const colonies = [
+      makeMinimalNPCColony({
+        coordinates: { galaxy: 1, system: 1, slot: 2 },
+        resourcesAtLastRaid: { metal: 500, crystal: 250, deuterium: 75 },
+      }),
+      makeMinimalNPCColony({
+        coordinates: { galaxy: 1, system: 2, slot: 5 },
+        resourcesAtLastRaid: { metal: 1000, crystal: 600, deuterium: 200 },
+      }),
+      makeMinimalNPCColony({
+        coordinates: { galaxy: 1, system: 3, slot: 9 },
+        resourcesAtLastRaid: { metal: 0, crystal: 0, deuterium: 0 },
+      }),
+    ];
+
+    const v17Save = makeV17Save(colonies);
+    localStorage.setItem(GAME_CONSTANTS.STORAGE_KEY, JSON.stringify(v17Save));
+
+    const state = loadState();
+    expect(state).not.toBeNull();
+    expect(state!.version).toBe(18);
+    expect(state!.galaxy.npcColonies).toHaveLength(3);
+
+    // All three colonies must have the `resources` field set
+    for (const c of state!.galaxy.npcColonies) {
+      const colony = c as unknown as NPCColonyV18Shape;
+      expect(colony.resources).toBeDefined();
+      expect(typeof colony.resources!.metal).toBe('number');
+      expect(typeof colony.resources!.crystal).toBe('number');
+      expect(typeof colony.resources!.deuterium).toBe('number');
+    }
+  });
+
+  it('drops resourcesAtLastRaid field after v17 → v18 migration', async () => {
+    const { loadState } = await import('../StateManager.ts');
+
+    const colony = makeMinimalNPCColony({
+      resourcesAtLastRaid: { metal: 200, crystal: 100, deuterium: 30 },
+    });
+
+    const v17Save = makeV17Save([colony]);
+    localStorage.setItem(GAME_CONSTANTS.STORAGE_KEY, JSON.stringify(v17Save));
+
+    const state = loadState();
+    expect(state).not.toBeNull();
+    expect(state!.version).toBe(18);
+
+    const migratedColony = state!.galaxy.npcColonies[0] as unknown as NPCColonyV18Shape;
+
+    // The old field must be absent (or undefined) after migration
+    expect(migratedColony.resourcesAtLastRaid).toBeUndefined();
+  });
+
+  it('migrates a colony that has never been raided (lastRaidedAt === 0)', async () => {
+    const { loadState } = await import('../StateManager.ts');
+
+    const colony = makeMinimalNPCColony({
+      lastRaidedAt: 0,
+      resourcesAtLastRaid: { metal: 0, crystal: 0, deuterium: 0 },
+    });
+
+    const v17Save = makeV17Save([colony]);
+    localStorage.setItem(GAME_CONSTANTS.STORAGE_KEY, JSON.stringify(v17Save));
+
+    const state = loadState();
+    expect(state).not.toBeNull();
+    expect(state!.version).toBe(18);
+
+    const c = state!.galaxy.npcColonies[0] as unknown as NPCColonyV18Shape;
+    expect(c.resources).toBeDefined();
+    // Colony was never raided — elapsed since "last raid" at t=0 would be huge,
+    // but the 48h cap in the legacy formula bounds it. After migration resources
+    // should be non-negative.
+    expect(c.resources!.metal).toBeGreaterThanOrEqual(0);
+    expect(c.resources!.crystal).toBeGreaterThanOrEqual(0);
+    expect(c.resources!.deuterium).toBeGreaterThanOrEqual(0);
+  });
+});
