@@ -17,6 +17,16 @@ interface DefenderSide extends CombatSide {
   defences: Partial<Record<string, number>>;
 }
 
+export interface CombatPreview {
+  trials: number;
+  winProbability: number;
+  drawProbability: number;
+  averageRounds: number;
+  averageAttackerLosses: Partial<Record<string, number>>;
+  averageDefenderShipLosses: Partial<Record<string, number>>;
+  averageDefenderDefenceLosses: Partial<Record<string, number>>;
+}
+
 interface UnitInstance {
   uid: number;
   id: string;
@@ -37,6 +47,7 @@ interface Shot {
 const MAX_ROUNDS = 6;
 const DEFENCE_REBUILD_RATE = 0.7;
 const MAX_RAPID_FIRE_CHAIN = 10000;
+const PREVIEW_SEED_STRIDE = 7919;
 const SHIP_DEFINITIONS_BY_ID = SHIPS as Record<
   string,
   (typeof SHIPS)[keyof typeof SHIPS] | undefined
@@ -359,6 +370,34 @@ function mergeDebris(
   };
 }
 
+function accumulateLosses(
+  totals: Partial<Record<string, number>>,
+  losses: Partial<Record<string, number>> | undefined,
+): void {
+  if (!losses) return;
+  for (const [id, value] of Object.entries(losses)) {
+    const safeValue = Math.max(0, value ?? 0);
+    if (safeValue <= 0) continue;
+    totals[id] = (totals[id] ?? 0) + safeValue;
+  }
+}
+
+function averageLosses(
+  totals: Partial<Record<string, number>>,
+  trials: number,
+): Partial<Record<string, number>> {
+  if (trials <= 0) return {};
+
+  const averages: Partial<Record<string, number>> = {};
+  for (const [id, value] of Object.entries(totals)) {
+    const average = (value ?? 0) / trials;
+    if (average > 0) {
+      averages[id] = average;
+    }
+  }
+  return averages;
+}
+
 export function simulate(
   attacker: CombatSide,
   defender: DefenderSide,
@@ -448,5 +487,69 @@ export function simulate(
     defencesRebuilt,
     debrisCreated: mergeDebris(attackerLosses, defenderLosses),
     loot: { metal: 0, crystal: 0, deuterium: 0 },
+  };
+}
+
+export function simulatePreview(
+  attacker: { ships: Partial<Record<string, number>>; techs: AttackerTechs },
+  defender: {
+    ships: Partial<Record<string, number>>;
+    defences: Partial<Record<string, number>>;
+    techs: DefenderTechs;
+  },
+  seedBase: number,
+  trials: number = 10,
+): CombatPreview {
+  const safeTrials = Math.max(0, Math.floor(trials));
+  if (safeTrials <= 0) {
+    return {
+      trials: safeTrials,
+      winProbability: 0,
+      drawProbability: 0,
+      averageRounds: 0,
+      averageAttackerLosses: {},
+      averageDefenderShipLosses: {},
+      averageDefenderDefenceLosses: {},
+    };
+  }
+
+  let attackerWins = 0;
+  let draws = 0;
+  let totalRounds = 0;
+  const attackerLossTotals: Partial<Record<string, number>> = {};
+  const defenderShipLossTotals: Partial<Record<string, number>> = {};
+  const defenderDefenceLossTotals: Partial<Record<string, number>> = {};
+
+  try {
+    for (let i = 0; i < safeTrials; i += 1) {
+      const result = simulate(attacker, defender, seedBase + i * PREVIEW_SEED_STRIDE);
+      if (result.outcome === 'attacker_wins') attackerWins += 1;
+      if (result.outcome === 'draw') draws += 1;
+      totalRounds += result.rounds;
+
+      accumulateLosses(attackerLossTotals, result.attackerLosses.ships);
+      accumulateLosses(defenderShipLossTotals, result.defenderLosses.ships);
+      accumulateLosses(defenderDefenceLossTotals, result.defenderLosses.defences);
+    }
+  } catch {
+    return {
+      trials: safeTrials,
+      winProbability: 0,
+      drawProbability: 0,
+      averageRounds: 0,
+      averageAttackerLosses: {},
+      averageDefenderShipLosses: {},
+      averageDefenderDefenceLosses: {},
+    };
+  }
+
+  return {
+    trials: safeTrials,
+    winProbability: attackerWins / safeTrials,
+    drawProbability: draws / safeTrials,
+    averageRounds: totalRounds / safeTrials,
+    averageAttackerLosses: averageLosses(attackerLossTotals, safeTrials),
+    averageDefenderShipLosses: averageLosses(defenderShipLossTotals, safeTrials),
+    averageDefenderDefenceLosses: averageLosses(defenderDefenceLossTotals, safeTrials),
   };
 }
