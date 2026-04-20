@@ -1134,21 +1134,21 @@ git commit -m "feat(ui): redesign MessagesPanel with tab bar, combat/espionage/f
 - Modify: `src/panels/StatisticsPanel.tsx`
 - Modify: `src/styles.css`
 
-- [ ] **Step 1: Score Breakdown**
+- [x] **Step 1: Score Breakdown**
 
 4-row grid: Economy/Research/Military/Fleet. Each: label + proportional bar + value + % of total.
 
-- [ ] **Step 2: Battle Stats**
+- [x] **Step 2: Battle Stats**
 
 6 stat cards: Raids Won, Raids Lost, Debris Harvested, Colonies, Win Rate, Ships Built.
 
-- [ ] **Step 3: Production Trend**
+- [x] **Step 3: Production Trend**
 
 7-bar SVG sparkline per resource. Current rate + % change vs 7 days ago.
 
 Reference `handoff/design_handoff/sf-panels-d.jsx` lines 49-64 for MiniSparkline.
 
-- [ ] **Step 4: Rankings Table**
+- [x] **Step 4: Rankings Table**
 
 CSS grid: `2rem | 1fr | 90px | 90px | 90px | 90px | 100px`.
 
@@ -1162,7 +1162,7 @@ CSS grid: `2rem | 1fr | 90px | 90px | 90px | 90px | 100px`.
 
 Reference `sf-panels-d.jsx` lines 66-130.
 
-- [ ] **Step 5: Verify and commit**
+- [x] **Step 5: Verify and commit**
 
 ```bash
 git add src/panels/StatisticsPanel.tsx src/styles.css
