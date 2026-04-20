@@ -8,8 +8,7 @@ import { PanelBanner } from '../components/PanelBanner';
 import { LevelRing } from '../components/LevelRing';
 import { CostDisplay } from '../components/CostDisplay';
 import { QueueRow, getQueuedItemDuration } from '../components/QueueRow';
-import { useNow } from '../hooks/useNow.ts';
-import { formatCountdown, formatDuration } from '../utils/time.ts';
+import { formatDuration } from '../utils/time.ts';
 import type { GameState } from '../models/GameState.ts';
 import type {
   BuildingId,
@@ -69,14 +68,13 @@ function requirementLabel(prerequisite: Prerequisite): string {
 }
 
 export function ResearchPanel() {
-  const { gameState, startResearchAction, adminCompleteResearch } = useGame();
+  const {
+    gameState,
+    startResearchAction,
+    adminCompleteResearch,
+    cancelResearch,
+  } = useGame();
   const planet = gameState.planets[gameState.activePlanetIndex];
-  const now = useNow(1000);
-  const activeResearch = gameState.researchQueue[0] ?? null;
-  const queuedResearch = gameState.researchQueue.slice(1);
-  const activeCountdown = activeResearch
-    ? formatCountdown(Math.max(0, activeResearch.completesAt - now))
-    : '';
 
   return (
     <section className="panel research-panel">
@@ -86,20 +84,20 @@ export function ResearchPanel() {
         subtitle="Advance your civilization through scientific breakthroughs."
       />
 
-      {activeResearch && (
-        <div className="research-queue-stack">
-          <div className="research-active">
-            <div className="research-active__pulse" aria-hidden="true" />
-            <div className="research-active__text">
-              <span>
-                Researching: <strong>{RESEARCH[activeResearch.id as ResearchId].name}</strong> →
-                {' '}
-                Lv {activeResearch.targetLevel ?? 0}
-              </span>
-            </div>
-            <div className="research-active__meta">
-              <span className="research-active__time">{activeCountdown}</span>
-              {gameState.settings.godMode && (
+      {gameState.researchQueue.length > 0 && (
+        <div className="construction-queue">
+          <div className="construction-queue__title">Research Queue</div>
+          {gameState.researchQueue.map((item, index) => (
+            <QueueRow
+              key={`${item.id}-${item.targetLevel}-${index}`}
+              label={`Research: ${RESEARCH[item.id as ResearchId].name}`}
+              subtitle={`Lv ${item.targetLevel ?? 0}${index > 0 ? ' (queued)' : ''}`}
+              completesAt={index === 0 ? item.completesAt : null}
+              duration={index > 0 ? getQueuedItemDuration(item) : undefined}
+              startedAt={item.startedAt}
+              totalDurationMs={item.completesAt - item.startedAt}
+              onCancel={() => cancelResearch(index)}
+              action={gameState.settings.godMode && index === 0 && (
                 <button
                   type="button"
                   className="btn btn-sm"
@@ -108,22 +106,8 @@ export function ResearchPanel() {
                   ⚡ Complete
                 </button>
               )}
-            </div>
-          </div>
-
-          {queuedResearch.length > 0 && (
-            <div className="research-queue-list">
-              {queuedResearch.map((item, index) => (
-                <QueueRow
-                  key={`${item.id}-${item.targetLevel}-${index + 1}`}
-                  label={`Research: ${RESEARCH[item.id as ResearchId].name}`}
-                  subtitle={`Lv ${item.targetLevel ?? 0} (queued)`}
-                  completesAt={null}
-                  duration={getQueuedItemDuration(item)}
-                />
-              ))}
-            </div>
-          )}
+            />
+          ))}
         </div>
       )}
 

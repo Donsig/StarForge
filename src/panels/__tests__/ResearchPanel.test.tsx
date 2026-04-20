@@ -175,4 +175,40 @@ describe('ResearchPanel', () => {
     const images = document.querySelectorAll('.card-banner img');
     expect(images).toHaveLength(0);
   });
+
+  it('cancels queued research items from the in-panel queue card', async () => {
+    const user = userEvent.setup();
+    const cancelResearch = vi.fn();
+
+    renderWithGame(<ResearchPanel />, {
+      gameState: {
+        researchQueue: [
+          {
+            type: 'research',
+            id: 'energyTechnology',
+            targetLevel: 1,
+            sourcePlanetIndex: 0,
+            startedAt: Date.now(),
+            completesAt: Date.now() + 60_000,
+          },
+        ],
+        planet: {
+          buildings: { researchLab: 1 },
+          resources: { metal: 1_000_000, crystal: 1_000_000, deuterium: 1_000_000 },
+        },
+      },
+      actions: {
+        cancelResearch,
+      },
+    });
+
+    const queueRow = screen.getByText('Research: Energy Technology').closest('.queue-item');
+    expect(queueRow).not.toBeNull();
+
+    await user.click(
+      within(queueRow as HTMLElement).getByRole('button', { name: 'Cancel' }),
+    );
+
+    expect(cancelResearch).toHaveBeenCalledWith(0);
+  });
 });

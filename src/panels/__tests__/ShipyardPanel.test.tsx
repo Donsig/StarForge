@@ -196,4 +196,38 @@ describe('ShipyardPanel', () => {
     const srcs = Array.from(images).map((image) => (image as HTMLImageElement).src);
     expect(srcs.some((src) => src.includes('lightFighter.webp'))).toBe(true);
   });
+
+  it('cancels queued shipyard items from the in-panel queue card', async () => {
+    const user = userEvent.setup();
+    const cancelShipyard = vi.fn();
+
+    renderWithGame(<ShipyardPanel />, {
+      gameState: {
+        planet: {
+          shipyardQueue: [
+            {
+              type: 'ship',
+              id: 'lightFighter',
+              quantity: 3,
+              completed: 0,
+              startedAt: Date.now(),
+              completesAt: Date.now() + 60_000,
+            },
+          ],
+        },
+      },
+      actions: {
+        cancelShipyard,
+      },
+    });
+
+    const queueRow = screen.getByText('Shipyard: Light Fighter').closest('.queue-item');
+    expect(queueRow).not.toBeNull();
+
+    await user.click(
+      within(queueRow as HTMLElement).getByRole('button', { name: 'Cancel' }),
+    );
+
+    expect(cancelShipyard).toHaveBeenCalledWith(0);
+  });
 });

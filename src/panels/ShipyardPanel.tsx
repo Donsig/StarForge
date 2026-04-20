@@ -51,7 +51,12 @@ function requirementLabel(prerequisite: Prerequisite): string {
 }
 
 export function ShipyardPanel() {
-  const { gameState, buildShips, adminCompleteShipyard } = useGame();
+  const {
+    gameState,
+    buildShips,
+    adminCompleteShipyard,
+    cancelShipyard,
+  } = useGame();
   const [quantities, setQuantities] = useState<Record<ShipId, string>>(DEFAULT_QUANTITIES);
   const planet = gameState.planets[gameState.activePlanetIndex];
   const shipStats = [
@@ -102,6 +107,9 @@ export function ShipyardPanel() {
               subtitle={`${index === 0 ? `${(item.completed ?? 0) + 1}/${item.quantity}` : `0/${item.quantity}`}${index > 0 ? ' (queued)' : ''}`}
               completesAt={index === 0 ? item.completesAt : null}
               duration={index > 0 ? getQueuedItemDuration(item) : undefined}
+              startedAt={item.startedAt}
+              totalDurationMs={item.completesAt - item.startedAt}
+              onCancel={() => cancelShipyard(index)}
               action={gameState.settings.godMode && index === 0 && (
                 <button
                   type="button"

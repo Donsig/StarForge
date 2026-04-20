@@ -57,7 +57,13 @@ function requirementLabel(prerequisite: Prerequisite): string {
 }
 
 export function BuildingsPanel() {
-  const { gameState, upgradeBuilding, buildShips, adminCompleteBuilding } = useGame();
+  const {
+    gameState,
+    upgradeBuilding,
+    buildShips,
+    adminCompleteBuilding,
+    cancelBuilding,
+  } = useGame();
   const [satelliteQuantityInput, setSatelliteQuantityInput] = useState('1');
   const planet = gameState.planets[gameState.activePlanetIndex];
 
@@ -101,6 +107,9 @@ export function BuildingsPanel() {
               subtitle={`Lv ${item.targetLevel ?? 0}${index > 0 ? ' (queued)' : ''}`}
               completesAt={index === 0 ? item.completesAt : null}
               duration={index > 0 ? getQueuedItemDuration(item) : undefined}
+              startedAt={item.startedAt}
+              totalDurationMs={item.completesAt - item.startedAt}
+              onCancel={() => cancelBuilding(index)}
               action={gameState.settings.godMode && index === 0 && (
                 <button
                   type="button"

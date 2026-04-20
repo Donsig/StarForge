@@ -251,4 +251,37 @@ describe('BuildingsPanel', () => {
     const srcs = Array.from(images).map((image) => (image as HTMLImageElement).src);
     expect(srcs.some((src) => src.includes('metalMine.webp'))).toBe(true);
   });
+
+  it('cancels queued building items from the in-panel queue card', async () => {
+    const user = userEvent.setup();
+    const cancelBuilding = vi.fn();
+
+    renderWithGame(<BuildingsPanel />, {
+      gameState: {
+        planet: {
+          buildingQueue: [
+            {
+              type: 'building',
+              id: 'metalMine',
+              targetLevel: 2,
+              startedAt: Date.now(),
+              completesAt: Date.now() + 60_000,
+            },
+          ],
+        },
+      },
+      actions: {
+        cancelBuilding,
+      },
+    });
+
+    const queueRow = screen.getByText('Building: Metal Mine').closest('.queue-item');
+    expect(queueRow).not.toBeNull();
+
+    await user.click(
+      within(queueRow as HTMLElement).getByRole('button', { name: 'Cancel' }),
+    );
+
+    expect(cancelBuilding).toHaveBeenCalledWith(0);
+  });
 });
