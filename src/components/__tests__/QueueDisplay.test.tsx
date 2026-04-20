@@ -4,13 +4,13 @@ import { renderWithGame, screen, within } from '../../test/test-utils';
 
 describe('QueueDisplay', () => {
   it('is not rendered when all queues are empty', () => {
-    const { container } = renderWithGame(<QueueDisplay />);
+    const { container } = renderWithGame(<QueueDisplay activePanel="overview" />);
 
     expect(container.firstChild).toBeNull();
   });
 
   it('shows a building queue item with name and target level', () => {
-    renderWithGame(<QueueDisplay />, {
+    renderWithGame(<QueueDisplay activePanel="overview" />, {
       gameState: {
         planet: {
           buildingQueue: [
@@ -31,7 +31,7 @@ describe('QueueDisplay', () => {
   });
 
   it('shows a research queue item', () => {
-    renderWithGame(<QueueDisplay />, {
+    renderWithGame(<QueueDisplay activePanel="overview" />, {
       gameState: {
         researchQueue: [
           {
@@ -50,7 +50,7 @@ describe('QueueDisplay', () => {
   });
 
   it('shows shipyard queue items when ships are building', () => {
-    renderWithGame(<QueueDisplay />, {
+    renderWithGame(<QueueDisplay activePanel="overview" />, {
       gameState: {
         planet: {
           shipyardQueue: [
@@ -72,7 +72,7 @@ describe('QueueDisplay', () => {
   });
 
   it('shows all queued items with cancel buttons', () => {
-    renderWithGame(<QueueDisplay />, {
+    renderWithGame(<QueueDisplay activePanel="overview" />, {
       gameState: {
         planet: {
           buildingQueue: [
@@ -105,7 +105,7 @@ describe('QueueDisplay', () => {
     const now = Date.now();
     const oneHourMs = 3600 * 1000;
 
-    renderWithGame(<QueueDisplay />, {
+    renderWithGame(<QueueDisplay activePanel="overview" />, {
       gameState: {
         planet: {
           buildingQueue: [
@@ -135,7 +135,7 @@ describe('QueueDisplay', () => {
     const now = Date.now();
     const perUnitMs = 30 * 60 * 1000;
 
-    renderWithGame(<QueueDisplay />, {
+    renderWithGame(<QueueDisplay activePanel="overview" />, {
       gameState: {
         planet: {
           shipyardQueue: [
@@ -169,7 +169,7 @@ describe('QueueDisplay', () => {
     const cancelResearch = vi.fn();
     const cancelShipyard = vi.fn();
 
-    renderWithGame(<QueueDisplay />, {
+    renderWithGame(<QueueDisplay activePanel="overview" />, {
       gameState: {
         planet: {
           buildingQueue: [
@@ -218,5 +218,35 @@ describe('QueueDisplay', () => {
 
     expect(cancelBuilding).toHaveBeenCalledWith(0);
     expect(cancelResearch).toHaveBeenCalledWith(0);
+  });
+
+  it('hides queue items for the owning panel while keeping other queues visible', () => {
+    renderWithGame(<QueueDisplay activePanel="buildings" />, {
+      gameState: {
+        planet: {
+          buildingQueue: [
+            {
+              type: 'building',
+              id: 'metalMine',
+              targetLevel: 2,
+              startedAt: Date.now(),
+              completesAt: Date.now() + 60_000,
+            },
+          ],
+        },
+        researchQueue: [
+          {
+            type: 'research',
+            id: 'energyTechnology',
+            targetLevel: 1,
+            startedAt: Date.now(),
+            completesAt: Date.now() + 60_000,
+          },
+        ],
+      },
+    });
+
+    expect(screen.queryByText('Building: Metal Mine')).not.toBeInTheDocument();
+    expect(screen.getByText('Research: Energy Technology')).toBeInTheDocument();
   });
 });

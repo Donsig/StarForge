@@ -91,7 +91,7 @@ function GameLayout() {
         <main className="main-content">
           <ActivePanelContent activePanel={activePanel} onNavigate={handlePanelNavigate} />
         </main>
-        <QueueDisplay />
+        <QueueDisplay activePanel={activePanel} />
         <FleetMovementsBar />
       </div>
       <ToastContainer />
