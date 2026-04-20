@@ -81,7 +81,7 @@ describe('SettingsPanel — header', () => {
     renderWithGame(<SettingsPanel />);
     // Subtitle: "Configure game behaviour, alerts, and display preferences."
     expect(
-      screen.getByText(/configure game behaviour|alerts|display preferences/i),
+      screen.getByText(/configure game behaviour/i),
     ).toBeInTheDocument();
   });
 });
@@ -96,13 +96,13 @@ describe('SettingsPanel — Game group', () => {
     expect(screen.getByText(/game speed/i)).toBeInTheDocument();
   });
 
-  it('renders Game Speed slider with min=1 max=8', () => {
+  it('renders Game Speed slider with min=1 max=100', () => {
     renderWithGame(<SettingsPanel />);
     const sliders = screen.getAllByRole('slider');
     const gameSpeedSlider = sliders.find(
       (s) =>
         s.getAttribute('min') === '1' &&
-        s.getAttribute('max') === '8',
+        s.getAttribute('max') === '100',
     );
     expect(gameSpeedSlider).toBeDefined();
   });
