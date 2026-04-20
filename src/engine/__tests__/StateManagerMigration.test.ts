@@ -2,8 +2,27 @@
 
 // Tests for v15 → v16 migration that adds productionHistory and totalBuilt
 // to GameStatistics. These tests FAIL until StateManager.ts ships v16 migration.
+//
+// Also contains tests for v16 → v17 migration that adds NotificationSettings to
+// GameSettings. These tests FAIL until StateManager.ts ships v17 migration.
 
 import { GAME_CONSTANTS } from '../../models/types.ts';
+
+// Local types mirror the upcoming v17 NotificationSettings / GameSettings shape.
+// Delete these when types.ts ships v17.
+interface NotificationSettings {
+  enabled: boolean;
+  combat: boolean;
+  fleet: boolean;
+  espionage: boolean;
+}
+
+interface GameSettingsV17 {
+  gameSpeed: number;
+  godMode: boolean;
+  maxProbeCount: number;
+  notifications: NotificationSettings;
+}
 
 // Local types mirror the upcoming v16 GameStatistics shape.
 // Delete these when models/GameState.ts ships v16.
@@ -182,5 +201,162 @@ describe('StateManager migration v15 → v16', () => {
 
     expect(stats.totalBuilt).toBeDefined();
     expect(stats.totalBuilt).toEqual({});
+  });
+});
+
+// ─── v16 → v17 migration: NotificationSettings ─────────────────────────────
+//
+// These tests FAIL against the current production code (v16). They drive:
+//   • STATE_VERSION bump 16 → 17 in src/models/types.ts
+//   • v16→v17 migrator in src/engine/StateManager.ts
+//   • notifications field in GameSettings interface in src/models/types.ts
+//   • createNewGameState() defaults in src/models/GameState.ts
+
+function makeV16Save() {
+  return {
+    version: 16,
+    lastSaveTimestamp: Date.now(),
+    tickCount: 0,
+    planets: [],
+    activePlanetIndex: 0,
+    galaxy: { seed: 42, npcColonies: [] },
+    debrisFields: [],
+    fleetMissions: [],
+    combatLog: [],
+    espionageReports: [],
+    fleetNotifications: [],
+    research: {
+      energyTechnology: 0,
+      laserTechnology: 0,
+      ionTechnology: 0,
+      plasmaTechnology: 0,
+      espionageTechnology: 0,
+      computerTechnology: 0,
+      weaponsTechnology: 0,
+      shieldingTechnology: 0,
+      armourTechnology: 0,
+      combustionDrive: 0,
+      impulseDrive: 0,
+      hyperspaceDrive: 0,
+      hyperspaceTechnology: 0,
+      astrophysicsTechnology: 0,
+      intergalacticResearchNetwork: 0,
+    },
+    researchQueue: [],
+    // v16 settings — no notifications field yet
+    settings: { gameSpeed: 2, godMode: true, maxProbeCount: 25 },
+    playerScores: {
+      military: 0, economy: 0, research: 0,
+      buildings: 0, fleet: 0, defence: 0, total: 0,
+    },
+    statistics: {
+      resourcesMined: { metal: 0, crystal: 0, deuterium: 0 },
+      combat: { fought: 0, won: 0, lost: 0, drawn: 0, totalLoot: 0, shipsLost: 0 },
+      fleet: { sent: {}, totalDistance: 0 },
+      milestones: {},
+      productionHistory: { metal: [], crystal: [], deuterium: [], lastSampleAt: 0 },
+      totalBuilt: {},
+    },
+  };
+}
+
+describe('StateManager migration v16 → v17', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.resetModules();
+  });
+
+  it('migrates v16 to v17 adding default notifications settings', async () => {
+    const { loadState } = await import('../StateManager.ts');
+
+    const v16Save = makeV16Save();
+    localStorage.setItem(GAME_CONSTANTS.STORAGE_KEY, JSON.stringify(v16Save));
+
+    const state = loadState();
+    expect(state).not.toBeNull();
+    // After migration the version must be 17 (new STATE_VERSION)
+    expect(state!.version).toBe(17);
+
+    const settings = state!.settings as unknown as GameSettingsV17;
+    expect(settings.notifications).toBeDefined();
+    expect(settings.notifications.enabled).toBe(true);
+    expect(settings.notifications.combat).toBe(true);
+    expect(settings.notifications.fleet).toBe(true);
+    expect(settings.notifications.espionage).toBe(true);
+  });
+
+  it('preserves existing GameSettings fields during v16 to v17 migration', async () => {
+    const { loadState } = await import('../StateManager.ts');
+
+    const v16Save = makeV16Save();
+    // gameSpeed=2, godMode=true, maxProbeCount=25 set in makeV16Save
+    localStorage.setItem(GAME_CONSTANTS.STORAGE_KEY, JSON.stringify(v16Save));
+
+    const state = loadState();
+    expect(state).not.toBeNull();
+
+    expect(state!.settings.gameSpeed).toBe(2);
+    expect(state!.settings.godMode).toBe(true);
+    expect(state!.settings.maxProbeCount).toBe(25);
+  });
+
+  it('v16 to v17 migration is idempotent', async () => {
+    const { loadState, saveState } = await import('../StateManager.ts');
+
+    const v16Save = makeV16Save();
+    localStorage.setItem(GAME_CONSTANTS.STORAGE_KEY, JSON.stringify(v16Save));
+
+    const firstPass = loadState();
+    expect(firstPass).not.toBeNull();
+    expect(firstPass!.version).toBe(17);
+
+    // Save the already-migrated state then load again — should still be v17
+    saveState(firstPass!);
+    const secondPass = loadState();
+    expect(secondPass).not.toBeNull();
+    expect(secondPass!.version).toBe(17);
+
+    const s1 = firstPass!.settings as unknown as GameSettingsV17;
+    const s2 = secondPass!.settings as unknown as GameSettingsV17;
+    expect(s2.notifications).toEqual(s1.notifications);
+  });
+
+  it('preserves user-set notification values through re-migration of v17 state', async () => {
+    const { loadState, saveState } = await import('../StateManager.ts');
+
+    const v16Save = makeV16Save();
+    localStorage.setItem(GAME_CONSTANTS.STORAGE_KEY, JSON.stringify(v16Save));
+
+    // First load — produces v17 state with defaults
+    const firstPass = loadState();
+    expect(firstPass).not.toBeNull();
+
+    // Mutate: disable combat alerts, re-save
+    const settings = firstPass!.settings as unknown as GameSettingsV17;
+    settings.notifications.combat = false;
+    saveState(firstPass!);
+
+    // Second load — already v17, no migration should run; value preserved
+    const secondPass = loadState();
+    expect(secondPass).not.toBeNull();
+    const s2 = secondPass!.settings as unknown as GameSettingsV17;
+    expect(s2.notifications.combat).toBe(false);
+    // Other flags unchanged
+    expect(s2.notifications.enabled).toBe(true);
+    expect(s2.notifications.fleet).toBe(true);
+    expect(s2.notifications.espionage).toBe(true);
+  });
+
+  it('createNewGameState (v17) initializes notifications with all defaults true', async () => {
+    const { createNewGameState } = await import('../../models/GameState.ts');
+
+    const state = createNewGameState();
+    const settings = state.settings as unknown as GameSettingsV17;
+
+    expect(settings.notifications).toBeDefined();
+    expect(settings.notifications.enabled).toBe(true);
+    expect(settings.notifications.combat).toBe(true);
+    expect(settings.notifications.fleet).toBe(true);
+    expect(settings.notifications.espionage).toBe(true);
   });
 });
