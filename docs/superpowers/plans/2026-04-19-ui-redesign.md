@@ -1214,19 +1214,19 @@ git commit -m "feat(ui): redesign SettingsPanel with toggle components, grouped 
 **Files:**
 - Modify: `src/styles.css`
 
-- [ ] **Step 1: Remove dead CSS rules**
+- [x] **Step 1: Remove dead CSS rules**
 
 After all panels are rewritten, search `src/styles.css` for class names that are no longer used in any `.tsx` file. Remove orphaned rules.
 
-- [ ] **Step 2: Verify responsive breakpoints**
+- [x] **Step 2: Verify responsive breakpoints**
 
 Check media queries at `@media (max-width: 900px)` and `@media (max-height: 500px)`. Update breakpoint rules to work with new component dimensions (e.g., panel banner height, fleet bar height).
 
-- [ ] **Step 3: Verify QueueDisplay still works**
+- [x] **Step 3: Verify QueueDisplay still works**
 
 The QueueDisplay component and QueueRow weren't explicitly redesigned. Verify they still render correctly with the new token values. Minor CSS tweaks may be needed.
 
-- [ ] **Step 4: Verify AdminPanel still works**
+- [x] **Step 4: Verify AdminPanel still works**
 
 AdminPanel was excluded from the redesign. Verify it renders correctly — its dark monospace styling should be independent of the redesign tokens, but check for any `.panel` or `.btn` class conflicts.
 
@@ -1241,7 +1241,7 @@ Navigate through every panel. Check:
 - PlanetSwitcher (dropdown opens/closes, planet icons load)
 - Mobile breakpoint (≤900px width)
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/styles.css
