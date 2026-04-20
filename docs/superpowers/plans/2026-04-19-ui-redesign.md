@@ -1177,13 +1177,13 @@ git commit -m "feat(ui): redesign StatisticsPanel with score breakdown, sparklin
 - Modify: `src/panels/SettingsPanel.tsx`
 - Modify: `src/styles.css`
 
-- [ ] **Step 1: Create Toggle component**
+- [x] **Step 1: Create Toggle component**
 
 Create inline or extract a `Toggle` component: 40x22px pill, 16x16 thumb, transitions left 2px → 18px in 200ms. Active: coloured background + white thumb with glow. Inactive: muted.
 
 Reference `handoff/design_handoff/sf-panels-d.jsx` lines 224-239.
 
-- [ ] **Step 2: Rewrite settings sections**
+- [x] **Step 2: Rewrite settings sections**
 
 5 card groups, each in a `SettingsGroup` wrapper (Orbitron 0.65rem uppercase title). Each row uses `SettingsRow` layout (label + sub-label left, control right).
 
@@ -1196,11 +1196,11 @@ Reference `handoff/design_handoff/sf-panels-d.jsx` lines 224-239.
 
 Reference `sf-panels-d.jsx` lines 263-374.
 
-- [ ] **Step 3: Save button**
+- [x] **Step 3: Save button**
 
 Orbitron 0.82rem, blue gradient, transitions to "Saved ✓" for 2s.
 
-- [ ] **Step 4: Verify and commit**
+- [x] **Step 4: Verify and commit**
 
 ```bash
 git add src/panels/SettingsPanel.tsx src/styles.css
