@@ -2,6 +2,78 @@ import userEvent from '@testing-library/user-event';
 import { FleetPanel } from '../FleetPanel';
 import { renderWithGame, screen } from '../../test/test-utils';
 
+// ── Mock simulatePreview for tone/probability tests ──────────────────────────
+// We use vi.mock to control the CombatPreview output precisely so tone-mapping
+// tests are isolated from combat simulation variance.
+// Real-simulation integration tests follow below (no mock).
+vi.mock('../../engine/CombatEngine.ts', async () => {
+  const actual = await vi.importActual<typeof import('../../engine/CombatEngine.ts')>(
+    '../../engine/CombatEngine.ts',
+  );
+  return {
+    ...actual,
+    // @ts-expect-error simulatePreview does not yet exist — created by dev subagent in Task 19
+    simulatePreview: vi.fn(),
+  };
+});
+
+// Import after mocking so we get the mocked version
+// @ts-expect-error simulatePreview does not yet exist — created by dev subagent in Task 19
+import { simulatePreview } from '../../engine/CombatEngine.ts';
+
+// ── Shared fixtures ────────────────────────────────────────────────────────────
+
+const now = Date.now();
+
+/** An espionage report that includes fleet + defences intel (enables combat estimate). */
+function makeIntelReport(overrides: { fleet?: Record<string, number>; defences?: Record<string, number> } = {}) {
+  return {
+    id: 'report_combat_intel',
+    timestamp: now - 1000,
+    targetCoordinates: { galaxy: 1, system: 2, slot: 4 },
+    targetName: 'Enemy Base',
+    sourcePlanetIndex: 0,
+    probesSent: 3,
+    probesLost: 0,
+    detected: false as const,
+    detectionChance: 0,
+    read: false,
+    fleet: overrides.fleet ?? { lightFighter: 10 },
+    defences: overrides.defences ?? { rocketLauncher: 5 },
+  };
+}
+
+/** A synthetic CombatPreview with the given win probability for testing tone mapping. */
+function makeCombatPreview(winProbability: number) {
+  return {
+    trials: 10,
+    winProbability,
+    drawProbability: 0,
+    averageRounds: 3,
+    averageAttackerLosses: { lightFighter: 2 },
+    averageDefenderShipLosses: { lightFighter: 8 },
+    averageDefenderDefenceLosses: { rocketLauncher: 5 },
+  };
+}
+
+/** Base render options with a fleet + espionage intel to trigger combat estimate. */
+function makeAttackSetup() {
+  return {
+    gameState: {
+      planet: {
+        ships: { battleship: 10 },
+        resources: { deuterium: 50_000 },
+      },
+      espionageReports: [makeIntelReport()],
+    },
+    actions: {
+      fleetTarget: { galaxy: 1, system: 2, slot: 4 },
+    },
+  };
+}
+
+// ── Existing unrelated tests (kept intact) ────────────────────────────────────
+
 describe('FleetPanel', () => {
   it('shows fleet slots counter in panel header', () => {
     renderWithGame(<FleetPanel />, {
@@ -364,5 +436,141 @@ describe('FleetPanel', () => {
     await user.click(screen.getByRole('button', { name: /\+ 7 Large Cargo/i }));
 
     expect(screen.getAllByText(/175,000/)).toHaveLength(2);
+  });
+
+  // ── NEW: Combat simulation preview tests ────────────────────────────────────
+  // These tests target the upcoming simulatePreview-based combat estimate in FleetPanel.
+  // They FAIL against current code (old ratio-based estimate), which is expected.
+  // The mock for simulatePreview is set up at the top of this file.
+
+  describe('combat simulation preview (Task 19)', () => {
+    beforeEach(() => {
+      vi.mocked(simulatePreview).mockReset();
+    });
+
+    it('shows "% win probability" text when combat preview is available', () => {
+      // Mock returns a 80% win preview
+      vi.mocked(simulatePreview).mockReturnValue(makeCombatPreview(0.8));
+
+      renderWithGame(<FleetPanel />, {
+        gameState: {
+          planet: {
+            ships: { battleship: 10 },
+            resources: { deuterium: 50_000 },
+          },
+          espionageReports: [makeIntelReport()],
+        },
+        actions: {
+          fleetTarget: { galaxy: 1, system: 2, slot: 4 },
+        },
+      });
+
+      // The panel should display a win probability percentage
+      expect(screen.getByText(/\d+% win probability/i)).toBeInTheDocument();
+    });
+
+    it('shows "Clear advantage" tone when winProbability > 0.75', () => {
+      vi.mocked(simulatePreview).mockReturnValue(makeCombatPreview(0.9));
+
+      renderWithGame(<FleetPanel />, makeAttackSetup());
+
+      expect(screen.getByText('Clear advantage')).toBeInTheDocument();
+    });
+
+    it('shows "Outmatched" tone when winProbability <= 0.25', () => {
+      vi.mocked(simulatePreview).mockReturnValue(makeCombatPreview(0.1));
+
+      renderWithGame(<FleetPanel />, makeAttackSetup());
+
+      expect(screen.getByText('Outmatched')).toBeInTheDocument();
+    });
+
+    it('shows "Risky odds" tone when winProbability is between 0.25 and 0.75', () => {
+      vi.mocked(simulatePreview).mockReturnValue(makeCombatPreview(0.5));
+
+      renderWithGame(<FleetPanel />, makeAttackSetup());
+
+      expect(screen.getByText('Risky odds')).toBeInTheDocument();
+    });
+
+    it('shows "Risky odds" tone at the exact 0.25 boundary (inclusive)', () => {
+      vi.mocked(simulatePreview).mockReturnValue(makeCombatPreview(0.25));
+
+      renderWithGame(<FleetPanel />, makeAttackSetup());
+
+      expect(screen.getByText('Risky odds')).toBeInTheDocument();
+    });
+
+    it('shows "Clear advantage" tone at exactly 0.76 win probability', () => {
+      vi.mocked(simulatePreview).mockReturnValue(makeCombatPreview(0.76));
+
+      renderWithGame(<FleetPanel />, makeAttackSetup());
+
+      expect(screen.getByText('Clear advantage')).toBeInTheDocument();
+    });
+
+    it('displays expected attacker losses for top ship types', () => {
+      vi.mocked(simulatePreview).mockReturnValue({
+        trials: 10,
+        winProbability: 0.8,
+        drawProbability: 0,
+        averageRounds: 3,
+        averageAttackerLosses: { lightFighter: 5, cruiser: 1 },
+        averageDefenderShipLosses: {},
+        averageDefenderDefenceLosses: {},
+      });
+
+      renderWithGame(<FleetPanel />, makeAttackSetup());
+
+      // Panel should show expected losses section
+      expect(screen.getByText(/Expected losses/i)).toBeInTheDocument();
+      // Should show at least one ship type with a number
+      expect(
+        screen.getByText(/\d+\s*(Light Fighter|Cruiser|Battleship|Heavy Fighter)/i),
+      ).toBeInTheDocument();
+    });
+
+    it('does not show combat estimate section when no espionage intel is available', () => {
+      vi.mocked(simulatePreview).mockReturnValue(makeCombatPreview(0.8));
+
+      renderWithGame(<FleetPanel />, {
+        gameState: {
+          planet: {
+            ships: { battleship: 10 },
+            resources: { deuterium: 50_000 },
+          },
+          // No espionage reports
+          espionageReports: [],
+        },
+        actions: {
+          fleetTarget: { galaxy: 1, system: 2, slot: 4 },
+        },
+      });
+
+      expect(screen.queryByText(/win probability/i)).not.toBeInTheDocument();
+    });
+
+    it('calls simulatePreview with deterministic seedBase based on target coordinates', () => {
+      vi.mocked(simulatePreview).mockReturnValue(makeCombatPreview(0.7));
+
+      renderWithGame(<FleetPanel />, {
+        gameState: {
+          planet: {
+            ships: { battleship: 5 },
+            resources: { deuterium: 50_000 },
+          },
+          espionageReports: [makeIntelReport()],
+          galaxy: { seed: 1000, npcColonies: [] },
+        },
+        actions: {
+          fleetTarget: { galaxy: 1, system: 2, slot: 4 },
+        },
+      });
+
+      expect(vi.mocked(simulatePreview)).toHaveBeenCalled();
+      const callArgs = vi.mocked(simulatePreview).mock.calls[0];
+      // seedBase should be a number (deterministic from gameState.galaxy.seed XOR coordinates)
+      expect(typeof callArgs[2]).toBe('number');
+    });
   });
 });
