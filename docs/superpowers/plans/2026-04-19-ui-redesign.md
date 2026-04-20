@@ -1326,3 +1326,8 @@ Use these exact values for fleet mission type styling across FleetMovementsBar, 
 - [x] Part A: Redesigned `QueueDisplay`, hid duplicate queue ownership on Buildings/Research/Shipyard, and added in-panel Cancel actions for the corresponding queue cards.
 - [x] Part B: Converted the queue bar to fixed positioning, introduced runtime `--queue-bar-height` measurement, and stacked it correctly beneath the Fleet Movements bar with updated main-content padding.
 - [x] Part C: Added mobile nav tab auto-scroll, hid the sidebar header at `<=900px`, tightened the Galaxy navigator row for very narrow widths, and right-aligned settings toggles on mobile.
+
+## Task 19: Combat simulation preview
+
+- [x] Added `simulatePreview()` and `CombatPreview` in `src/engine/CombatEngine.ts` to aggregate deterministic multi-trial combat forecasts.
+- [x] Replaced FleetPanel's attack power-ratio estimate with a simulation-backed preview showing tone, win probability, and expected attacker losses from the latest combat intel.
