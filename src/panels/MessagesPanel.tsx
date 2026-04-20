@@ -12,96 +12,25 @@ function formatCoords(coords: { galaxy: number; system: number; slot: number }):
   return `${coords.galaxy}:${coords.system}:${coords.slot}`;
 }
 
-function formatDate(timestamp: number): string {
-  return new Date(timestamp).toLocaleString([], {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+function formatTimeAgo(timestamp: number): string {
+  const diffMs = Date.now() - timestamp;
+  const diffSec = Math.floor(diffMs / 1000);
+  if (diffSec < 60) return `${diffSec}s ago`;
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin} min ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}h ago`;
+  const diffDay = Math.floor(diffHr / 24);
+  return `${diffDay}d ago`;
 }
 
-function summarizeLosses(units: Partial<Record<string, number>> | undefined): string {
-  if (!units) {
-    return 'None';
-  }
-
-  const segments = Object.entries(units)
-    .filter(([, count]) => Math.max(0, Math.floor(count ?? 0)) > 0)
-    .map(([id, count]) => `${count}x ${SHIPS[id as keyof typeof SHIPS]?.name ?? DEFENCES[id as keyof typeof DEFENCES]?.name ?? id}`);
-
-  return segments.length > 0 ? segments.join(', ') : 'None';
+function getShipOrDefenceName(id: string): string {
+  return SHIPS[id as keyof typeof SHIPS]?.name ?? DEFENCES[id as keyof typeof DEFENCES]?.name ?? id;
 }
 
-function renderOptionalList(
-  title: string,
-  units: Partial<Record<string, number>> | undefined,
-  names: Record<string, { name: string }>,
-  emptyLabel: string,
-  unknownLabel: string,
-) {
-  if (units === undefined) {
-    return <p><strong>{title}:</strong> {unknownLabel}</p>;
-  }
+// ── Coords badge (preserves coord-link class for tests) ────────────────────────
 
-  const entries = Object.entries(units)
-    .filter(([, count]) => Math.max(0, Math.floor(count ?? 0)) > 0)
-    .map(([id, count]) => `${count}x ${names[id]?.name ?? id}`);
-
-  return <p><strong>{title}:</strong> {entries.length > 0 ? entries.join(', ') : emptyLabel}</p>;
-}
-
-interface RowFrameProps {
-  icon: string;
-  title: string;
-  meta: string[];
-  coordsNode?: React.ReactNode;
-  read: boolean;
-  onToggle: () => void;
-  onDelete: () => void;
-  expanded: boolean;
-  children: React.ReactNode;
-}
-
-function RowFrame({
-  icon,
-  title,
-  meta,
-  coordsNode,
-  read,
-  onToggle,
-  onDelete,
-  expanded,
-  children,
-}: RowFrameProps) {
-  return (
-    <article className={`message-row ${read ? '' : 'message-unread'}`}>
-      <div className="message-row-top">
-        <button type="button" className="message-row-toggle" onClick={onToggle}>
-          <div className="message-row-summary">
-            <span className="message-row-icon">{icon}</span>
-            <span className="message-row-text">
-              <span className="message-row-title">{title}</span>
-              <span className="message-row-meta">
-                {meta.map((item) => (
-                  <span key={item}>{item}</span>
-                ))}
-                {!read && <span className="message-unread-pill">Unread</span>}
-              </span>
-            </span>
-          </div>
-        </button>
-        {coordsNode}
-        <button type="button" className="btn btn-sm message-delete-btn" onClick={onDelete}>
-          Delete
-        </button>
-      </div>
-      {expanded && <div className="message-detail">{children}</div>}
-    </article>
-  );
-}
-
-function CoordLink({
+function CoordsLink({
   coords,
   setActivePanel,
 }: {
@@ -113,11 +42,22 @@ function CoordLink({
   return (
     <button
       type="button"
-      className="coord-link btn btn-sm"
+      className="coord-link"
       title="View in galaxy map"
-      onClick={() => {
+      onClick={(e) => {
+        e.stopPropagation();
         setGalaxyJumpTarget(coords);
         setActivePanel('galaxy');
+      }}
+      style={{
+        fontFamily: 'JetBrains Mono, monospace',
+        fontSize: '0.72rem',
+        color: 'rgba(120,150,200,0.55)',
+        background: 'rgba(40,60,120,0.12)',
+        border: '1px solid rgba(40,60,120,0.3)',
+        borderRadius: 4,
+        padding: '0.1rem 0.35rem',
+        cursor: 'pointer',
       }}
     >
       [{formatCoords(coords)}]
@@ -125,189 +65,575 @@ function CoordLink({
   );
 }
 
-function CombatMessageRow({
+// ── Empty state ────────────────────────────────────────────────────────────────
+
+function EmptyState() {
+  return (
+    <div className="messages-empty">
+      No messages in this inbox.
+    </div>
+  );
+}
+
+// ── Combat report card ─────────────────────────────────────────────────────────
+
+function CombatCard({
   entry,
-  onRead,
+  expanded,
+  onToggle,
   onDelete,
   setActivePanel,
 }: {
   entry: CombatLogEntry;
-  onRead: (id: string) => void;
+  expanded: boolean;
+  onToggle: () => void;
   onDelete: (id: string) => void;
   setActivePanel: (panel: ActivePanel) => void;
 }) {
-  const [expanded, setExpanded] = useState(false);
-  const outcome =
-    entry.result.outcome === 'attacker_wins'
-      ? 'Victory'
-      : entry.result.outcome === 'defender_wins'
-        ? 'Defeat'
-        : 'Draw';
+  const { setGalaxyJumpTarget } = useGame();
 
-  const handleToggle = () => {
-    setExpanded((current) => !current);
-    if (!entry.read) {
-      onRead(entry.id);
-    }
-  };
+  const outcome = entry.result.outcome;
+  const isVictory = outcome === 'attacker_wins';
+  const isDefeat  = outcome === 'defender_wins';
+
+  const accentColor  = isVictory ? '#34d399' : isDefeat ? '#f87171' : '#f0a832';
+  const bgColor      = isVictory ? 'rgba(52,211,153,0.06)' : isDefeat ? 'rgba(248,113,113,0.07)' : 'rgba(240,168,50,0.07)';
+  const borderColor  = isVictory ? 'rgba(52,211,153,0.3)'  : isDefeat ? 'rgba(248,113,113,0.3)'  : 'rgba(240,168,50,0.3)';
+  const outcomeLabel = isVictory ? 'Victory' : isDefeat ? 'Defeat' : 'Draw';
+  const outcomeIcon  = isVictory ? '✓' : isDefeat ? '✗' : '~';
+
+  const cardBorder  = entry.read ? '1px solid rgba(40,60,120,0.3)' : `1px solid ${borderColor}`;
+  const cardBg      = entry.read ? 'rgba(8,12,28,0.8)' : bgColor;
+
+  const hasLoot = entry.result.loot.metal > 0 || entry.result.loot.crystal > 0 || entry.result.loot.deuterium > 0;
+  const hasDebris = entry.result.debrisCreated.metal > 0 || entry.result.debrisCreated.crystal > 0;
+
+  // Losses lists
+  const attackerLossEntries = Object.entries(entry.result.attackerLosses.ships ?? {})
+    .filter(([, v]) => (v ?? 0) > 0);
+  const defenderShipEntries = Object.entries(entry.result.defenderLosses.ships ?? {})
+    .filter(([, v]) => (v ?? 0) > 0);
+  const defenderDefenceEntries = Object.entries(entry.result.defenderLosses.defences ?? {})
+    .filter(([, v]) => (v ?? 0) > 0);
+  const defenderLossEntries = [...defenderShipEntries, ...defenderDefenceEntries];
+
+  const coordsStr = formatCoords(entry.targetCoordinates);
 
   return (
-    <RowFrame
-      icon="CMB"
-      title={outcome}
-      meta={[
-        `${entry.result.rounds} rounds`,
-        `Loot M ${formatNumber(entry.result.loot.metal)} C ${formatNumber(entry.result.loot.crystal)} D ${formatNumber(entry.result.loot.deuterium)}`,
-        formatDate(entry.timestamp),
-      ]}
-      coordsNode={
-        <CoordLink coords={entry.targetCoordinates} setActivePanel={setActivePanel} />
-      }
-      read={entry.read}
-      onToggle={handleToggle}
-      onDelete={() => onDelete(entry.id)}
-      expanded={expanded}
+    <article
+      className={`message-card ${entry.read ? 'message-card--read' : 'message-card--unread'}`}
+      style={{ border: cardBorder, background: cardBg }}
     >
-      <p><strong>Outcome:</strong> {outcome}</p>
-      <p><strong>Attacker losses:</strong> {summarizeLosses(entry.result.attackerLosses.ships)}</p>
-      <p><strong>Defender fleet losses:</strong> {summarizeLosses(entry.result.defenderLosses.ships)}</p>
-      <p><strong>Defender defence losses:</strong> {summarizeLosses(entry.result.defenderLosses.defences)}</p>
-      <p>
-        <strong>Debris:</strong> M {formatNumber(entry.result.debrisCreated.metal)} C {formatNumber(entry.result.debrisCreated.crystal)}
-      </p>
-    </RowFrame>
+      {/* Header */}
+      <div
+        role="button"
+        tabIndex={0}
+        className="message-card-header"
+        onClick={onToggle}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle(); } }}
+        aria-expanded={expanded}
+      >
+        {/* Outcome icon circle */}
+        <div
+          className="message-icon"
+          style={{
+            background: bgColor,
+            border: `1.5px solid ${borderColor}`,
+            color: accentColor,
+            fontSize: '1rem',
+          }}
+        >
+          {outcomeIcon}
+        </div>
+
+        {/* Main text block */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <span
+              className="message-outcome-label"
+              style={{ color: accentColor }}
+            >
+              {outcomeLabel}
+            </span>
+            <span className="message-title">vs [{coordsStr}]</span>
+            <CoordsLink coords={entry.targetCoordinates} setActivePanel={setActivePanel} />
+            {!entry.read && (
+              <span
+                className="message-new-badge"
+                style={{
+                  background: `${accentColor}20`,
+                  border: `1px solid ${accentColor}50`,
+                  color: accentColor,
+                }}
+              >
+                NEW
+              </span>
+            )}
+          </div>
+          <div className="message-meta">
+            <span className="message-time-ago">{entry.result.rounds} rounds</span>
+            {hasLoot && (
+              <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.72rem', color: '#34d399' }}>
+                Loot M {formatNumber(entry.result.loot.metal)} · C {formatNumber(entry.result.loot.crystal)} · D {formatNumber(entry.result.loot.deuterium)}
+              </span>
+            )}
+            <span className="message-time-ago">{formatTimeAgo(entry.timestamp)}</span>
+          </div>
+        </div>
+
+        <span className="message-chevron">{expanded ? '▲' : '▼'}</span>
+      </div>
+
+      {/* Expanded body */}
+      {expanded && (
+        <div className="message-body">
+          {/* Attacker vs Defender grid */}
+          <div className="combat-losses-grid">
+            {/* Attacker card */}
+            <div
+              className="combat-loss-card"
+              style={{
+                background: 'rgba(77,143,255,0.07)',
+                border: '1px solid rgba(77,143,255,0.2)',
+              }}
+            >
+              <div className="combat-loss-card-header" style={{ color: '#4d8fff' }}>
+                Attacker — You
+              </div>
+              {attackerLossEntries.length > 0 ? (
+                <>
+                  <div className="combat-loss-card-sub">Losses:</div>
+                  {attackerLossEntries.map(([id, count]) => (
+                    <div key={id} className="combat-loss-row">
+                      <span>{getShipOrDefenceName(id)}</span>
+                      <span style={{ color: '#f87171' }}>-{count}</span>
+                    </div>
+                  ))}
+                </>
+              ) : (
+                <div style={{ fontSize: '0.75rem', color: '#34d399' }}>No losses</div>
+              )}
+            </div>
+
+            {/* Defender card */}
+            <div
+              className="combat-loss-card"
+              style={{
+                background: 'rgba(239,68,68,0.07)',
+                border: '1px solid rgba(239,68,68,0.2)',
+              }}
+            >
+              <div className="combat-loss-card-header" style={{ color: '#f87171' }}>
+                Defender — [{coordsStr}]
+              </div>
+              {defenderLossEntries.length > 0 ? (
+                <>
+                  <div className="combat-loss-card-sub">Losses:</div>
+                  {defenderLossEntries.map(([id, count]) => (
+                    <div key={id} className="combat-loss-row">
+                      <span>{getShipOrDefenceName(id)}</span>
+                      <span style={{ color: '#f87171' }}>-{count}</span>
+                    </div>
+                  ))}
+                </>
+              ) : (
+                <div style={{ fontSize: '0.75rem', color: '#34d399' }}>No losses</div>
+              )}
+            </div>
+          </div>
+
+          {/* Loot + debris row */}
+          {(hasLoot || hasDebris) && (
+            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+              {hasLoot && (
+                <div
+                  className="combat-loot-row"
+                  style={{
+                    flex: '1 1 200px',
+                    background: 'rgba(52,211,153,0.07)',
+                    border: '1px solid rgba(52,211,153,0.2)',
+                  }}
+                >
+                  <div className="combat-loot-header" style={{ color: '#34d399' }}>Plundered</div>
+                  <div style={{ display: 'flex', gap: '0.75rem', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.8rem' }}>
+                    <span style={{ color: '#9ca3af' }}>M {formatNumber(entry.result.loot.metal)}</span>
+                    <span style={{ color: '#60a5fa' }}>C {formatNumber(entry.result.loot.crystal)}</span>
+                    <span style={{ color: '#34d399' }}>D {formatNumber(entry.result.loot.deuterium)}</span>
+                  </div>
+                </div>
+              )}
+              {hasDebris && (
+                <div
+                  className="combat-loot-row"
+                  style={{
+                    flex: '1 1 180px',
+                    background: 'rgba(48,213,200,0.07)',
+                    border: '1px solid rgba(48,213,200,0.2)',
+                  }}
+                >
+                  <div className="combat-loot-header" style={{ color: '#30d5c8' }}>Debris Field</div>
+                  <div style={{ display: 'flex', gap: '0.75rem', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.8rem' }}>
+                    <span style={{ color: '#9ca3af' }}>M {formatNumber(entry.result.debrisCreated.metal)}</span>
+                    <span style={{ color: '#60a5fa' }}>C {formatNumber(entry.result.debrisCreated.crystal)}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Footer actions */}
+          <div className="message-actions">
+            <button
+              type="button"
+              className="msg-btn msg-btn--teal"
+              onClick={() => {
+                setGalaxyJumpTarget(entry.targetCoordinates);
+                setActivePanel('galaxy');
+              }}
+            >
+              Send Recyclers
+            </button>
+            <button
+              type="button"
+              className="msg-btn msg-btn--muted"
+              onClick={() => onDelete(entry.id)}
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      )}
+    </article>
   );
 }
 
-function EspionageMessageRow({
+// ── Espionage report card ──────────────────────────────────────────────────────
+
+function EspionageCard({
   report,
-  onRead,
+  expanded,
+  onToggle,
   onDelete,
   setActivePanel,
 }: {
   report: EspionageReport;
-  onRead: (id: string) => void;
+  expanded: boolean;
+  onToggle: () => void;
   onDelete: (id: string) => void;
   setActivePanel: (panel: ActivePanel) => void;
 }) {
-  const [expanded, setExpanded] = useState(false);
+  const { setFleetTarget } = useGame();
 
-  const handleToggle = () => {
-    setExpanded((current) => !current);
-    if (!report.read) {
-      onRead(report.id);
-    }
-  };
+  const detected     = report.detected;
+  const accentColor  = detected ? '#f87171' : '#818cf8';
+  const borderColor  = detected ? 'rgba(248,113,113,0.3)' : 'rgba(129,140,248,0.25)';
+  const bgColor      = detected ? 'rgba(248,113,113,0.06)' : 'rgba(129,140,248,0.06)';
 
-  const resourceSummary = report.resources
-    ? `Res M ${formatNumber(report.resources.metal)} C ${formatNumber(report.resources.crystal)} D ${formatNumber(report.resources.deuterium)}`
-    : 'Resources unknown';
+  const cardBorder   = report.read ? '1px solid rgba(40,60,120,0.3)' : `1px solid ${borderColor}`;
+  const cardBg       = report.read ? 'rgba(8,12,28,0.8)' : bgColor;
+
+  const fleetEntries   = report.fleet
+    ? Object.entries(report.fleet).filter(([, v]) => v > 0)
+    : [];
+  const defenceEntries = report.defences
+    ? Object.entries(report.defences).filter(([, v]) => v > 0)
+    : [];
 
   return (
-    <RowFrame
-      icon="ESP"
-      title={report.targetName}
-      meta={[
-        report.detected ? 'Detected' : resourceSummary,
-        `Counter chance ${(report.detectionChance * 100).toFixed(1)}%`,
-        formatDate(report.timestamp),
-      ]}
-      coordsNode={
-        <CoordLink coords={report.targetCoordinates} setActivePanel={setActivePanel} />
-      }
-      read={report.read}
-      onToggle={handleToggle}
-      onDelete={() => onDelete(report.id)}
-      expanded={expanded}
+    <article
+      className={`message-card ${report.read ? 'message-card--read' : 'message-card--unread'}`}
+      style={{ border: cardBorder, background: cardBg }}
     >
-      {report.detected && (
-        <p className="hint danger">
-          Probes destroyed: {report.probesLost}/{report.probesSent}
-        </p>
+      {/* Header */}
+      <div
+        role="button"
+        tabIndex={0}
+        className="message-card-header"
+        onClick={onToggle}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle(); } }}
+        aria-expanded={expanded}
+      >
+        {/* ESP icon circle */}
+        <div
+          className="message-icon"
+          style={{
+            background: bgColor,
+            border: `1.5px solid ${borderColor}`,
+            fontFamily: 'Orbitron, sans-serif',
+            fontSize: '0.6rem',
+            color: accentColor,
+            letterSpacing: '0.05em',
+          }}
+        >
+          ESP
+        </div>
+
+        {/* Text block */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <span className="message-title">{report.targetName}</span>
+            <CoordsLink coords={report.targetCoordinates} setActivePanel={setActivePanel} />
+            {detected && (
+              <span
+                className="message-new-badge"
+                style={{
+                  background: 'rgba(248,113,113,0.15)',
+                  border: '1px solid rgba(248,113,113,0.4)',
+                  color: '#f87171',
+                }}
+              >
+                DETECTED
+              </span>
+            )}
+            {!report.read && (
+              <span
+                className="message-new-badge"
+                style={{
+                  background: `${accentColor}20`,
+                  border: `1px solid ${accentColor}50`,
+                  color: accentColor,
+                }}
+              >
+                NEW
+              </span>
+            )}
+          </div>
+          <div className="message-meta">
+            {report.resources && !detected && (
+              <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.72rem', color: 'rgba(120,150,200,0.55)' }}>
+                M {formatNumber(report.resources.metal)} · C {formatNumber(report.resources.crystal)} · D {formatNumber(report.resources.deuterium)}
+              </span>
+            )}
+            <span className="message-time-ago">
+              Counter chance {(report.detectionChance * 100).toFixed(1)}%
+            </span>
+            <span className="message-time-ago">{formatTimeAgo(report.timestamp)}</span>
+          </div>
+        </div>
+
+        <span className="message-chevron">{expanded ? '▲' : '▼'}</span>
+      </div>
+
+      {/* Expanded body */}
+      {expanded && (
+        <div className="message-body">
+          {detected ? (
+            <>
+              <p style={{ margin: 0, color: '#f87171', fontSize: '0.82rem' }}>
+                {report.probesLost > 0
+                  ? `Probes destroyed: ${report.probesLost}/${report.probesSent} — intelligence gathering failed.`
+                  : 'Probes destroyed — intelligence gathering failed.'}
+              </p>
+            </>
+          ) : (
+            <div className="espionage-grid">
+              {/* Resources card */}
+              {report.resources && (
+                <div
+                  className="espionage-grid-card"
+                  style={{
+                    background: 'rgba(52,211,153,0.07)',
+                    border: '1px solid rgba(52,211,153,0.2)',
+                  }}
+                >
+                  <div className="espionage-grid-card-header" style={{ color: '#34d399' }}>Resources</div>
+                  {[
+                    ['Metal',     '#9ca3af', report.resources.metal],
+                    ['Crystal',   '#60a5fa', report.resources.crystal],
+                    ['Deuterium', '#34d399', report.resources.deuterium],
+                  ].map(([label, color, value]) => (
+                    <div key={label as string} className="espionage-grid-row">
+                      <span style={{ color: 'rgba(150,180,220,0.5)' }}>{label as string}</span>
+                      <span style={{ color: color as string, fontFamily: 'JetBrains Mono, monospace' }}>
+                        {formatNumber(value as number)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Fleet card */}
+              {fleetEntries.length > 0 && (
+                <div
+                  className="espionage-grid-card"
+                  style={{
+                    background: 'rgba(248,113,113,0.07)',
+                    border: '1px solid rgba(248,113,113,0.2)',
+                  }}
+                >
+                  <div className="espionage-grid-card-header" style={{ color: '#f87171' }}>Fleet</div>
+                  {fleetEntries.map(([id, count]) => (
+                    <div key={id} className="espionage-grid-row">
+                      <span style={{ color: 'rgba(150,180,220,0.5)' }}>{getShipOrDefenceName(id)}</span>
+                      <span style={{ color: '#f87171', fontFamily: 'JetBrains Mono, monospace' }}>{count}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Defences card */}
+              {defenceEntries.length > 0 && (
+                <div
+                  className="espionage-grid-card"
+                  style={{
+                    background: 'rgba(240,168,50,0.07)',
+                    border: '1px solid rgba(240,168,50,0.2)',
+                  }}
+                >
+                  <div className="espionage-grid-card-header" style={{ color: '#f0a832' }}>Defences</div>
+                  {defenceEntries.map(([id, count]) => (
+                    <div key={id} className="espionage-grid-row">
+                      <span style={{ color: 'rgba(150,180,220,0.5)' }}>{getShipOrDefenceName(id)}</span>
+                      <span style={{ color: '#f0a832', fontFamily: 'JetBrains Mono, monospace' }}>{count}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Colony metadata (tier / specialty / rebuild) */}
+          {(report.tier !== undefined || report.rebuildStatus) && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginTop: '0.25rem' }}>
+              {report.tier !== undefined && (
+                <div style={{ fontSize: '0.75rem', color: 'rgba(150,180,220,0.55)' }}>
+                  Colony tier: {report.tier}{report.specialty ? ` (${report.specialty})` : ''}
+                </div>
+              )}
+              {report.rebuildStatus && (
+                <div style={{ fontSize: '0.75rem', color: 'rgba(150,180,220,0.55)' }}>
+                  Rebuild status: Fleet {report.rebuildStatus.fleetPct}% | Defence {report.rebuildStatus.defencePct}%
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Footer actions */}
+          <div className="message-actions">
+            {!detected && (
+              <button
+                type="button"
+                className="msg-btn msg-btn--danger"
+                onClick={() => {
+                  setFleetTarget(report.targetCoordinates);
+                  setActivePanel('fleet');
+                }}
+              >
+                Attack
+              </button>
+            )}
+            <button
+              type="button"
+              className="msg-btn msg-btn--muted"
+              onClick={() => onDelete(report.id)}
+            >
+              Delete
+            </button>
+          </div>
+        </div>
       )}
-      {report.resources ? (
-        <p>
-          <strong>Resources:</strong> M {formatNumber(report.resources.metal)} C {formatNumber(report.resources.crystal)} D {formatNumber(report.resources.deuterium)}
-        </p>
-      ) : (
-        <p><strong>Resources:</strong> Unknown</p>
-      )}
-      {renderOptionalList('Fleet', report.fleet, SHIPS, 'None', 'Unknown')}
-      {renderOptionalList('Defences', report.defences, DEFENCES, 'None', 'Unknown')}
-      {report.tier !== undefined && (
-        <p><strong>Colony tier:</strong> {report.tier}{report.specialty ? ` (${report.specialty})` : ''}</p>
-      )}
-      {report.rebuildStatus && (
-        <p><strong>Rebuild status:</strong> Fleet {report.rebuildStatus.fleetPct}% | Defence {report.rebuildStatus.defencePct}%</p>
-      )}
-    </RowFrame>
+    </article>
   );
 }
 
-function FleetMessageRow({
+// ── Fleet notification card ────────────────────────────────────────────────────
+
+function FleetCard({
   notification,
   onRead,
   onDelete,
-  setActivePanel,
 }: {
   notification: FleetNotification;
   onRead: (id: string) => void;
   onDelete: (id: string) => void;
-  setActivePanel: (panel: ActivePanel) => void;
 }) {
-  const [expanded, setExpanded] = useState(false);
   const isEmpty =
     notification.loot.metal <= 0 &&
     notification.loot.crystal <= 0 &&
     notification.loot.deuterium <= 0;
 
-  const handleToggle = () => {
-    setExpanded((current) => !current);
-    if (!notification.read) {
-      onRead(notification.id);
-    }
-  };
+  const failureText =
+    notification.missionType === 'harvest'
+      ? 'No recoverable debris remained at arrival.'
+      : notification.failureReason === 'planet_missing'
+        ? 'Destination planet no longer exists.'
+        : 'Destination planet storage was full — nothing could be delivered.';
+
+  const cardBorder = notification.read ? '1px solid rgba(40,60,120,0.3)' : '1px solid rgba(52,211,153,0.3)';
+  const cardBg     = notification.read ? 'rgba(8,12,28,0.8)' : 'rgba(52,211,153,0.06)';
+
+  const title = notification.missionType === 'harvest'
+    ? `Debris Harvested — ${notification.targetName}`
+    : `Transport Delivered — ${notification.targetName}`;
 
   return (
-    <RowFrame
-      icon="FLT"
-      title={
-        notification.missionType === 'transport'
-          ? `Transport to ${notification.targetName}`
-          : `Harvest at ${notification.targetName}`
-      }
-      meta={[
-        `M ${formatNumber(notification.loot.metal)} C ${formatNumber(notification.loot.crystal)} D ${formatNumber(notification.loot.deuterium)}`,
-        formatDate(notification.timestamp),
-      ]}
-      coordsNode={
-        <CoordLink
-          coords={notification.targetCoordinates}
-          setActivePanel={setActivePanel}
-        />
-      }
-      read={notification.read}
-      onToggle={handleToggle}
-      onDelete={() => onDelete(notification.id)}
-      expanded={expanded}
+    <article
+      className={`message-card fleet-note ${notification.read ? 'message-card--read' : 'message-card--unread'}`}
+      style={{ border: cardBorder, background: cardBg }}
+      onClick={() => { if (!notification.read) onRead(notification.id); }}
     >
-      <p><strong>Target:</strong> {notification.targetName}</p>
-      {isEmpty ? (
-        <p className="hint">
-          {notification.missionType === 'harvest'
-            ? 'No recoverable debris remained at arrival.'
-            : notification.failureReason === 'planet_missing'
-              ? 'Destination planet no longer exists.'
-              : 'Destination planet storage was full — nothing could be delivered.'}
-        </p>
-      ) : (
-        <p>
-          <strong>Resources:</strong> M {formatNumber(notification.loot.metal)} C {formatNumber(notification.loot.crystal)} D {formatNumber(notification.loot.deuterium)}
-        </p>
-      )}
-    </RowFrame>
+      {/* FLT icon circle */}
+      <div
+        className="message-icon"
+        style={{
+          background: 'rgba(52,211,153,0.1)',
+          border: '1.5px solid rgba(52,211,153,0.3)',
+          fontFamily: 'Orbitron, sans-serif',
+          fontSize: '0.58rem',
+          color: '#34d399',
+          letterSpacing: '0.04em',
+        }}
+      >
+        FLT
+      </div>
+
+      {/* Text block */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <span className="message-title">{title}</span>
+          {!notification.read && (
+            <span
+              className="message-new-badge"
+              style={{
+                background: 'rgba(52,211,153,0.2)',
+                border: '1px solid rgba(52,211,153,0.4)',
+                color: '#34d399',
+              }}
+            >
+              NEW
+            </span>
+          )}
+        </div>
+        <div className="message-meta">
+          {isEmpty ? (
+            <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.72rem', color: 'rgba(248,113,113,0.7)' }}>
+              {failureText}
+            </span>
+          ) : (
+            <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.72rem', color: 'rgba(120,150,200,0.55)' }}>
+              M {formatNumber(notification.loot.metal)} · C {formatNumber(notification.loot.crystal)} · D {formatNumber(notification.loot.deuterium)}
+            </span>
+          )}
+          <span className="message-time-ago">{formatTimeAgo(notification.timestamp)}</span>
+        </div>
+      </div>
+
+      {/* Delete button */}
+      <button
+        type="button"
+        className="msg-btn msg-btn--muted"
+        onClick={(e) => {
+          e.stopPropagation();
+          onDelete(notification.id);
+        }}
+      >
+        Delete
+      </button>
+    </article>
   );
 }
+
+// ── Main panel ─────────────────────────────────────────────────────────────────
 
 export function MessagesPanel({
   setActivePanel,
@@ -327,124 +653,170 @@ export function MessagesPanel({
     deleteEspionageReport,
     deleteFleetNotification,
   } = useGame();
+
   const [activeTab, setActiveTab] = useState<MessageTab>('combat');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const combatEntries = [...gameState.combatLog].sort((a, b) => b.timestamp - a.timestamp);
+  // Sorted newest-first
+  const combatEntries    = [...gameState.combatLog].sort((a, b) => b.timestamp - a.timestamp);
   const espionageEntries = [...gameState.espionageReports].sort((a, b) => b.timestamp - a.timestamp);
-  const fleetEntries = [...fleetNotifications].sort((a, b) => b.timestamp - a.timestamp);
+  const fleetEntries     = [...fleetNotifications].sort((a, b) => b.timestamp - a.timestamp);
 
-  const combatUnread = gameState.combatLog.filter((entry) => !entry.read).length;
-  const espionageUnread = gameState.espionageReports.filter((report) => !report.read).length;
-  const fleetUnread = fleetNotifications.filter((notification) => !notification.read).length;
+  // Unread counts
+  const combatUnread    = gameState.combatLog.filter((e) => !e.read).length;
+  const espionageUnread = gameState.espionageReports.filter((r) => !r.read).length;
+  const fleetUnread     = fleetNotifications.filter((n) => !n.read).length;
+
+  const TABS: { id: MessageTab; label: string; unread: number; color: string }[] = [
+    { id: 'combat',    label: 'Combat',    unread: combatUnread,    color: '#f87171' },
+    { id: 'espionage', label: 'Espionage', unread: espionageUnread, color: '#818cf8' },
+    { id: 'fleet',     label: 'Fleet',     unread: fleetUnread,     color: '#34d399' },
+  ];
+
+  function handleToggle(id: string) {
+    setExpandedId((prev) => (prev === id ? null : id));
+  }
+
+  function handleMarkAllRead() {
+    if (activeTab === 'combat')    markAllCombatRead();
+    if (activeTab === 'espionage') markAllEspionageRead();
+    if (activeTab === 'fleet')     markAllFleetRead();
+  }
+
+  // Mark-read-on-expand
+  function makeCombatToggle(entry: CombatLogEntry) {
+    return () => {
+      handleToggle(entry.id);
+      if (!entry.read) markCombatRead(entry.id);
+    };
+  }
+
+  function makeEspionageToggle(report: EspionageReport) {
+    return () => {
+      handleToggle(report.id);
+      if (!report.read) markEspionageRead(report.id);
+    };
+  }
 
   return (
-    <section className="panel">
-      <h1 className="panel-title">Messages</h1>
+    <section className="panel messages-panel">
+      {/* Header */}
+      <div style={{ marginBottom: '1.25rem' }}>
+        <h1
+          style={{
+            margin: '0 0 0.2rem',
+            fontFamily: 'Orbitron, sans-serif',
+            fontSize: '1.5rem',
+            fontWeight: 700,
+            color: '#c8e0ff',
+            letterSpacing: '0.06em',
+          }}
+        >
+          Messages
+        </h1>
+        <p style={{ margin: 0, color: 'rgba(150,180,220,0.55)', fontSize: '0.85rem' }}>
+          Combat reports, espionage intelligence, fleet notifications.
+        </p>
+      </div>
 
+      {/* Tab bar */}
       <div className="messages-tabs">
+        {TABS.map((t) => {
+          const isActive = activeTab === t.id;
+          return (
+            <button
+              key={t.id}
+              type="button"
+              className={`messages-tab ${isActive ? 'messages-tab--active' : ''}`}
+              style={{
+                color: isActive ? t.color : 'rgba(120,150,200,0.6)',
+                background: isActive ? 'rgba(8,12,28,0.95)' : 'transparent',
+                border: isActive ? '1px solid rgba(40,60,120,0.4)' : '1px solid transparent',
+                borderBottom: isActive ? '1px solid rgba(8,12,28,0.95)' : undefined,
+                marginBottom: isActive ? -1 : 0,
+              }}
+              onClick={() => {
+                setActiveTab(t.id);
+                setExpandedId(null);
+              }}
+            >
+              {t.label}
+              {t.unread > 0 && (
+                <span
+                  className="messages-tab-badge"
+                  style={{
+                    background: `${t.color}25`,
+                    border: `1px solid ${t.color}50`,
+                    color: t.color,
+                  }}
+                >
+                  {t.unread}
+                </span>
+              )}
+            </button>
+          );
+        })}
+
+        <div style={{ flex: 1 }} />
+
         <button
           type="button"
-          className={`btn messages-tab-btn ${activeTab === 'combat' ? 'active' : ''}`}
-          onClick={() => setActiveTab('combat')}
+          className="msg-btn msg-btn--ghost"
+          onClick={handleMarkAllRead}
         >
-          Combat
-          {combatUnread > 0 && <span className="nav-badge">{combatUnread}</span>}
-        </button>
-        <button
-          type="button"
-          className={`btn messages-tab-btn ${activeTab === 'espionage' ? 'active' : ''}`}
-          onClick={() => setActiveTab('espionage')}
-        >
-          Espionage
-          {espionageUnread > 0 && <span className="nav-badge">{espionageUnread}</span>}
-        </button>
-        <button
-          type="button"
-          className={`btn messages-tab-btn ${activeTab === 'fleet' ? 'active' : ''}`}
-          onClick={() => setActiveTab('fleet')}
-        >
-          Fleet
-          {fleetUnread > 0 && <span className="nav-badge">{fleetUnread}</span>}
+          Mark All Read
         </button>
       </div>
 
-      <div className="panel-card">
+      {/* Message list */}
+      <div className="messages-list">
         {activeTab === 'combat' && (
-          <>
-            <div className="messages-tab-header">
-              <h2 className="section-title">Combat Reports</h2>
-              <button type="button" className="btn btn-sm" onClick={markAllCombatRead}>
-                Mark All Read
-              </button>
-            </div>
-            {combatEntries.length === 0 ? (
-              <p className="hint">No combat messages</p>
-            ) : (
-              <div className="messages-list">
-                {combatEntries.map((entry) => (
-                  <CombatMessageRow
-                    key={entry.id}
-                    entry={entry}
-                    onRead={markCombatRead}
-                    onDelete={deleteCombatEntry}
-                    setActivePanel={setActivePanel}
-                  />
-                ))}
-              </div>
-            )}
-          </>
+          combatEntries.length === 0 ? (
+            <EmptyState />
+          ) : (
+            combatEntries.map((entry) => (
+              <CombatCard
+                key={entry.id}
+                entry={entry}
+                expanded={expandedId === entry.id}
+                onToggle={makeCombatToggle(entry)}
+                onDelete={deleteCombatEntry}
+                setActivePanel={setActivePanel}
+              />
+            ))
+          )
         )}
 
         {activeTab === 'espionage' && (
-          <>
-            <div className="messages-tab-header">
-              <h2 className="section-title">Espionage Reports</h2>
-              <button type="button" className="btn btn-sm" onClick={markAllEspionageRead}>
-                Mark All Read
-              </button>
-            </div>
-            {espionageEntries.length === 0 ? (
-              <p className="hint">No espionage messages</p>
-            ) : (
-              <div className="messages-list">
-                {espionageEntries.map((report) => (
-                  <EspionageMessageRow
-                    key={report.id}
-                    report={report}
-                    onRead={markEspionageRead}
-                    onDelete={deleteEspionageReport}
-                    setActivePanel={setActivePanel}
-                  />
-                ))}
-              </div>
-            )}
-          </>
+          espionageEntries.length === 0 ? (
+            <EmptyState />
+          ) : (
+            espionageEntries.map((report) => (
+              <EspionageCard
+                key={report.id}
+                report={report}
+                expanded={expandedId === report.id}
+                onToggle={makeEspionageToggle(report)}
+                onDelete={deleteEspionageReport}
+                setActivePanel={setActivePanel}
+              />
+            ))
+          )
         )}
 
         {activeTab === 'fleet' && (
-          <>
-            <div className="messages-tab-header">
-              <h2 className="section-title">Fleet Notifications</h2>
-              <button type="button" className="btn btn-sm" onClick={markAllFleetRead}>
-                Mark All Read
-              </button>
-            </div>
-            {fleetEntries.length === 0 ? (
-              <p className="hint">No fleet messages</p>
-            ) : (
-              <div className="messages-list">
-                {fleetEntries.map((notification) => (
-                  <FleetMessageRow
-                    key={notification.id}
-                    notification={notification}
-                    onRead={markFleetRead}
-                    onDelete={deleteFleetNotification}
-                    setActivePanel={setActivePanel}
-                  />
-                ))}
-              </div>
-            )}
-          </>
+          fleetEntries.length === 0 ? (
+            <EmptyState />
+          ) : (
+            fleetEntries.map((notification) => (
+              <FleetCard
+                key={notification.id}
+                notification={notification}
+                onRead={markFleetRead}
+                onDelete={deleteFleetNotification}
+              />
+            ))
+          )
         )}
       </div>
     </section>

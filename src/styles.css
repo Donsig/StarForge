@@ -2931,144 +2931,279 @@ body::before {
   border-color: rgba(245, 158, 11, 0.7);
 }
 
+/* ── Messages Panel redesign ─────────────────────────────────────────────── */
+
+.messages-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
 .messages-tabs {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+  align-items: flex-end;
+  gap: 0.25rem;
+  border-bottom: 1px solid rgba(40, 60, 120, 0.3);
+  margin-bottom: 1rem;
 }
 
-.messages-tab-btn {
+.messages-tab {
+  padding: 0.45rem 1.1rem;
+  border-radius: 8px 8px 0 0;
+  cursor: pointer;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.85rem;
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.5rem;
+  transition: color 0.15s;
 }
 
-.messages-tab-btn.active {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(30, 64, 175, 0.55));
-  border-color: #3c6cc6;
-  color: #f1f6ff;
+.messages-tab--active {
+  font-weight: 600;
 }
 
-.messages-tab-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  margin-bottom: 0.75rem;
+.messages-tab-badge {
+  font-size: 0.68rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+}
+
+.messages-empty {
+  padding: 3rem;
+  text-align: center;
+  color: rgba(120, 150, 200, 0.35);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.88rem;
 }
 
 .messages-list {
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
-}
-
-.message-row {
-  border: 1px solid var(--border);
-  border-radius: 0.55rem;
-  background: rgba(10, 14, 23, 0.45);
-  overflow: hidden;
-}
-
-.message-row.message-unread {
-  border-color: rgba(59, 130, 246, 0.6);
-  box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.18);
-}
-
-.message-row-top {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0.6rem;
-  align-items: start;
-}
-
-.message-row-toggle {
-  width: 100%;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-  padding: 0.8rem 0.85rem;
-  text-align: left;
-}
-
-.message-row-toggle:hover {
-  background: rgba(26, 37, 64, 0.45);
-}
-
-.message-row-summary {
-  display: flex;
-  align-items: center;
   gap: 0.55rem;
 }
 
-.message-row-icon {
-  flex: 0 0 auto;
-  width: 2.1rem;
-  height: 2.1rem;
-  border-radius: 999px;
-  display: inline-flex;
+/* Card base */
+.message-card {
+  border-radius: 10px;
+  overflow: hidden;
+  backdrop-filter: blur(12px);
+}
+
+/* Expandable card header (div with role=button) */
+.message-card-header {
+  width: 100%;
+  cursor: pointer;
+  padding: 0.9rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-align: left;
+  user-select: none;
+}
+
+.message-card-header:hover {
+  background: rgba(26, 37, 64, 0.3);
+}
+
+/* Icon circle (36×36) */
+.message-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.74rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  border: 1px solid rgba(59, 130, 246, 0.45);
-  color: #dbeafe;
-  background: rgba(59, 130, 246, 0.14);
 }
 
-.message-row-text {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  min-width: 0;
+.message-outcome-label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
 }
 
-.message-row-title {
-  font-size: 0.92rem;
+.message-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.88rem;
+  color: #c8e0ff;
 }
 
-.message-row-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem 0.75rem;
-  color: var(--text-dim);
-  font-size: 0.76rem;
-}
-
-.message-unread-pill {
-  display: inline-flex;
-  align-items: center;
+.message-new-badge {
+  font-size: 0.65rem;
   padding: 0.1rem 0.45rem;
   border-radius: 999px;
-  background: rgba(59, 130, 246, 0.15);
-  border: 1px solid rgba(59, 130, 246, 0.45);
-  color: #bfdbfe;
-  font-size: 0.7rem;
+}
+
+.message-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  margin-top: 0.2rem;
+}
+
+.message-time-ago {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  color: rgba(120, 150, 200, 0.45);
+}
+
+.message-chevron {
+  color: rgba(120, 150, 200, 0.4);
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+/* Expanded body */
+.message-body {
+  border-top: 1px solid rgba(40, 60, 120, 0.25);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+/* Combat: attacker vs defender 2-col grid */
+.combat-losses-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.combat-loss-card {
+  border-radius: 8px;
+  padding: 0.75rem;
+}
+
+.combat-loss-card-header {
+  font-size: 0.68rem;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.5rem;
+  font-family: 'Orbitron', sans-serif;
 }
 
-.message-delete-btn {
-  margin: 0.7rem 0.75rem 0 0;
-  align-self: start;
+.combat-loss-card-sub {
+  font-size: 0.72rem;
+  color: rgba(150, 180, 220, 0.5);
+  margin-bottom: 0.25rem;
 }
 
-.message-detail {
-  padding: 0 0.85rem 0.85rem;
-  border-top: 1px solid rgba(30, 45, 74, 0.55);
+.combat-loss-row {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.1rem;
+  color: rgba(180, 200, 230, 0.8);
 }
 
-.message-detail p {
-  margin: 0.5rem 0 0;
+/* Loot / debris cards */
+.combat-loot-row {
+  border-radius: 8px;
+  padding: 0.7rem;
 }
 
-.message-detail-list {
-  margin: 0.35rem 0 0;
-  padding-left: 1.1rem;
-  color: var(--text-dim);
-  font-size: 0.8rem;
+.combat-loot-header {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.4rem;
+  font-family: 'Orbitron', sans-serif;
+}
+
+/* Espionage intel grid */
+.espionage-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.6rem;
+}
+
+.espionage-grid-card {
+  border-radius: 8px;
+  padding: 0.65rem;
+}
+
+.espionage-grid-card-header {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.35rem;
+  font-family: 'Orbitron', sans-serif;
+}
+
+.espionage-grid-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  margin-top: 0.15rem;
+}
+
+/* Fleet card (compact, horizontal) */
+.fleet-note {
+  padding: 0.85rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+}
+
+/* Footer action buttons */
+.message-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.msg-btn {
+  padding: 0.35rem 0.8rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.78rem;
+  border: 1px solid;
+  transition: opacity 0.15s;
+}
+
+.msg-btn:hover {
+  opacity: 0.85;
+}
+
+.msg-btn--teal {
+  background: rgba(48, 213, 200, 0.15);
+  border-color: rgba(48, 213, 200, 0.35);
+  color: #30d5c8;
+}
+
+.msg-btn--danger {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.35);
+  color: #f87171;
+}
+
+.msg-btn--muted {
+  background: rgba(8, 12, 28, 0.9);
+  border-color: rgba(80, 80, 120, 0.3);
+  color: rgba(150, 180, 220, 0.6);
+}
+
+.msg-btn--ghost {
+  background: transparent;
+  border-color: rgba(40, 60, 120, 0.3);
+  color: rgba(120, 150, 200, 0.5);
+  padding: 0.35rem 0.8rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.75rem;
+  margin-bottom: 0;
+  align-self: center;
+}
+
+/* coord-link: preserve class for tests, inline styled in JSX */
+.coord-link {
+  cursor: pointer;
 }
 
 /* Artwork */
@@ -4156,17 +4291,8 @@ body::before {
     min-width: 100%;
   }
 
-  .messages-tab-header {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .message-row-top {
+  .combat-losses-grid {
     grid-template-columns: 1fr;
-  }
-
-  .message-delete-btn {
-    margin: 0 0.85rem 0.85rem;
   }
 }
 

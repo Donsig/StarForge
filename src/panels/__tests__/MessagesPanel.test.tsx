@@ -26,10 +26,10 @@ describe('MessagesPanel', () => {
 
   it('shows empty state when combat log is empty', () => {
     renderWithGame(<MessagesPanel setActivePanel={() => {}} />, { gameState: { combatLog: [] } });
-    expect(screen.getByText(/no combat messages/i)).toBeInTheDocument();
+    expect(screen.getByText(/no messages in this inbox/i)).toBeInTheDocument();
   });
 
-  it('shows unread indicator on combat log entry', () => {
+  it('shows NEW badge on unread combat log entry', () => {
     renderWithGame(<MessagesPanel setActivePanel={() => {}} />, {
       gameState: {
         combatLog: [{
@@ -54,7 +54,7 @@ describe('MessagesPanel', () => {
         }],
       },
     });
-    expect(screen.getByText(/unread/i)).toBeInTheDocument();
+    expect(screen.getByText(/new/i)).toBeInTheDocument();
   });
 
   it('calls markAllCombatRead when Mark All Read is clicked', async () => {
@@ -69,14 +69,14 @@ describe('MessagesPanel', () => {
     const user = userEvent.setup();
     renderWithGame(<MessagesPanel setActivePanel={() => {}} />, { gameState: { espionageReports: [] } });
     await user.click(screen.getByRole('button', { name: /espionage/i }));
-    expect(screen.getByText(/no espionage messages/i)).toBeInTheDocument();
+    expect(screen.getByText(/no messages in this inbox/i)).toBeInTheDocument();
   });
 
   it('switches to Fleet tab on click', async () => {
     const user = userEvent.setup();
     renderWithGame(<MessagesPanel setActivePanel={() => {}} />, { gameState: { fleetNotifications: [] } });
     await user.click(screen.getByRole('button', { name: /fleet/i }));
-    expect(screen.getByText(/no fleet messages/i)).toBeInTheDocument();
+    expect(screen.getByText(/no messages in this inbox/i)).toBeInTheDocument();
   });
 
   it('renders coord-link buttons for combat report coordinates', () => {
@@ -117,8 +117,6 @@ describe('MessagesPanel', () => {
         gameState: { fleetNotifications: [notification] },
       });
       await user.click(screen.getByRole('button', { name: /fleet/i }));
-      // Expand the notification row to reveal the detail / hint text
-      await user.click(screen.getByRole('button', { name: /transport to/i }));
       return user;
     }
 
