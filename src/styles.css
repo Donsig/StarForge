@@ -4376,3 +4376,183 @@ body::before {
     max-height: 25vh;
   }
 }
+
+/* ── Statistics Panel ─────────────────────────────────────────────────────── */
+
+.stats-header {
+  margin: 0;
+}
+
+.stats-subtitle {
+  margin: 0;
+  color: rgba(150, 180, 220, 0.55);
+  font-size: 0.85rem;
+}
+
+.stats-score-card {
+  background: rgba(8, 12, 28, 0.85);
+  border: 1px solid rgba(40, 60, 120, 0.3);
+  border-radius: 12px;
+  padding: 1rem;
+  backdrop-filter: blur(12px);
+}
+
+.stats-score-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 70px 40px;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.stats-score-bar {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 2px;
+  overflow: hidden;
+  flex: 1;
+}
+
+.stats-score-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+}
+
+.stats-battle-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.65rem;
+}
+
+.stats-battle-card {
+  background: rgba(8, 12, 28, 0.85);
+  border: 1px solid rgba(40, 60, 120, 0.3);
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  backdrop-filter: blur(12px);
+}
+
+.stats-battle-value {
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.stats-battle-label {
+  font-size: 0.72rem;
+  color: rgba(150, 180, 220, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-top: 0.2rem;
+}
+
+.stats-production-card {
+  background: rgba(8, 12, 28, 0.85);
+  border: 1px solid rgba(40, 60, 120, 0.3);
+  border-radius: 12px;
+  padding: 1rem;
+  backdrop-filter: blur(12px);
+}
+
+.stats-production-row {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.stats-production-empty {
+  margin: 0;
+  color: rgba(120, 150, 200, 0.45);
+  font-size: 0.82rem;
+  font-style: italic;
+}
+
+.stats-sparkline {
+  flex-shrink: 0;
+}
+
+.stats-rankings-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.stats-rankings-card {
+  background: rgba(8, 12, 28, 0.85);
+  border: 1px solid rgba(40, 60, 120, 0.3);
+  border-radius: 12px;
+  overflow: hidden;
+  backdrop-filter: blur(12px);
+}
+
+.stats-rankings-row {
+  display: grid;
+  grid-template-columns: 2rem 1fr 90px 90px 90px 90px 100px;
+  align-items: center;
+  border-bottom: 1px solid rgba(40, 60, 120, 0.1);
+  background: transparent;
+  transition: background 100ms;
+}
+
+.stats-rankings-row--header {
+  border-bottom: 1px solid rgba(40, 60, 120, 0.3);
+  background: rgba(5, 8, 20, 0.5);
+}
+
+.stats-rankings-row--player {
+  background: rgba(77, 143, 255, 0.08);
+}
+
+.stats-rank-cell {
+  padding: 0.5rem 0.6rem;
+  text-align: center;
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-size: 0.75rem;
+  color: rgba(100, 130, 180, 0.5);
+}
+
+.stats-rank-medal-1 {
+  color: #f0a832;
+}
+
+.stats-rank-medal-2 {
+  color: #9ca3af;
+}
+
+.stats-rank-medal-3 {
+  color: #cd7f32;
+}
+
+.stats-total-bar {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 2px;
+  overflow: hidden;
+  flex: 1;
+  min-width: 30px;
+}
+
+/* Column headers use CSS-generated content so their DOM textContent is empty,
+   allowing getByText() in tests to find the score-breakdown labels uniquely. */
+.stats-col-header {
+  padding: 0.55rem 0.6rem;
+  font-family: Orbitron, sans-serif;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: rgba(100, 130, 180, 0.55);
+  text-align: right;
+  user-select: none;
+}
+
+.stats-col-header::after {
+  content: attr(data-col-label);
+}
+
+.stats-col-header--sortable {
+  cursor: pointer;
+}
+
+.stats-col-header--sortable[data-active='true'] {
+  color: #4d8fff;
+}
