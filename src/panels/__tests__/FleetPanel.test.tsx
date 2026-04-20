@@ -1,6 +1,6 @@
 import userEvent from '@testing-library/user-event';
 import { FleetPanel } from '../FleetPanel';
-import { fireEvent, renderWithGame, screen } from '../../test/test-utils';
+import { renderWithGame, screen } from '../../test/test-utils';
 
 describe('FleetPanel', () => {
   it('shows fleet slots counter in panel header', () => {
@@ -138,7 +138,8 @@ describe('FleetPanel', () => {
 
     expect(screen.getByText('[G:1 S:2 P:8]')).toBeInTheDocument();
     expect(screen.getByText('Mission Type')).toBeInTheDocument();
-    expect(screen.getByText('Attack')).toBeInTheDocument();
+    // "Attack" appears in the toggle button and hidden select option
+    expect(screen.getAllByText('Attack').length).toBeGreaterThan(0);
     expect(screen.getByText('Small Cargo')).toBeInTheDocument();
     expect(screen.getByText('Cruiser')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Dispatch Attack' })).toBeDisabled();
@@ -177,12 +178,12 @@ describe('FleetPanel', () => {
     expect(recallFleet).toHaveBeenCalledWith('mission_testdeadbeef');
   });
 
-  it('renders ship manifest tooltip in a portal for active missions', () => {
+  it('renders ship manifest chips inline for active missions', () => {
     renderWithGame(<FleetPanel />, {
       gameState: {
         fleetMissions: [
           {
-            id: 'mission_manifesttooltip',
+            id: 'mission_manifestchips',
             type: 'attack',
             status: 'outbound',
             sourcePlanetIndex: 0,
@@ -199,13 +200,9 @@ describe('FleetPanel', () => {
       },
     });
 
-    const row = screen.getByText('[G:1 S:8 P:4]').closest('tr');
-    expect(row).not.toBeNull();
-    fireEvent.mouseEnter(row!);
-
-    const tooltip = document.body.querySelector('.fleet-mission-tooltip');
-    expect(tooltip).not.toBeNull();
-    expect(tooltip).toHaveTextContent('1× Small Cargo, 2× Cruiser');
+    // Ship manifest is shown as inline chips inside the mission card
+    expect(screen.getByText('1× Small Cargo')).toBeInTheDocument();
+    expect(screen.getByText('2× Cruiser')).toBeInTheDocument();
   });
 
   it('shows cargo details for returning missions carrying loot', () => {
@@ -255,7 +252,8 @@ describe('FleetPanel', () => {
       },
     });
 
-    expect(screen.getByText('Harvest')).toBeInTheDocument();
+    // "Harvest" appears in the mission pill and the hidden select option + toggle button
+    expect(screen.getAllByText('Harvest').length).toBeGreaterThan(0);
   });
 
   it('allows dispatching espionage with more than one probe', async () => {
