@@ -1049,11 +1049,11 @@ git commit -m "feat(ui): redesign GalaxyPanel with minimap strip, slot table, ho
 - Modify: `src/panels/FleetPanel.tsx`
 - Modify: `src/styles.css`
 
-- [ ] **Step 1: Add PanelBanner**
+- [x] **Step 1: Add PanelBanner**
 
 `<PanelBanner panel="fleet" title="Fleet" subtitle="Dispatch missions, track movements, manage your war fleet." />`
 
-- [ ] **Step 2: Active Missions section**
+- [x] **Step 2: Active Missions section**
 
 Each mission as a card with: type pill + target + coords + status badge + ETA, 4px progress bar, ship manifest chips OR cargo summary, recall button.
 
@@ -1061,13 +1061,13 @@ Mission colours: attack red, harvest teal, espionage purple, transport green, co
 
 Reference `handoff/design_handoff/sf-panels-b.jsx` lines 392-448.
 
-- [ ] **Step 3: Dispatch Form**
+- [x] **Step 3: Dispatch Form**
 
 Mission type selector (row of coloured toggle buttons), coordinate inputs (3 number inputs), ship selection grid, footer with Speed/Travel/Fuel stats + Dispatch button.
 
 Reference `sf-panels-b.jsx` lines 450-534.
 
-- [ ] **Step 4: Verify and commit**
+- [x] **Step 4: Verify and commit**
 
 ```bash
 git add src/panels/FleetPanel.tsx src/styles.css
