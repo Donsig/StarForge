@@ -141,7 +141,7 @@ export function SettingsPanel() {
               <input
                 type="range"
                 min={1}
-                max={8}
+                max={100}
                 step={1}
                 value={gameState.settings.gameSpeed}
                 className="settings-slider settings-slider--speed"

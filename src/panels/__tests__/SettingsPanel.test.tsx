@@ -98,13 +98,15 @@ describe('SettingsPanel — Game group', () => {
 
   it('renders Game Speed slider with min=1 max=100', () => {
     renderWithGame(<SettingsPanel />);
+    // Target the speed slider by its distinguishing class (multiple sliders
+    // may share min=1 max=100; find the one flagged as the speed slider).
     const sliders = screen.getAllByRole('slider');
-    const gameSpeedSlider = sliders.find(
-      (s) =>
-        s.getAttribute('min') === '1' &&
-        s.getAttribute('max') === '100',
+    const gameSpeedSlider = sliders.find((s) =>
+      s.className.includes('settings-slider--speed'),
     );
     expect(gameSpeedSlider).toBeDefined();
+    expect(gameSpeedSlider?.getAttribute('min')).toBe('1');
+    expect(gameSpeedSlider?.getAttribute('max')).toBe('100');
   });
 
   it('Game Speed slider value label displays current speed with × suffix', () => {
@@ -124,8 +126,8 @@ describe('SettingsPanel — Game group', () => {
     });
 
     const sliders = screen.getAllByRole('slider');
-    const gameSpeedSlider = sliders.find(
-      (s) => s.getAttribute('min') === '1' && s.getAttribute('max') === '8',
+    const gameSpeedSlider = sliders.find((s) =>
+      s.className.includes('settings-slider--speed'),
     );
     expect(gameSpeedSlider).toBeDefined();
 
