@@ -1082,7 +1082,7 @@ git commit -m "feat(ui): redesign FleetPanel with mission cards, dispatch form, 
 - Modify: `src/panels/MessagesPanel.tsx`
 - Modify: `src/styles.css`
 
-- [ ] **Step 1: Panel shell + state management**
+- [x] **Step 1: Panel shell + state management**
 
 State variables needed:
 - `tab`: `'combat' | 'espionage' | 'fleet'` (default `'combat'`)
@@ -1092,13 +1092,13 @@ Unread count computed per tab from message arrays. "Mark All Read" button in tab
 
 Empty state: centered muted text "No messages in this inbox." when current tab has zero messages.
 
-- [ ] **Step 2: Tab bar redesign**
+- [x] **Step 2: Tab bar redesign**
 
 Tabs on border-bottom baseline. Active tab has visible border with bottom matching panel background (classic tab look). Unread count badges use tab accent colours (combat `#f87171`, espionage `#818cf8`, fleet `#34d399`).
 
 Reference `handoff/design_handoff/sf-panels-c.jsx` lines 244-288.
 
-- [ ] **Step 3: Combat report cards**
+- [x] **Step 3: Combat report cards**
 
 **Unread chrome:** unread cards use coloured border + tinted background. Read cards use muted border + neutral background. `NEW` badge (accent-coloured pill) on unread entries. Unread dot (6px circle) on header row.
 
@@ -1107,19 +1107,19 @@ Expanded: 2-column Attacker vs Defender grid (blue left / red right), plundered 
 
 Reference `sf-panels-c.jsx` lines 3-133.
 
-- [ ] **Step 4: Espionage report cards**
+- [x] **Step 4: Espionage report cards**
 
 Header: ESP badge (36x36 circle) + target + coords + DETECTED badge (red, if applicable) + NEW badge + time. Expanded: grid of Resources/Fleet/Defences coloured cards. Detected state: "Probes destroyed — intelligence gathering failed."
 
 Reference `sf-panels-c.jsx` lines 135-219.
 
-- [ ] **Step 5: Fleet notification cards**
+- [x] **Step 5: Fleet notification cards**
 
 Compact non-expandable. FLT badge (36x36 circle, green) + mission type text + resource summary + time + Delete button.
 
 Reference `sf-panels-c.jsx` lines 221-242.
 
-- [ ] **Step 6: Verify and commit**
+- [x] **Step 6: Verify and commit**
 
 ```bash
 git add src/panels/MessagesPanel.tsx src/styles.css
