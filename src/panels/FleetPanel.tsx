@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { FleetMission, MissionType } from '../models/Fleet.ts';
 import { SHIP_ORDER, SHIPS } from '../data/ships.ts';
-import { DEFENCES } from '../data/defences.ts';
 import { useGame } from '../context/GameContext';
 import { PanelBanner } from '../components/PanelBanner';
 import {
@@ -12,6 +11,7 @@ import {
   calcMaxFleetSlots,
   calcTravelSeconds,
 } from '../engine/FleetEngine.ts';
+import { simulatePreview } from '../engine/CombatEngine.ts';
 import { useCountdown } from '../hooks/useCountdown.ts';
 import { formatNumber } from '../utils/format.ts';
 import { formatDuration } from '../utils/time.ts';
@@ -76,54 +76,26 @@ function dispatchLabel(type: MissionType): string {
   return 'Dispatch Attack';
 }
 
-// ── Combat estimate logic ──────────────────────────────────────────────────────
+// ── Combat preview logic ───────────────────────────────────────────────────────
 
-interface CombatEstimate {
-  ratio: number;
+interface FleetCombatPreview {
   title: string;
-  message: string;
   toneClass: 'combat-outmatched' | 'combat-risky' | 'combat-advantage';
+  winProbability: number;
+  drawProbability: number;
+  topAttackerLosses: string[];
 }
 
-function calculateAttackerPower(ships: Record<string, number>, weaponsTechnology: number): number {
-  const techMultiplier = 1 + 0.1 * weaponsTechnology;
-  let total = 0;
-  for (const [shipId, countValue] of Object.entries(ships)) {
-    const count = Math.max(0, Math.floor(countValue));
-    if (count <= 0) continue;
-    const ship = SHIPS[shipId as keyof typeof SHIPS];
-    if (!ship) continue;
-    total += ship.attack * count * techMultiplier;
+function buildCombatPreviewTitle(
+  winProbability: number,
+): Pick<FleetCombatPreview, 'title' | 'toneClass'> {
+  if (winProbability > 0.75) {
+    return { title: 'Clear advantage', toneClass: 'combat-advantage' };
   }
-  return total;
-}
-
-function calculateDefenderPower(
-  fleet: Record<string, number> | undefined,
-  defences: Record<string, number>,
-): number {
-  let total = 0;
-  for (const [shipId, countValue] of Object.entries(fleet ?? {})) {
-    const count = Math.max(0, Math.floor(countValue));
-    if (count <= 0) continue;
-    const ship = SHIPS[shipId as keyof typeof SHIPS];
-    if (!ship) continue;
-    total += ship.hull * count;
+  if (winProbability >= 0.25) {
+    return { title: 'Risky odds', toneClass: 'combat-risky' };
   }
-  for (const [defenceId, countValue] of Object.entries(defences)) {
-    const count = Math.max(0, Math.floor(countValue));
-    if (count <= 0) continue;
-    const defence = DEFENCES[defenceId as keyof typeof DEFENCES];
-    if (!defence) continue;
-    total += defence.hull * count;
-  }
-  return total;
-}
-
-function buildCombatEstimate(ratio: number): CombatEstimate {
-  if (ratio < 0.5) return { ratio, title: 'Outmatched', message: 'Your fleet will likely be destroyed', toneClass: 'combat-outmatched' };
-  if (ratio < 1.5) return { ratio, title: 'Risky odds', message: 'Outcome is uncertain', toneClass: 'combat-risky' };
-  return { ratio, title: 'Clear advantage', message: 'Victory is likely', toneClass: 'combat-advantage' };
+  return { title: 'Outmatched', toneClass: 'combat-outmatched' };
 }
 
 // ── MissionCard ────────────────────────────────────────────────────────────────
@@ -367,6 +339,23 @@ export function FleetPanel() {
     return Object.values(selectedShips).reduce((total, value) => total + Math.max(0, Math.floor(value)), 0);
   }, [maxProbePerMission, missionType, selectedShips]);
 
+  const previewShips = useMemo(() => {
+    if (selectedShipCount > 0) {
+      return selectedShips;
+    }
+
+    const fallbackShips: Record<string, number> = {};
+    for (const shipId of availableShips) {
+      fallbackShips[shipId] = sourcePlanet.ships[shipId];
+    }
+    return fallbackShips;
+  }, [availableShips, selectedShipCount, selectedShips, sourcePlanet.ships]);
+
+  const previewShipCount = useMemo(
+    () => Object.values(previewShips).reduce((total, value) => total + Math.max(0, Math.floor(value)), 0),
+    [previewShips],
+  );
+
   const dispatchPreview = useMemo(() => {
     if (!missionTarget || selectedShipCount <= 0) {
       return { distance: 0, speed: 0, travelSeconds: 0, fuelCost: 0, arrivalTime: 0, returnTime: 0 };
@@ -413,14 +402,59 @@ export function FleetPanel() {
       .sort((a, b) => b.timestamp - a.timestamp)[0] ?? null;
   }, [espionageReports, fleetTarget, missionType]);
 
-  const combatEstimate = useMemo(() => {
-    if (!latestCombatIntel || selectedShipCount <= 0) return null;
-    const attackerPower = calculateAttackerPower(selectedShips, gameState.research.weaponsTechnology);
-    if (attackerPower <= 0) return null;
-    const defenderPower = calculateDefenderPower(latestCombatIntel.fleet, latestCombatIntel.defences ?? {});
-    const ratio = defenderPower > 0 ? attackerPower / defenderPower : Number.POSITIVE_INFINITY;
-    return buildCombatEstimate(ratio);
-  }, [gameState.research.weaponsTechnology, latestCombatIntel, selectedShipCount, selectedShips]);
+  const combatPreview = useMemo(() => {
+    if (!latestCombatIntel || previewShipCount <= 0) return null;
+    const preview = simulatePreview(
+      {
+        ships: previewShips,
+        techs: {
+          weaponsTechnology: gameState.research.weaponsTechnology,
+          shieldingTechnology: gameState.research.shieldingTechnology,
+          armourTechnology: gameState.research.armourTechnology,
+        },
+      },
+      {
+        ships: latestCombatIntel.fleet ?? {},
+        defences: latestCombatIntel.defences ?? {},
+        techs: {
+          weaponsTechnology: 0,
+          shieldingTechnology: 0,
+          armourTechnology: 0,
+        },
+      },
+      fleetTarget.galaxy * 1000000 + fleetTarget.system * 1000 + fleetTarget.slot,
+      10,
+    );
+
+    const topAttackerLosses = Object.entries(preview.averageAttackerLosses)
+      .map(([shipId, averageLosses]) => ({
+        shipId,
+        averageLosses,
+        roundedLosses: Math.round(averageLosses),
+      }))
+      .filter(({ roundedLosses }) => roundedLosses > 0)
+      .sort((left, right) => right.averageLosses - left.averageLosses)
+      .slice(0, 3)
+      .map(({ shipId, roundedLosses }) => {
+        const ship = SHIPS[shipId as keyof typeof SHIPS];
+        return `${roundedLosses} ${ship?.name ?? shipId}`;
+      });
+
+    return {
+      ...buildCombatPreviewTitle(preview.winProbability),
+      winProbability: preview.winProbability,
+      drawProbability: preview.drawProbability,
+      topAttackerLosses,
+    };
+  }, [
+    fleetTarget,
+    gameState.research.armourTechnology,
+    gameState.research.shieldingTechnology,
+    gameState.research.weaponsTechnology,
+    latestCombatIntel,
+    previewShipCount,
+    previewShips,
+  ]);
 
   const cargoInfo = useMemo(() => {
     if (missionType !== 'attack' || !fleetTarget) return null;
@@ -712,14 +746,17 @@ export function FleetPanel() {
           )}
 
           {/* Combat estimate */}
-          {combatEstimate && missionType === 'attack' && (
-            <div className={`fleet-combat-estimate ${combatEstimate.toneClass}`}>
+          {combatPreview && missionType === 'attack' && (
+            <div className={`fleet-combat-estimate ${combatPreview.toneClass}`}>
               <div className="fleet-combat-header">
                 <strong>Combat estimate</strong>
-                <span className="number">x{combatEstimate.ratio.toFixed(2)}</span>
+                <span className="number">{Math.round(combatPreview.winProbability * 100)}% win probability</span>
               </div>
-              <p className="fleet-combat-title">{combatEstimate.title}</p>
-              <p className="hint">{combatEstimate.message}</p>
+              <p className="fleet-combat-title">{combatPreview.title}</p>
+              <p className="hint">
+                Expected losses:{' '}
+                {combatPreview.topAttackerLosses.length > 0 ? combatPreview.topAttackerLosses.join(', ') : 'Minimal'}
+              </p>
               <p className="hint">Approximate only, based on latest espionage report.</p>
             </div>
           )}
