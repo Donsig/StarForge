@@ -22,8 +22,7 @@
 //   - Clicking the X button calls onDismiss() (not onNavigate)
 //   - Timer is cleaned up on unmount
 
-import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { fireEvent, render, screen } from '@testing-library/react';
 
 // @ts-expect-error — Toast.tsx created by dev subagent (Task 16); doesn't exist yet.
 // Vitest will fail with module-not-found at runtime — that is the intended "red" state.
@@ -68,8 +67,7 @@ describe('Toast component', () => {
     expect(dismissBtn).toBeInTheDocument();
   });
 
-  it('calls onDismiss when X button is clicked', async () => {
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime.bind(vi) });
+  it('calls onDismiss when X button is clicked', () => {
     const onDismiss = vi.fn();
     const onNavigate = vi.fn();
 
@@ -83,15 +81,15 @@ describe('Toast component', () => {
       />,
     );
 
-    const dismissBtn = screen.getByRole('button', { name: /dismiss|close|×/i });
-    await user.click(dismissBtn);
+    // Use fireEvent (synchronous) instead of userEvent.click to avoid
+    // userEvent's internal delay machinery hanging under vi.useFakeTimers.
+    fireEvent.click(screen.getByRole('button', { name: /dismiss|close|×/i }));
 
     expect(onDismiss).toHaveBeenCalledTimes(1);
     expect(onNavigate).not.toHaveBeenCalled();
   });
 
-  it('calls onNavigate when toast body is clicked (not the X)', async () => {
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime.bind(vi) });
+  it('calls onNavigate when toast body is clicked (not the X)', () => {
     const onDismiss = vi.fn();
     const onNavigate = vi.fn();
 
@@ -105,8 +103,7 @@ describe('Toast component', () => {
       />,
     );
 
-    // Click the message text (not the dismiss button) — should navigate
-    await user.click(screen.getByText('Battle at [1:2:3]'));
+    fireEvent.click(screen.getByText('Battle at [1:2:3]'));
 
     expect(onNavigate).toHaveBeenCalledTimes(1);
     expect(onDismiss).not.toHaveBeenCalled();

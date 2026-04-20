@@ -643,6 +643,8 @@ export function MessagesPanel({
   const {
     gameState,
     fleetNotifications,
+    messagesInitialTab,
+    setMessagesInitialTab,
     markCombatRead,
     markAllCombatRead,
     markEspionageRead,
@@ -654,7 +656,7 @@ export function MessagesPanel({
     deleteFleetNotification,
   } = useGame();
 
-  const [activeTab, setActiveTab] = useState<MessageTab>('combat');
+  const [activeTab, setActiveTab] = useState<MessageTab>(messagesInitialTab ?? 'combat');
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   // Sorted newest-first
@@ -738,6 +740,7 @@ export function MessagesPanel({
               onClick={() => {
                 setActiveTab(t.id);
                 setExpandedId(null);
+                setMessagesInitialTab?.(null);
               }}
             >
               {t.label}

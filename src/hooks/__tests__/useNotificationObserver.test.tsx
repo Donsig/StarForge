@@ -307,8 +307,8 @@ describe('useNotificationObserver', () => {
     expect(emittedIds).toContain('e-0');
     expect(emittedIds).toContain('f-2');
     expect(emittedIds).toContain('f-1');
-    // f-0 has timestamp now-5000, c-3 has now-7000 — f-0 should be in, c-3 should not
-    expect(emittedIds).toContain('f-0');
+    // f-0 is the 6th most recent so should NOT be in the top-5 recap
+    expect(emittedIds).not.toContain('f-0');
     expect(emittedIds).not.toContain('c-0'); // oldest combat entry
   });
 
@@ -363,6 +363,9 @@ describe('useNotificationObserver', () => {
       fleet: true,
       espionage: true,
     };
+    // buildMockGameContext does not expose catchUp on the ctx object — attach it
+    // directly so the observer can consume it during the mount-effect recap.
+    (ctx as unknown as { catchUp: CatchUpBatch }).catchUp = catchUp;
 
     function Wrapper({ children }: { children: ReactNode }) {
       return <GameContext.Provider value={ctx}>{children}</GameContext.Provider>;

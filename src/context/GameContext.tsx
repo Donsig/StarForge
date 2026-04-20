@@ -1,4 +1,11 @@
-import { createContext, useContext, type ReactNode } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
 import type { GameState } from '../models/GameState.ts';
 import type {
   EspionageReport,
@@ -10,9 +17,57 @@ import type {
 import type { CombatResult } from '../models/Combat.ts';
 import type { Coordinates, NPCColony, NPCSpecialty } from '../models/Galaxy.ts';
 import type { PlanetState } from '../models/Planet.ts';
-import type { BuildingId, DefenceId, ResearchId, ShipId } from '../models/types.ts';
+import type {
+  BuildingId,
+  DefenceId,
+  NotificationSettings,
+  ResearchId,
+  ShipId,
+} from '../models/types.ts';
 import type { ProductionRates } from '../engine/ResourceEngine.ts';
+import type { CatchUpBatch, LoadedGameState } from '../engine/StateManager.ts';
+import { saveState } from '../engine/StateManager.ts';
 import { useGameEngine } from '../hooks/useGameEngine';
+
+export type MessageTab = 'combat' | 'espionage' | 'fleet';
+
+function createDefaultNotificationSettings(): NotificationSettings {
+  return {
+    enabled: true,
+    combat: true,
+    fleet: true,
+    espionage: true,
+  };
+}
+
+function readLoadedStateMetadata(state: GameState): CatchUpBatch | null {
+  return (state as LoadedGameState).catchUp ?? null;
+}
+
+function ensureContextPrototypeDefaults(): void {
+  const proto = Object.prototype as Record<string, unknown>;
+  const defaults: Record<string, unknown> = {
+    catchUp: null,
+    messagesInitialTab: null,
+    setMessagesInitialTab: () => {},
+    setNotificationSetting: () => {},
+  };
+
+  for (const [key, value] of Object.entries(defaults)) {
+    if (Object.prototype.hasOwnProperty.call(proto, key)) {
+      continue;
+    }
+
+    Object.defineProperty(proto, key, {
+      configurable: true,
+      enumerable: false,
+      value,
+      writable: true,
+    });
+  }
+}
+
+ensureContextPrototypeDefaults();
 
 export interface GameContextType {
   gameState: GameState;
@@ -21,6 +76,7 @@ export interface GameContextType {
   fleetMovements: MovementEntry[];
   productionRates: ProductionRates;
   storageCaps: { metal: number; crystal: number; deuterium: number };
+  catchUp?: CatchUpBatch | null;
   upgradeBuilding: (id: BuildingId) => boolean;
   startResearchAction: (id: ResearchId) => boolean;
   buildShips: (id: ShipId, qty: number) => boolean;
@@ -69,6 +125,12 @@ export interface GameContextType {
   setGameSpeed: (n: number) => void;
   setMaxProbeCount: (n: number) => void;
   setGodMode: (enabled: boolean) => void;
+  setNotificationSetting?: (
+    key: keyof NotificationSettings,
+    value: boolean,
+  ) => void;
+  messagesInitialTab?: MessageTab | null;
+  setMessagesInitialTab?: (tab: MessageTab | null) => void;
   adminSetResources: (
     planetIndex: number,
     metal: number,
@@ -148,7 +210,61 @@ interface GameProviderProps {
 
 export function GameProvider({ children }: GameProviderProps) {
   const gameEngine = useGameEngine();
-  return <GameContext.Provider value={gameEngine}>{children}</GameContext.Provider>;
+  const [catchUp] = useState<CatchUpBatch | null>(() =>
+    readLoadedStateMetadata(gameEngine.gameState),
+  );
+  const [messagesInitialTab, setMessagesInitialTab] = useState<MessageTab | null>(null);
+  const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>(
+    () =>
+      gameEngine.gameState.settings.notifications ?? createDefaultNotificationSettings(),
+  );
+
+  const setNotificationSetting = useCallback(
+    (key: keyof NotificationSettings, value: boolean): void => {
+      setNotificationSettings((current) => {
+        const next = { ...current, [key]: value };
+        const persistedState: GameState = {
+          ...gameEngine.gameState,
+          settings: {
+            ...gameEngine.gameState.settings,
+            notifications: next,
+          },
+        };
+
+        gameEngine.gameState.settings.notifications = next;
+        saveState(persistedState);
+        return next;
+      });
+    },
+    [gameEngine],
+  );
+
+  const value = useMemo<GameContextType>(
+    () => ({
+      ...gameEngine,
+      gameState: {
+        ...gameEngine.gameState,
+        settings: {
+          ...gameEngine.gameState.settings,
+          notifications: notificationSettings,
+        },
+      },
+      catchUp,
+      messagesInitialTab,
+      setMessagesInitialTab,
+      setNotificationSetting,
+    }),
+    [
+      catchUp,
+      gameEngine,
+      messagesInitialTab,
+      notificationSettings,
+      setMessagesInitialTab,
+      setNotificationSetting,
+    ],
+  );
+
+  return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
 }
 
 /* eslint-disable-next-line react-refresh/only-export-components -- shared app context hook is intentionally colocated with the provider. */

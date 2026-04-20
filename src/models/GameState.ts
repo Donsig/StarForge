@@ -92,6 +92,12 @@ export function createNewGameState(): GameState {
       gameSpeed: 1,
       godMode: false,
       maxProbeCount: 10,
+      notifications: {
+        enabled: true,
+        combat: true,
+        fleet: true,
+        espionage: true,
+      },
     },
     playerScores: {
       military: 0,

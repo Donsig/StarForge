@@ -22,6 +22,17 @@ import { generateNPCColonies, planetStatsForSlot } from './GalaxyEngine.ts';
 import { processTick as processFleetTick } from './FleetEngine.ts';
 import { processUpgrades as processNPCUpgrades } from './NPCUpgradeEngine.ts';
 
+export interface CatchUpBatch {
+  combat: GameState['combatLog'];
+  fleet: GameState['fleetNotifications'];
+  espionage: GameState['espionageReports'];
+}
+
+export type LoadedGameState = GameState & {
+  readonly state: GameState;
+  readonly catchUp: CatchUpBatch;
+};
+
 const NPC_SPECIALTIES: NPCSpecialty[] = [
   'turtle',
   'fleeter',
@@ -81,11 +92,62 @@ interface LegacyGameState
   settings?: Partial<GameState['settings']>;
 }
 
+function createDefaultNotificationSettings(): GameState['settings']['notifications'] {
+  return {
+    enabled: true,
+    combat: true,
+    fleet: true,
+    espionage: true,
+  };
+}
+
 function normalizeLegacyQueue<T>(queue: LegacyQueue<T>): T[] {
   if (queue === null || queue === undefined) {
     return [];
   }
   return Array.isArray(queue) ? queue : [queue];
+}
+
+function attachLoadMetadata(state: GameState, catchUp: CatchUpBatch): LoadedGameState {
+  Object.defineProperty(state, 'state', {
+    configurable: true,
+    enumerable: false,
+    value: state,
+    writable: true,
+  });
+  Object.defineProperty(state, 'catchUp', {
+    configurable: true,
+    enumerable: false,
+    value: catchUp,
+    writable: true,
+  });
+  return state as LoadedGameState;
+}
+
+function buildCatchUpEntries<T extends { id: string; timestamp: number }>(
+  before: T[],
+  after: T[],
+  windowStart: number,
+  windowEnd: number,
+): T[] {
+  const beforeIds = new Set(before.map((entry) => entry.id));
+  const seen = new Set<string>();
+  const collected: T[] = [];
+
+  for (const entry of after) {
+    const inOfflineWindow =
+      entry.timestamp >= windowStart && entry.timestamp <= windowEnd;
+    const addedDuringCatchUp = !beforeIds.has(entry.id);
+    if ((!inOfflineWindow && !addedDuringCatchUp) || seen.has(entry.id)) {
+      continue;
+    }
+
+    seen.add(entry.id);
+    collected.push(entry);
+  }
+
+  collected.sort((a, b) => a.timestamp - b.timestamp);
+  return collected;
 }
 
 /** Simple seedable PRNG (mulberry32). */
@@ -126,7 +188,7 @@ export function saveState(state: GameState): void {
   localStorage.setItem(GAME_CONSTANTS.STORAGE_KEY, JSON.stringify(state));
 }
 
-export function loadState(): GameState | null {
+export function loadState(): LoadedGameState | null {
   const raw = localStorage.getItem(GAME_CONSTANTS.STORAGE_KEY);
   if (!raw) return null;
 
@@ -134,8 +196,35 @@ export function loadState(): GameState | null {
     const parsed = JSON.parse(raw) as GameState;
     const migrated =
       parsed.version < GAME_CONSTANTS.STATE_VERSION ? migrate(parsed) : parsed;
+    const offlineWindowStart = migrated.lastSaveTimestamp;
+    const offlineWindowEnd = Date.now();
+    const baselineCatchUp: CatchUpBatch = {
+      combat: [...migrated.combatLog],
+      fleet: [...migrated.fleetNotifications],
+      espionage: [...migrated.espionageReports],
+    };
+    processOfflineTime(migrated);
     clampActivePlanetIndex(migrated);
-    return migrated;
+    return attachLoadMetadata(migrated, {
+      combat: buildCatchUpEntries(
+        baselineCatchUp.combat,
+        migrated.combatLog,
+        offlineWindowStart,
+        offlineWindowEnd,
+      ),
+      fleet: buildCatchUpEntries(
+        baselineCatchUp.fleet,
+        migrated.fleetNotifications,
+        offlineWindowStart,
+        offlineWindowEnd,
+      ),
+      espionage: buildCatchUpEntries(
+        baselineCatchUp.espionage,
+        migrated.espionageReports,
+        offlineWindowStart,
+        offlineWindowEnd,
+      ),
+    });
   } catch {
     return null;
   }
@@ -407,6 +496,22 @@ function migrate(state: GameState): GameState {
       stats['totalBuilt'] = {};
     }
     state.version = 16;
+  }
+
+  if (state.version < 17) {
+    legacyState.settings = legacyState.settings ?? {
+      gameSpeed: 1,
+      godMode: false,
+      maxProbeCount: 10,
+      notifications: createDefaultNotificationSettings(),
+    };
+
+    const settings = legacyState.settings as GameState['settings'];
+    settings.notifications = {
+      ...createDefaultNotificationSettings(),
+      ...(settings.notifications ?? {}),
+    };
+    state.version = 17;
   }
 
   return state;

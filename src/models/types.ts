@@ -102,10 +102,18 @@ export type NavId =
 
 export type ActivePanel = NavId;
 
+export interface NotificationSettings {
+  enabled: boolean;
+  combat: boolean;
+  fleet: boolean;
+  espionage: boolean;
+}
+
 export interface GameSettings {
   gameSpeed: number;
   godMode: boolean;
   maxProbeCount: number;
+  notifications: NotificationSettings;
 }
 
 export const GAME_CONSTANTS = {
@@ -115,7 +123,7 @@ export const GAME_CONSTANTS = {
   AUTO_SAVE_TICKS: 30,
   MAX_OFFLINE_SECONDS: 7 * 24 * 3600, // 7 days
   STORAGE_KEY: 'starforge_save',
-  STATE_VERSION: 16,
+  STATE_VERSION: 17,
 } as const;
 
 export interface PlayerScores {

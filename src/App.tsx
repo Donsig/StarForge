@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import type { ActivePanel } from './models/types.ts';
 import { GameProvider, useGame } from './context/GameContext';
+import type { MessageTab } from './context/GameContext';
+import { NotificationProvider } from './context/NotificationContext.tsx';
 import { ResourceBar } from './components/ResourceBar';
 import { PlanetSwitcher } from './components/PlanetSwitcher';
 import { NavSidebar } from './components/NavSidebar';
 import { QueueDisplay } from './components/QueueDisplay';
 import { FleetMovementsBar } from './components/FleetMovementsBar.tsx';
+import { ToastContainer } from './components/ToastContainer.tsx';
 import { OverviewPanel } from './panels/OverviewPanel';
 import { BuildingsPanel } from './panels/BuildingsPanel';
 import { ResearchPanel } from './panels/ResearchPanel';
@@ -17,6 +20,7 @@ import { SettingsPanel } from './panels/SettingsPanel';
 import { AdminPanel } from './panels/AdminPanel';
 import { MessagesPanel } from './panels/MessagesPanel';
 import { StatisticsPanel } from './panels/StatisticsPanel';
+import { useNotificationObserver } from './hooks/useNotificationObserver.ts';
 
 function ActivePanelContent({
   activePanel,
@@ -54,29 +58,50 @@ function ActivePanelContent({
 }
 
 function GameLayout() {
-  const { gameState, fleetNotifications } = useGame();
+  const { gameState, fleetNotifications, setMessagesInitialTab } = useGame();
   const [activePanel, setActivePanel] = useState<ActivePanel>('overview');
   const unreadMessageCount =
     gameState.combatLog.filter((entry) => !entry.read).length +
     gameState.espionageReports.filter((report) => !report.read).length +
     fleetNotifications.filter((notification) => !notification.read).length;
 
+  const handleNavigateToMessages = (tab: MessageTab): void => {
+    setMessagesInitialTab?.(tab);
+    setActivePanel('messages');
+  };
+
+  const handlePanelNavigate = (panel: ActivePanel): void => {
+    if (panel === 'messages') {
+      setMessagesInitialTab?.(null);
+    }
+    setActivePanel(panel);
+  };
+
   return (
-    <div className="app-shell">
-      <PlanetSwitcher />
-      <ResourceBar />
-      <NavSidebar
-        activePanel={activePanel}
-        onNavigate={setActivePanel}
-        unreadMessageCount={unreadMessageCount}
-      />
-      <main className="main-content">
-        <ActivePanelContent activePanel={activePanel} onNavigate={setActivePanel} />
-      </main>
-      <QueueDisplay />
-      <FleetMovementsBar />
-    </div>
+    <NotificationProvider onNavigateToMessages={handleNavigateToMessages}>
+      <NotificationObserverMount />
+      <div className="app-shell">
+        <PlanetSwitcher />
+        <ResourceBar />
+        <NavSidebar
+          activePanel={activePanel}
+          onNavigate={handlePanelNavigate}
+          unreadMessageCount={unreadMessageCount}
+        />
+        <main className="main-content">
+          <ActivePanelContent activePanel={activePanel} onNavigate={handlePanelNavigate} />
+        </main>
+        <QueueDisplay />
+        <FleetMovementsBar />
+      </div>
+      <ToastContainer />
+    </NotificationProvider>
   );
+}
+
+function NotificationObserverMount() {
+  useNotificationObserver();
+  return null;
 }
 
 export default function App() {
