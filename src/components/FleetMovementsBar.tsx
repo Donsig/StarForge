@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useGame } from '../context/GameContext.tsx';
 import { useNow } from '../hooks/useNow.ts';
 import type { MissionStatus, MovementEntry } from '../models/Fleet.ts';
-import type { Coordinates } from '../models/Galaxy.ts';
+import type { Coordinates, NPCColony } from '../models/Galaxy.ts';
 import type { PlanetState } from '../models/Planet.ts';
 import { formatNumber } from '../utils/format.ts';
 import { missionShipManifest } from '../utils/fleet.ts';
@@ -79,11 +79,16 @@ function sameCoordinates(a: Coordinates, b: Coordinates): boolean {
   return a.galaxy === b.galaxy && a.system === b.system && a.slot === b.slot;
 }
 
-function findPlanetByCoordinates(
-  planets: PlanetState[],
+function resolveTargetName(
   coordinates: Coordinates,
-): PlanetState | undefined {
-  return planets.find((planet) => sameCoordinates(planet.coordinates, coordinates));
+  planets: PlanetState[],
+  npcColonies: NPCColony[],
+): string | null {
+  const planet = planets.find((p) => sameCoordinates(p.coordinates, coordinates));
+  if (planet) return planet.name;
+  const npc = npcColonies.find((n) => sameCoordinates(n.coordinates, coordinates));
+  if (npc) return npc.name;
+  return null;
 }
 
 function clamp01(value: number): number {
@@ -118,11 +123,12 @@ function readCollapsedPreference(): boolean {
 interface MovementRowProps {
   entry: MovementEntry;
   planets: PlanetState[];
+  npcColonies: NPCColony[];
   now: number;
   onRecall: (id: string) => void;
 }
 
-function MovementRow({ entry, planets, now, onRecall }: MovementRowProps) {
+function MovementRow({ entry, planets, npcColonies, now, onRecall }: MovementRowProps) {
   const anchorRef = useRef<HTMLLIElement>(null);
   const [showTooltip, setShowTooltip] = useState(false);
   const hoverTimerRef = useRef<number | null>(null);
@@ -150,7 +156,7 @@ function MovementRow({ entry, planets, now, onRecall }: MovementRowProps) {
   useEffect(() => () => clearTimer(), []);
 
   const sourcePlanet = entry.kind === 'player' ? planets[entry.sourcePlanetIndex] : undefined;
-  const targetPlanet = findPlanetByCoordinates(planets, entry.targetCoordinates);
+  const targetName = resolveTargetName(entry.targetCoordinates, planets, npcColonies);
   const statusClass = getStatusClass(entry.status);
   const countdown = formatCountdownFromNow(entry.nextTransitionTime, now);
   const progress = getMovementProgress(entry, now);
@@ -185,7 +191,7 @@ function MovementRow({ entry, planets, now, onRecall }: MovementRowProps) {
                 {arrow}
               </span>
               <span className="movement-route__home">
-                {targetPlanet?.name ?? 'Coords'}
+                {targetName ?? 'Home Planet'}
               </span>
             </>
           ) : (
@@ -199,9 +205,9 @@ function MovementRow({ entry, planets, now, onRecall }: MovementRowProps) {
               >
                 {arrow}
               </span>
-              <span className="movement-route__target">
-                {targetPlanet?.name ?? 'Coords'}
-              </span>
+              {targetName && (
+                <span className="movement-route__target">{targetName}</span>
+              )}
               <span className="movement-route__coords">
                 {formatRouteCoords(entry.targetCoordinates)}
               </span>
@@ -337,6 +343,7 @@ export function FleetMovementsBar() {
               key={entry.id}
               entry={entry}
               planets={gameState.planets}
+              npcColonies={gameState.galaxy.npcColonies}
               now={now}
               onRecall={recallFleet}
             />
