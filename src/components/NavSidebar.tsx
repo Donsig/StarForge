@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import type { ActivePanel } from '../models/types.ts';
 import { useGame } from '../context/GameContext.tsx';
 
@@ -29,6 +30,33 @@ export function NavSidebar({ activePanel, onNavigate, unreadMessageCount }: NavS
   const { gameState } = useGame();
   const planet = gameState.planets[gameState.activePlanetIndex];
   const coords = planet?.coordinates;
+  const activeTabRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    const activeTab = activeTabRef.current;
+    if (!activeTab) {
+      return;
+    }
+
+    const shouldScroll =
+      typeof window === 'undefined' ||
+      typeof window.matchMedia !== 'function' ||
+      window.matchMedia('(max-width: 900px)').matches;
+
+    if (!shouldScroll) {
+      return;
+    }
+
+    if (typeof activeTab.scrollIntoView !== 'function') {
+      return;
+    }
+
+    activeTab.scrollIntoView({
+      block: 'nearest',
+      inline: 'center',
+      behavior: 'smooth',
+    });
+  }, [activePanel]);
 
   return (
     <aside className="nav-sidebar">
@@ -45,6 +73,7 @@ export function NavSidebar({ activePanel, onNavigate, unreadMessageCount }: NavS
           <button
             key={item.id}
             type="button"
+            ref={activePanel === item.id ? activeTabRef : null}
             className={`nav-button ${activePanel === item.id ? 'active' : ''}`}
             onClick={() => onNavigate(item.id)}
           >
@@ -57,6 +86,7 @@ export function NavSidebar({ activePanel, onNavigate, unreadMessageCount }: NavS
         <hr className="nav-divider" />
         <button
           type="button"
+          ref={activePanel === ADMIN_NAV_ITEM.id ? activeTabRef : null}
           className={`nav-button nav-button-admin ${activePanel === ADMIN_NAV_ITEM.id ? 'active' : ''}`}
           onClick={() => onNavigate(ADMIN_NAV_ITEM.id)}
         >

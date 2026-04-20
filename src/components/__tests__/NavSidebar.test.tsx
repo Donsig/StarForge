@@ -44,4 +44,50 @@ describe('NavSidebar', () => {
 
     expect(screen.getByText('3')).toHaveClass('nav-badge');
   });
+
+  it('scrolls the active tab into view on mobile when the active panel changes', () => {
+    const onNavigate = vi.fn();
+    const scrollIntoView = vi.fn();
+    const originalMatchMedia = window.matchMedia;
+    const originalScrollIntoView = HTMLElement.prototype.scrollIntoView;
+
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: vi.fn().mockReturnValue({
+        matches: true,
+        media: '(max-width: 900px)',
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      }),
+    });
+    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+      configurable: true,
+      value: scrollIntoView,
+    });
+
+    try {
+      const view = renderWithGame(
+        <NavSidebar activePanel="overview" onNavigate={onNavigate} unreadMessageCount={0} />,
+      );
+
+      view.rerender(
+        <NavSidebar activePanel="messages" onNavigate={onNavigate} unreadMessageCount={0} />,
+      );
+
+      expect(scrollIntoView).toHaveBeenCalled();
+    } finally {
+      Object.defineProperty(window, 'matchMedia', {
+        configurable: true,
+        value: originalMatchMedia,
+      });
+      Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+        configurable: true,
+        value: originalScrollIntoView,
+      });
+    }
+  });
 });

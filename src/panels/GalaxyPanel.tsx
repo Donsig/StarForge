@@ -641,10 +641,17 @@ export function GalaxyPanel({ onNavigate }: GalaxyPanelProps = {}) {
         </button>
 
         <div className="galaxy-nav-coords">
-          <span className="galaxy-nav-label">Galaxy</span>
-          <span className="galaxy-nav-galaxy-badge">1</span>
+          <span className="galaxy-nav-galaxy">
+            <span className="galaxy-nav-label galaxy-nav-label--galaxy">Galaxy</span>
+            <span className="galaxy-nav-galaxy-badge">1</span>
+          </span>
           <span className="galaxy-nav-dot">·</span>
-          <label className="galaxy-nav-label" htmlFor="galaxy-nav-system-input">System</label>
+          <label
+            className="galaxy-nav-label galaxy-nav-label--system"
+            htmlFor="galaxy-nav-system-input"
+          >
+            System
+          </label>
           <input
             id="galaxy-nav-system-input"
             type="number"
