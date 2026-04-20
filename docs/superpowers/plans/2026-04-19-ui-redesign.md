@@ -994,23 +994,23 @@ git commit -m "feat(ui): redesign OverviewPanel with planet hero, production bar
 - Modify: `src/panels/GalaxyPanel.tsx`
 - Modify: `src/styles.css`
 
-- [ ] **Step 1: Add PanelBanner**
+- [x] **Step 1: Add PanelBanner**
 
 `<PanelBanner panel="galaxy" title="Galaxy" subtitle="Navigate systems, locate targets, colonize worlds, harvest debris fields." />`
 
-- [ ] **Step 2: System Minimap Strip**
+- [x] **Step 2: System Minimap Strip**
 
 Horizontal strip: sun circle → 1px orbit line → 15 slot buttons (planet icons with strength-coloured borders). Selected slot gets outline. Debris indicator: 6x6 teal dot.
 
 Reference `handoff/design_handoff/sf-panels-b.jsx` lines 54-82.
 
-- [ ] **Step 2b: System navigator + legend row**
+- [x] **Step 2b: System navigator + legend row**
 
 Above the minimap: prev/next system buttons, Galaxy label + number badge, System editable input, `/500` label. Right-aligned: colour legend dots (You, Weak, Moderate, Strong, Dangerous, Debris).
 
 Reference `sf-panels-b.jsx` lines 304-331.
 
-- [ ] **Step 3: Slot Table**
+- [x] **Step 3: Slot Table**
 
 CSS grid rows: `2.5rem | 2rem | 1fr | 90px | 150px`. Per row: slot number, planet dot, name + status badges + mission indicators, strength pill, action buttons.
 
@@ -1024,17 +1024,17 @@ CSS grid rows: `2.5rem | 2rem | 1fr | 90px | 150px`. Per row: slot number, plane
 
 Reference `sf-panels-b.jsx` lines 84-185.
 
-- [ ] **Step 4: Hover tooltip via cursor-following portal**
+- [x] **Step 4: Hover tooltip via cursor-following portal**
 
 Espionage intel + active missions. Use `CursorTooltip` portal (NOT `HoverPortal`) — track mouse via `onMouseMove`, position with `position: fixed`, clamp to viewport. Content: planet name + strength, active missions list, espionage report (resources, fleet, defences), "No intelligence" fallback.
 
 Reference `sf-panels-b.jsx` lines 225-302.
 
-- [ ] **Step 5: Selected slot detail strip**
+- [x] **Step 5: Selected slot detail strip**
 
 Below table, shows expanded info for selected slot.
 
-- [ ] **Step 6: Verify and commit**
+- [x] **Step 6: Verify and commit**
 
 ```bash
 git add src/panels/GalaxyPanel.tsx src/styles.css
