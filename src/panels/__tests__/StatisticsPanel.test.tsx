@@ -131,18 +131,18 @@ describe('StatisticsPanel — header', () => {
 // ─── Score Breakdown ────────────────────────────────────────────────────────
 
 describe('StatisticsPanel — Score Breakdown', () => {
-  it('renders 4 score category labels: Economy, Research, Military, Fleet', () => {
+  it('renders 4 score category labels: Buildings, Research, Fleet, Defence', () => {
     renderWithGame(<StatisticsPanel />, {
       gameState: { statistics: makeBaseStatistics() as never },
     });
 
-    expect(screen.getByText(/economy/i)).toBeInTheDocument();
+    expect(screen.getByText(/buildings/i)).toBeInTheDocument();
     expect(screen.getByText(/research/i)).toBeInTheDocument();
-    expect(screen.getByText(/military/i)).toBeInTheDocument();
     expect(screen.getByText(/fleet/i)).toBeInTheDocument();
+    expect(screen.getByText(/defence/i)).toBeInTheDocument();
   });
 
-  it('renders percentage for economy when economy is 50% of total', () => {
+  it('renders percentage for buildings when buildings is 50% of total', () => {
     renderWithGame(<StatisticsPanel />, {
       gameState: {
         statistics: makeBaseStatistics() as never,
@@ -468,10 +468,11 @@ describe('StatisticsPanel — Rankings Table', () => {
     expect(screen.getByText('Beta Outpost')).toBeInTheDocument();
   });
 
-  it('clicking Economy column header re-sorts by economy (highest first)', async () => {
+  it('clicking Buildings column header re-sorts by buildings (highest first)', async () => {
     const user = userEvent.setup();
 
-    // 3 NPCs with known distinct economy: tier 1=500k, tier 2=1M, tier 3=1.5M
+    // 3 NPCs with progressively larger building stockpiles so buildings-column
+    // order is deterministic (higher base + level → higher cumulative cost).
     renderWithGame(<StatisticsPanel />, {
       gameState: {
         statistics: makeBaseStatistics() as never,
@@ -479,18 +480,33 @@ describe('StatisticsPanel — Rankings Table', () => {
         galaxy: {
           seed: 42,
           npcColonies: [
-            makeMinimalNPC({ name: 'Tier1', tier: 1, coordinates: { galaxy: 1, system: 9, slot: 1 } }),
-            makeMinimalNPC({ name: 'Tier2', tier: 2, coordinates: { galaxy: 1, system: 9, slot: 2 } }),
-            makeMinimalNPC({ name: 'Tier3', tier: 3, coordinates: { galaxy: 1, system: 9, slot: 3 } }),
+            makeMinimalNPC({
+              name: 'Tier1',
+              tier: 1,
+              coordinates: { galaxy: 1, system: 9, slot: 1 },
+              buildings: { metalMine: 5 },
+            }),
+            makeMinimalNPC({
+              name: 'Tier2',
+              tier: 2,
+              coordinates: { galaxy: 1, system: 9, slot: 2 },
+              buildings: { metalMine: 15 },
+            }),
+            makeMinimalNPC({
+              name: 'Tier3',
+              tier: 3,
+              coordinates: { galaxy: 1, system: 9, slot: 3 },
+              buildings: { metalMine: 25 },
+            }),
           ],
         },
       },
     });
 
-    // Click the Economy column header
-    await user.click(screen.getByRole('columnheader', { name: /economy/i }));
+    // Click the Buildings column header
+    await user.click(screen.getByRole('columnheader', { name: /buildings/i }));
 
-    // After sorting by economy desc, Tier3 (1.5M) should appear before Tier2 (1M) before Tier1 (500k)
+    // After sorting by buildings desc, Tier3 > Tier2 > Tier1 (higher mine levels)
     const rows = screen.getAllByRole('row');
     // Find rows containing the NPC names
     const tier3RowIndex = rows.findIndex((row) => within(row).queryByText('Tier3') !== null);
@@ -501,7 +517,7 @@ describe('StatisticsPanel — Rankings Table', () => {
     expect(tier2RowIndex).toBeLessThan(tier1RowIndex);
   });
 
-  it('renders column headers Economy, Research, Military, Fleet, Total', () => {
+  it('renders column headers Buildings, Research, Fleet, Defence, Total', () => {
     renderWithGame(<StatisticsPanel />, {
       gameState: {
         statistics: makeBaseStatistics() as never,
@@ -509,10 +525,10 @@ describe('StatisticsPanel — Rankings Table', () => {
       },
     });
 
-    expect(screen.getByRole('columnheader', { name: /economy/i })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /buildings/i })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /research/i })).toBeInTheDocument();
-    expect(screen.getByRole('columnheader', { name: /military/i })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /fleet/i })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /defence/i })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /total/i })).toBeInTheDocument();
   });
 });
