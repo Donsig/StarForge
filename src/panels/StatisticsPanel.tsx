@@ -44,7 +44,7 @@ function MiniSparkline({ values, color }: { values: number[]; color: string }) {
   );
 }
 
-type SortKey = 'economy' | 'research' | 'military' | 'fleet' | 'total';
+type SortKey = 'buildings' | 'research' | 'fleet' | 'defence' | 'total';
 
 interface SortableColHeader {
   key: SortKey;
@@ -52,10 +52,10 @@ interface SortableColHeader {
 }
 
 const SORTABLE_COLUMNS: SortableColHeader[] = [
-  { key: 'economy', label: 'Economy' },
+  { key: 'buildings', label: 'Buildings' },
   { key: 'research', label: 'Research' },
-  { key: 'military', label: 'Military' },
   { key: 'fleet', label: 'Fleet' },
+  { key: 'defence', label: 'Defence' },
   { key: 'total', label: 'Total' },
 ];
 
@@ -68,11 +68,11 @@ function RankingsTable({ rankings }: { rankings: RankingEntry[] }) {
 
   const topTotal = sorted[0]?.total || 1;
 
-  const categoryColors: Record<string, string> = {
-    economy: '#34d399',
+  const categoryColors: Record<Exclude<SortKey, 'total'>, string> = {
+    buildings: '#34d399',
     research: '#818cf8',
-    military: '#f87171',
     fleet: '#4d8fff',
+    defence: '#f87171',
   };
 
   return (
@@ -170,7 +170,7 @@ function RankingsTable({ rankings }: { rankings: RankingEntry[] }) {
                   </span>
                 )}
               </div>
-              {(['economy', 'research', 'military', 'fleet'] as const).map((k) => (
+              {(['buildings', 'research', 'fleet', 'defence'] as const).map((k) => (
                 <div
                   key={k}
                   role="cell"
@@ -264,11 +264,15 @@ export function StatisticsPanel() {
 
   // Score breakdown
   const total = playerScores.total;
-  const scoreRows: { key: 'economy' | 'research' | 'military' | 'fleet'; label: string; color: string }[] = [
-    { key: 'economy', label: 'Economy', color: '#34d399' },
+  const scoreRows: {
+    key: 'buildings' | 'research' | 'fleet' | 'defence';
+    label: string;
+    color: string;
+  }[] = [
+    { key: 'buildings', label: 'Buildings', color: '#34d399' },
     { key: 'research', label: 'Research', color: '#818cf8' },
-    { key: 'military', label: 'Military', color: '#f87171' },
     { key: 'fleet', label: 'Fleet', color: '#4d8fff' },
+    { key: 'defence', label: 'Defence', color: '#f87171' },
   ];
 
   // Production history

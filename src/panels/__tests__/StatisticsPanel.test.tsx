@@ -146,32 +146,18 @@ describe('StatisticsPanel — Score Breakdown', () => {
     renderWithGame(<StatisticsPanel />, {
       gameState: {
         statistics: makeBaseStatistics() as never,
-      },
-      actions: {
-        // override context playerScores to test percentage rendering
-      },
-    });
-
-    // With playerScores { economy: 500, total: 1000 } → 50%
-    // We do this by rendering with a gameState override that results in a
-    // known score ratio. Simplest: provide a planet with only economy buildings.
-    // Actually, provide the playerScores directly via gameState spread
-    renderWithGame(<StatisticsPanel />, {
-      gameState: {
-        statistics: makeBaseStatistics() as never,
         playerScores: {
-          economy: 500,
+          economy: 0,
           research: 300,
-          military: 200,
-          buildings: 0,
-          fleet: 0,
-          defence: 0,
+          military: 0,
+          buildings: 500,
+          fleet: 100,
+          defence: 100,
           total: 1000,
         },
       },
     });
 
-    // 500/1000 = 50%
     expect(screen.getByText('50%')).toBeInTheDocument();
   });
 

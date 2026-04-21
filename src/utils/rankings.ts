@@ -1,93 +1,124 @@
-import type { GameState } from '../models/GameState.ts';
-import { SHIPS } from '../data/ships.ts';
+import { BUILDINGS } from '../data/buildings.ts';
 import { DEFENCES } from '../data/defences.ts';
-import { computePlayerScores } from '../engine/ScoreEngine.ts';
+import { RESEARCH } from '../data/research.ts';
+import { SHIPS } from '../data/ships.ts';
+import type { GameState } from '../models/GameState.ts';
+import { cumulativeBuildingCost, cumulativeResearchCost, scorePointsForCost } from './score.ts';
+
+const NPC_RESEARCH_POINTS_PER_TIER = 2000;
 
 export interface RankingEntry {
   name: string;
-  economy: number;
+  buildings: number;
   research: number;
-  military: number;
   fleet: number;
+  defence: number;
   total: number;
   isPlayer: boolean;
 }
 
+function computeBuildingPoints(levels: Record<string, number>): number {
+  let total = 0;
+
+  for (const [id, def] of Object.entries(BUILDINGS)) {
+    const level = levels[id] ?? 0;
+    if (level <= 0) continue;
+
+    total += scorePointsForCost(cumulativeBuildingCost(def, level));
+  }
+
+  return total;
+}
+
+function computeResearchPoints(levels: Record<string, number>): number {
+  let total = 0;
+
+  for (const [id, def] of Object.entries(RESEARCH)) {
+    const level = levels[id] ?? 0;
+    if (level <= 0) continue;
+
+    total += scorePointsForCost(cumulativeResearchCost(def, level));
+  }
+
+  return total;
+}
+
+function computeFleetPoints(counts: Record<string, number>): number {
+  let total = 0;
+
+  for (const [id, def] of Object.entries(SHIPS)) {
+    const count = counts[id] ?? 0;
+    if (count <= 0) continue;
+
+    total += count * scorePointsForCost(def.cost);
+  }
+
+  return total;
+}
+
+function computeDefencePoints(counts: Record<string, number>): number {
+  let total = 0;
+
+  for (const [id, def] of Object.entries(DEFENCES)) {
+    const count = counts[id] ?? 0;
+    if (count <= 0) continue;
+
+    total += count * scorePointsForCost(def.cost);
+  }
+
+  return total;
+}
+
 /**
- * Compute rankings for all entities (player + NPC colonies).
- * Pure function — no Date.now(), no Math.random().
- * Returns entries sorted by total score descending (stable; ties preserve insertion order).
+ * Compute rankings for the player and NPC colonies in shared cost-point units.
+ * Pure function — no time, randomness, or mutation.
  */
-export function computeRankings(gameState: GameState): RankingEntry[] {
-  const entries: RankingEntry[] = [];
+export function computeRankings(state: GameState): RankingEntry[] {
+  let playerBuildings = 0;
+  let playerFleet = 0;
+  let playerDefence = 0;
 
-  // Player entry — compute fresh scores from current state so rankings
-  // reflect building/research changes even when playerScores cache is stale.
-  const freshScores = computePlayerScores(gameState);
-  // Accumulated scores (buildings, fleet, defence) are tracked via playerScores.
-  const accumulated = gameState.playerScores;
-  const playerFleet = accumulated.fleet ?? 0;
-  const playerEconomy = freshScores.economy;
-  const playerResearch = freshScores.research;
-  const playerMilitary = freshScores.military;
-  const playerTotal = playerEconomy + playerResearch + playerMilitary + playerFleet;
+  for (const planet of state.planets) {
+    playerBuildings += computeBuildingPoints(planet.buildings);
+    playerFleet += computeFleetPoints(planet.ships);
+    playerDefence += computeDefencePoints(planet.defences);
+  }
 
-  const playerName =
-    gameState.planets[gameState.activePlanetIndex]?.name || 'You';
+  const playerResearch = computeResearchPoints(state.research);
+  const playerTotal = playerBuildings + playerResearch + playerFleet + playerDefence;
+  const playerName = state.planets[state.activePlanetIndex]?.name || 'You';
 
-  entries.push({
-    name: playerName,
-    economy: playerEconomy,
-    research: playerResearch,
-    military: playerMilitary,
-    fleet: playerFleet,
-    total: playerTotal,
-    isPlayer: true,
-  });
+  const entries: RankingEntry[] = [
+    {
+      name: playerName,
+      buildings: playerBuildings,
+      research: playerResearch,
+      fleet: playerFleet,
+      defence: playerDefence,
+      total: playerTotal,
+      isPlayer: true,
+    },
+  ];
 
-  // NPC entries
-  for (const colony of gameState.galaxy.npcColonies) {
-    const economy = colony.tier * 500_000;
-    const research = colony.tier * 180_000;
-
-    // military = ships weapon power + defences weapon power
-    let shipWeapon = 0;
-    for (const [id, count] of Object.entries(colony.currentShips ?? {})) {
-      const count_ = count ?? 0;
-      if (count_ <= 0) continue;
-      const shipDef = SHIPS[id as keyof typeof SHIPS];
-      if (shipDef) {
-        shipWeapon += count_ * shipDef.weaponPower;
-      }
-    }
-
-    let defenceWeapon = 0;
-    for (const [id, count] of Object.entries(colony.currentDefences ?? {})) {
-      const count_ = count ?? 0;
-      if (count_ <= 0) continue;
-      const defDef = DEFENCES[id as keyof typeof DEFENCES];
-      if (defDef) {
-        defenceWeapon += count_ * defDef.weaponPower;
-      }
-    }
-
-    const military = shipWeapon + defenceWeapon;
-    const fleet = shipWeapon; // ships only (not defences)
-    const total = economy + research + military + fleet;
+  for (const colony of state.galaxy.npcColonies) {
+    const buildings = computeBuildingPoints(colony.buildings);
+    const research = colony.tier * NPC_RESEARCH_POINTS_PER_TIER;
+    const fleet = computeFleetPoints(colony.currentShips);
+    const defence = computeDefencePoints(colony.currentDefences);
 
     entries.push({
       name: colony.name,
-      economy,
+      buildings,
       research,
-      military,
       fleet,
-      total,
+      defence,
+      total: buildings + research + fleet + defence,
       isPlayer: false,
     });
   }
 
-  // Stable sort by total descending
-  entries.sort((a, b) => b.total - a.total);
-
-  return entries;
+  return entries
+    .map((entry, index) => ({ entry, index }))
+    .sort((a, b) => (b.entry.total - a.entry.total) || (a.index - b.index))
+    .map(({ entry }) => entry);
 }
