@@ -4,6 +4,8 @@ A single-player, browser-based idle strategy game inspired by **OGame**. Build m
 
 Built with **Vite + React 19 + TypeScript** (strict mode). The game engine is pure TypeScript with no React dependency — the UI is just a view layer over a deterministic simulation.
 
+**▶ Play it live: [donsig.github.io/StarForge](https://donsig.github.io/StarForge/)** — each visitor gets their own save scoped to that origin. No account, no server.
+
 ---
 
 ## Table of Contents
@@ -58,7 +60,7 @@ Built with **Vite + React 19 + TypeScript** (strict mode). The game engine is pu
 ### Espionage
 - **Probe-based intel** — Tiered reports gated by your Espionage Technology level: resources (always), fleet (≥2), defences (≥4), buildings + tier (≥6), rebuild status (≥8), NPC specialty (≥6).
 - **Detection** — NPC espionage level (tier-derived, boosted by Research Lab for `researcher` specialty) vs. your tech and probe count; detected probes are lost.
-- **Combat strength estimate** in the dispatch form when a non-detected report exists — rough attacker/defender power ratio with colour-coded advisory labels.
+- **Combat simulation preview** in the dispatch form when a non-detected report exists — runs the full combat engine against the spied fleet/defences and shows expected losses, debris, and loot with colour-coded advisory labels.
 
 ### Messages & statistics
 - **Messages panel** — Combat reports, espionage intel, and fleet notifications with unread badges, auto-prune at 7 days, mark-as-read.
@@ -119,8 +121,12 @@ Open the URL in a browser. On first load you'll start on your homeworld with a f
 
 ```bash
 npm run build       # tsc -b && vite build → dist/
-npm run preview     # Preview the dist/ build at http://localhost:4173
+npm run preview     # Preview the dist/ build at http://localhost:4173/StarForge/
 ```
+
+### Deployment
+
+The live site at [donsig.github.io/StarForge](https://donsig.github.io/StarForge/) auto-deploys on every push to `main` via `.github/workflows/deploy.yml` (GitHub Actions → GitHub Pages). Vite is configured with `base: '/StarForge/'` so assets resolve under the subpath; `src/data/assets.ts` wraps all asset URLs in a `BASE_URL`-aware helper so the same code serves both `/` locally and `/StarForge/` in production.
 
 ---
 
@@ -248,7 +254,7 @@ Galaxy generation is deterministic from `state.galaxy.seed`. Each NPC colony has
 - **Tier 1–10** — scales building levels, fleet composition, defences.
 - **Specialty** — biases upgrade priorities (e.g., `turtle` prioritises defences, `miner` prioritises mines).
 - **Raid memory** — 10-slot ring buffer of raid timestamps drives adaptation and abandonment logic.
-- **On-demand resources** — never stored; computed from `production_rate(buildings) × elapsed_since_lastRaidedAt`, capped at 48hr equivalent.
+- **Running resource balance** — NPCs accumulate resources over real time at their `production_rate(buildings)` and spend them on cost-gated upgrades; raids deplete the balance rather than reset a timestamp, so sustained pressure meaningfully starves them.
 
 NPCs never initiate raids — they're purely reactive targets.
 
