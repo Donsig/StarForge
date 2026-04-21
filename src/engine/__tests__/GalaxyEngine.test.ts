@@ -473,7 +473,7 @@ describe('getNPCResources – v18 simplified (Task 20)', () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function makeV18NPC(resources: { metal: number; crystal: number; deuterium: number }): any {
     const base = createNPCColony();
-    const colony = base as Record<string, unknown>;
+    const colony = base as unknown as Record<string, unknown>;
     delete colony['resourcesAtLastRaid'];
     colony['resources'] = { ...resources };
     return colony;

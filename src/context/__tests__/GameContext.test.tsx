@@ -10,9 +10,8 @@
 // Note: Tests that require the real GameProvider (which starts the game loop)
 // are intentionally avoided here. We test the context API contract instead.
 
-import { renderWithGame, screen } from '../../test/test-utils';
+import { renderWithGame } from '../../test/test-utils';
 import { createMockGameContext } from '../../test/test-utils';
-import { GAME_CONSTANTS } from '../../models/types';
 
 // Local types mirror the upcoming v17 GameSettings shape.
 // Delete when types.ts ships v17.
@@ -21,26 +20,6 @@ interface NotificationSettings {
   combat: boolean;
   fleet: boolean;
   espionage: boolean;
-}
-
-// A minimal component that just calls setNotificationSetting and renders nothing
-// — used to verify the setter is exposed by the context.
-function NotificationSetterConsumer({
-  keyName,
-  value,
-  onSet,
-}: {
-  keyName: string;
-  value: boolean;
-  onSet: () => void;
-}) {
-  // This component will fail to compile once the prop is added to context type,
-  // but we use a cast to avoid tsc errors right now.
-  // @ts-expect-error — setNotificationSetting added in v17; doesn't exist yet.
-  const { setNotificationSetting } = (window as Record<string, unknown>)['__testCtx__'] as {
-    setNotificationSetting: (key: string, value: boolean) => void;
-  };
-  return null;
 }
 
 // ---------------------------------------------------------------------------
@@ -69,7 +48,6 @@ describe('GameContext v17 — setNotificationSetting', () => {
   it('exposes setNotificationSetting as a function on the context', () => {
     const ctx = createMockGameContext();
 
-    // @ts-expect-error — setNotificationSetting added in v17; doesn't exist yet.
     expect(typeof ctx.setNotificationSetting).toBe('function');
   });
 
@@ -78,20 +56,16 @@ describe('GameContext v17 — setNotificationSetting', () => {
 
     const ctx = createMockGameContext({
       actions: {
-        // @ts-expect-error — setNotificationSetting added in v17; doesn't exist yet.
         setNotificationSetting,
       },
     });
 
-    // @ts-expect-error — setNotificationSetting added in v17; doesn't exist yet.
-    ctx.setNotificationSetting('combat', false);
+    ctx.setNotificationSetting!('combat', false);
 
     expect(setNotificationSetting).toHaveBeenCalledWith('combat', false);
   });
 
   it('setNotificationSetting updates settings.notifications[enabled] in mock state', () => {
-    const setNotificationSetting = vi.fn();
-
     // Render a component using the context and verify the setter is callable
     function CtxCapture() {
       // We import useGame inline via dynamic require to avoid circular deps
@@ -104,7 +78,6 @@ describe('GameContext v17 — setNotificationSetting', () => {
 
     renderWithGame(<CtxCapture />, {
       actions: {
-        // @ts-expect-error — setNotificationSetting added in v17; doesn't exist yet.
         setNotificationSetting: setNotificationSettingMock,
       },
     });

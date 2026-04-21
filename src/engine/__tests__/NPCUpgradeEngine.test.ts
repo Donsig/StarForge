@@ -237,7 +237,7 @@ function createV18Colony(
 ): any {
   const base = createColony(specialty, overrides);
   // Remove v17 field, add v18 field
-  const colony = base as Record<string, unknown>;
+  const colony = base as unknown as Record<string, unknown>;
   delete colony['resourcesAtLastRaid'];
   colony['resources'] = { ...resources };
   return colony;
@@ -249,8 +249,6 @@ describe('NPCUpgradeEngine – cost-gated upgrades (Task 20)', () => {
   // cruiser = 20000 metal + 7000 crystal + 2000 deuterium
   const CRUISER_COST = SHIPS.cruiser.cost;
   // battleship = 45000 metal + 15000 crystal + 5000 deuterium
-  const BATTLESHIP_COST = SHIPS.battleship.cost;
-
   it('does NOT add ship when colony cannot afford it', () => {
     // Colony has 0 resources — cannot afford even a light fighter.
     const colony = createV18Colony('fleeter', { metal: 0, crystal: 0, deuterium: 0 }, {

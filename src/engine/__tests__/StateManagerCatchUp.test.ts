@@ -98,12 +98,18 @@ function makeCombatEntry(id: string, timestamp: number): CombatLogEntry {
     timestamp,
     targetCoordinates: { galaxy: 1, system: 2, slot: 3 },
     result: {
-      attackerWon: true,
-      rounds: [],
+      seed: 1,
+      outcome: 'attacker_wins',
+      rounds: 1,
+      attackerStart: { ships: {} },
+      attackerEnd: { ships: {} },
+      defenderStart: { ships: {} },
+      defenderEnd: { ships: {} },
       loot: { metal: 100, crystal: 50, deuterium: 0 },
-      attackerLosses: { metal: 0, crystal: 0, deuterium: 0 },
-      defenderLosses: { metal: 500, crystal: 250, deuterium: 0 },
-      debrisField: { metal: 0, crystal: 0 },
+      attackerLosses: { ships: {} },
+      defenderLosses: { ships: {} },
+      defencesRebuilt: {},
+      debrisCreated: { metal: 0, crystal: 0 },
     },
     read: false,
   };
@@ -118,22 +124,6 @@ function makeFleetNotification(id: string, timestamp: number): FleetNotification
     targetCoordinates: { galaxy: 1, system: 3, slot: 6 },
     targetName: 'Debris Field',
     loot: { metal: 1000, crystal: 500, deuterium: 0 },
-    read: false,
-  };
-}
-
-function makeEspionageReport(id: string, timestamp: number): EspionageReport {
-  return {
-    id,
-    timestamp,
-    sourcePlanetIndex: 0,
-    targetCoordinates: { galaxy: 1, system: 5, slot: 2 },
-    targetName: 'Enemy Planet',
-    probesSent: 3,
-    probesLost: 0,
-    detected: false,
-    detectionChance: 0.1,
-    resources: { metal: 5000, crystal: 2000, deuterium: 500 },
     read: false,
   };
 }

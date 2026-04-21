@@ -7,7 +7,7 @@
 //
 // Vitest will error with "Failed to resolve import ../ToastContainer" which is
 // the correct "red" state for TDD. When ToastContainer.tsx ships, remove the
-// @ts-expect-error directives and all tests should pass.
+// temporary import suppressions and all tests should pass.
 //
 // ToastContainer API:
 //   export function ToastContainer(): JSX.Element | null
@@ -22,13 +22,10 @@
 
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { createContext, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
-// @ts-expect-error — ToastContainer.tsx created by dev subagent (Task 16); doesn't exist yet.
-// Vitest will fail with module-not-found at runtime — that is the intended "red" state.
 import { ToastContainer } from '../ToastContainer';
 
-// @ts-expect-error — NotificationContext.tsx created by dev subagent; doesn't exist yet.
 import { NotificationContext } from '../../context/NotificationContext';
 
 // ---------------------------------------------------------------------------

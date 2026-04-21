@@ -5,7 +5,7 @@
 // exist yet — vitest will error with "Failed to resolve import ../Toggle"
 // which is the correct "red" state for TDD.
 //
-// When Toggle.tsx ships, remove the @ts-expect-error and all tests should pass.
+// When Toggle.tsx ships, remove the temporary import suppression and all tests should pass.
 //
 // Toggle API:
 //   interface ToggleProps {
@@ -20,8 +20,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-// @ts-expect-error — Toggle.tsx created by dev subagent (Task 16); doesn't exist yet.
-// Vitest will fail with module-not-found at runtime — that is the intended "red" state.
 import { Toggle } from '../Toggle';
 
 describe('Toggle component', () => {

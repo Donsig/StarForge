@@ -1,5 +1,4 @@
 /// <reference types="vitest/globals" />
-// @ts-expect-error simulatePreview does not yet exist — created by dev subagent in Task 19
 import { simulatePreview } from '../CombatEngine.ts';
 import type { CombatPreview } from '../CombatEngine.ts';
 

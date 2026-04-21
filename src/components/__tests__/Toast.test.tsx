@@ -5,7 +5,7 @@
 // exist yet — vitest will error with "Failed to resolve import ../Toast"
 // which is the correct "red" state for TDD.
 //
-// When Toast.tsx ships, remove the @ts-expect-error and all tests should pass.
+// When Toast.tsx ships, remove the temporary import suppression and all tests should pass.
 //
 // Toast API:
 //   interface ToastProps {
@@ -24,8 +24,6 @@
 
 import { fireEvent, render, screen } from '@testing-library/react';
 
-// @ts-expect-error — Toast.tsx created by dev subagent (Task 16); doesn't exist yet.
-// Vitest will fail with module-not-found at runtime — that is the intended "red" state.
 import { Toast } from '../Toast';
 
 describe('Toast component', () => {

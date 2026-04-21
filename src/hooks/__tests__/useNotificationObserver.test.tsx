@@ -26,12 +26,10 @@
 
 import { renderHook, act } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { createContext, useContext, useRef, useState, type Context } from 'react';
 import { GameContext, type GameContextType } from '../../context/GameContext';
 import { createNewGameState } from '../../models/GameState';
 import type { CombatLogEntry, EspionageReport, FleetNotification } from '../../models/Fleet';
 
-// @ts-expect-error — useNotificationObserver.ts created by dev subagent; doesn't exist yet.
 import { useNotificationObserver } from '../useNotificationObserver';
 
 // ---------------------------------------------------------------------------
@@ -68,12 +66,18 @@ function makeCombatEntry(id: string, timestamp: number): CombatLogEntry {
     timestamp,
     targetCoordinates: { galaxy: 1, system: 2, slot: 3 },
     result: {
-      attackerWon: true,
-      rounds: [],
+      seed: 1,
+      outcome: 'attacker_wins',
+      rounds: 1,
+      attackerStart: { ships: {} },
+      attackerEnd: { ships: {} },
+      defenderStart: { ships: {} },
+      defenderEnd: { ships: {} },
       loot: { metal: 0, crystal: 0, deuterium: 0 },
-      attackerLosses: { metal: 0, crystal: 0, deuterium: 0 },
-      defenderLosses: { metal: 0, crystal: 0, deuterium: 0 },
-      debrisField: { metal: 0, crystal: 0 },
+      attackerLosses: { ships: {} },
+      defenderLosses: { ships: {} },
+      defencesRebuilt: {},
+      debrisCreated: { metal: 0, crystal: 0 },
     },
     read: false,
   };
@@ -117,7 +121,6 @@ function makeDefaultNotifications(overrides: Partial<NotificationSettings> = {})
 
 function buildMockGameContext(
   overrides: Partial<GameContextType> = {},
-  catchUp: CatchUpBatch = { combat: [], fleet: [], espionage: [] },
 ): GameContextType {
   const baseState = createNewGameState();
   // Inject notifications setting into gameState (will typecheck once v17 ships)
@@ -172,7 +175,6 @@ function buildMockGameContext(
     setGameSpeed: () => {},
     setMaxProbeCount: () => {},
     setGodMode: () => {},
-    // @ts-expect-error — setNotificationSetting added in v17; doesn't exist yet.
     setNotificationSetting: () => {},
     adminSetResources: () => {},
     adminAddResources: () => {},
@@ -235,10 +237,8 @@ function makeWrapper(
     {
       ...ctxOverrides,
       // Expose catchUp data via context field (dev subagent wires this)
-      // @ts-expect-error — catchUp field added in v17; doesn't exist yet.
       catchUp,
     },
-    catchUp,
   );
 
   function Wrapper({ children }: { children: ReactNode }) {
@@ -320,7 +320,7 @@ describe('useNotificationObserver', () => {
       espionage: [],
     };
 
-    const ctx = buildMockGameContext({}, catchUp);
+    const ctx = buildMockGameContext({ catchUp });
     // Set enabled=false
     (ctx.gameState.settings as unknown as { notifications: NotificationSettings }).notifications = {
       enabled: false,
@@ -355,7 +355,7 @@ describe('useNotificationObserver', () => {
       espionage: [],
     };
 
-    const ctx = buildMockGameContext({}, catchUp);
+    const ctx = buildMockGameContext({ catchUp });
     // Disable only combat
     (ctx.gameState.settings as unknown as { notifications: NotificationSettings }).notifications = {
       enabled: true,
@@ -601,11 +601,10 @@ describe('useNotificationObserver', () => {
       espionage: [],
     };
 
-    const ctx = buildMockGameContext({}, catchUp);
+    const ctx = buildMockGameContext({ catchUp });
     (ctx.gameState.settings as unknown as { notifications: NotificationSettings }).notifications =
       makeDefaultNotifications();
 
-    // @ts-expect-error — catchUp field added in v17
     ctx.catchUp = catchUp;
 
     function Wrapper({ children }: { children: ReactNode }) {
@@ -630,11 +629,10 @@ describe('useNotificationObserver', () => {
       espionage: [makeEspionageReport('e1', now - 1000)],
     };
 
-    const ctx = buildMockGameContext({}, catchUp);
+    const ctx = buildMockGameContext({ catchUp });
     (ctx.gameState.settings as unknown as { notifications: NotificationSettings }).notifications =
       makeDefaultNotifications();
 
-    // @ts-expect-error — catchUp field added in v17
     ctx.catchUp = catchUp;
 
     function Wrapper({ children }: { children: ReactNode }) {

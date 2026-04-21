@@ -62,7 +62,7 @@ interface LegacyPlanetState {
   shipyardQueue: PlanetState['shipyardQueue'];
 }
 
-interface LegacyNPCColony extends Omit<GameState['galaxy']['npcColonies'][number], 'temperature'> {
+interface LegacyNPCColony extends Omit<GameState['galaxy']['npcColonies'][number], 'temperature' | 'resources'> {
   temperature?: number;
   resourcesAtLastRaid?: {
     metal?: number;

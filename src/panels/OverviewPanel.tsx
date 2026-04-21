@@ -6,7 +6,7 @@ import { SHIP_ORDER, SHIPS } from '../data/ships.ts';
 import { usedFields } from '../engine/BuildQueue.ts';
 import { useGame } from '../context/GameContext';
 import { useNow } from '../hooks/useNow.ts';
-import type { MissionType, PlayerMovementEntry } from '../models/Fleet.ts';
+import type { MissionType, NpcRaidEntry, PlayerMovementEntry } from '../models/Fleet.ts';
 import type { GameState } from '../models/GameState.ts';
 import type { Coordinates } from '../models/Galaxy.ts';
 import type { PlanetState } from '../models/Planet.ts';
@@ -310,8 +310,12 @@ function formatUnitLabel(unitId: string): string {
 function compactUnitMap(
   ...groups: Array<Partial<Record<string, number>> | undefined>
 ): Record<string, number> | undefined {
-  const entries = groups.flatMap((group) => Object.entries(group ?? {}))
-    .filter(([, count]) => Math.max(0, Math.floor(count ?? 0)) > 0);
+  const entries: Array<[string, number]> = groups.flatMap((group) =>
+    Object.entries(group ?? {}).flatMap(([unitId, count]) => {
+      const safeCount = Math.max(0, Math.floor(count ?? 0));
+      return safeCount > 0 ? [[unitId, safeCount] as [string, number]] : [];
+    }),
+  );
 
   if (entries.length === 0) {
     return undefined;
@@ -629,7 +633,7 @@ export function OverviewPanel({ onNavigate }: OverviewPanelProps = {}) {
     (movement): movement is PlayerMovementEntry => movement.kind === 'player',
   );
   const missionCount = playerMissions.length;
-  const incomingThreats = fleetMovements.filter((m) =>
+  const incomingThreats = fleetMovements.filter((m): m is NpcRaidEntry =>
     m.kind === 'npc' &&
     m.status !== 'returning' &&
     m.targetCoordinates.galaxy === planet.coordinates.galaxy &&

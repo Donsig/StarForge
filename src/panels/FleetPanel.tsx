@@ -403,7 +403,7 @@ export function FleetPanel() {
   }, [espionageReports, fleetTarget, missionType]);
 
   const combatPreview = useMemo(() => {
-    if (!latestCombatIntel || previewShipCount <= 0) return null;
+    if (!latestCombatIntel || !fleetTarget || previewShipCount <= 0) return null;
     const preview = simulatePreview(
       {
         ships: previewShips,
@@ -429,8 +429,8 @@ export function FleetPanel() {
     const topAttackerLosses = Object.entries(preview.averageAttackerLosses)
       .map(([shipId, averageLosses]) => ({
         shipId,
-        averageLosses,
-        roundedLosses: Math.round(averageLosses),
+        averageLosses: averageLosses ?? 0,
+        roundedLosses: Math.round(averageLosses ?? 0),
       }))
       .filter(({ roundedLosses }) => roundedLosses > 0)
       .sort((left, right) => right.averageLosses - left.averageLosses)

@@ -68,7 +68,7 @@ describe('GameStatistics', () => {
       currentDefences: {},
       currentShips: {},
       lastRaidedAt: 0,
-      resourcesAtLastRaid: { metal: 0, crystal: 0, deuterium: 0 },
+      resources: { metal: 0, crystal: 0, deuterium: 0 },
     });
 
     dispatch(state, 0, target, { lightFighter: 5 }, 'attack');

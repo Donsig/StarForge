@@ -534,7 +534,7 @@ describe('StateManager migration v17 → v18', () => {
 
     const colony = makeMinimalNPCColony();
     // Inject v18-style resources field
-    (colony as Record<string, unknown>)['resources'] = { metal: 999, crystal: 888, deuterium: 777 };
+    (colony as unknown as Record<string, unknown>)['resources'] = { metal: 999, crystal: 888, deuterium: 777 };
     delete colony.resourcesAtLastRaid;
 
     const v17Save = makeV17Save([colony]);

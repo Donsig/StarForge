@@ -57,7 +57,7 @@ function createColony(overrides: Partial<NPCColony> = {}): NPCColony {
       smallCargo: 2,
     },
     lastRaidedAt: 0,
-    resourcesAtLastRaid: { metal: 0, crystal: 0, deuterium: 0 },
+    resources: { metal: 0, crystal: 0, deuterium: 0 },
     targetTier: 10,
     catchUpUpgradeIntervalMs: 5_400_000 / 4,
     catchUpProgressTicks: 0,

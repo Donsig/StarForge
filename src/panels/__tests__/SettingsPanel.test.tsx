@@ -18,43 +18,6 @@ import userEvent from '@testing-library/user-event';
 import { SettingsPanel } from '../SettingsPanel';
 import { renderWithGame, screen } from '../../test/test-utils';
 
-// Local types mirror the upcoming v17 GameSettings shape.
-// Delete when types.ts ships v17.
-interface NotificationSettings {
-  enabled: boolean;
-  combat: boolean;
-  fleet: boolean;
-  espionage: boolean;
-}
-
-// Default notification settings helper
-function makeNotifications(overrides: Partial<NotificationSettings> = {}): NotificationSettings {
-  return { enabled: true, combat: true, fleet: true, espionage: true, ...overrides };
-}
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function renderSettings(
-  settingsOverrides: Record<string, unknown> = {},
-  actionOverrides: Record<string, unknown> = {},
-) {
-  return renderWithGame(<SettingsPanel />, {
-    gameState: {
-      settings: {
-        gameSpeed: 1,
-        godMode: false,
-        maxProbeCount: 10,
-        // v17 field — will typecheck once types.ts ships v17
-        ...(makeNotifications() as unknown as Record<string, unknown>),
-        ...settingsOverrides,
-      } as never,
-    },
-    actions: actionOverrides as never,
-  });
-}
-
 // ---------------------------------------------------------------------------
 // Header
 // ---------------------------------------------------------------------------
@@ -241,7 +204,6 @@ describe('SettingsPanel — Notifications group', () => {
 
     renderWithGame(<SettingsPanel />, {
       actions: {
-        // @ts-expect-error — setNotificationSetting added in v17; doesn't exist yet.
         setNotificationSetting,
       },
     });
@@ -259,7 +221,6 @@ describe('SettingsPanel — Notifications group', () => {
 
     renderWithGame(<SettingsPanel />, {
       actions: {
-        // @ts-expect-error — setNotificationSetting added in v17; doesn't exist yet.
         setNotificationSetting,
       },
     });
@@ -275,7 +236,6 @@ describe('SettingsPanel — Notifications group', () => {
 
     renderWithGame(<SettingsPanel />, {
       actions: {
-        // @ts-expect-error — setNotificationSetting added in v17; doesn't exist yet.
         setNotificationSetting,
       },
     });
@@ -291,7 +251,6 @@ describe('SettingsPanel — Notifications group', () => {
 
     renderWithGame(<SettingsPanel />, {
       actions: {
-        // @ts-expect-error — setNotificationSetting added in v17; doesn't exist yet.
         setNotificationSetting,
       },
     });

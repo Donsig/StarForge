@@ -17,13 +17,12 @@
 //
 // All tests FAIL until src/utils/rankings.ts is created.
 
-import { createNewGameState, type GameState } from '../../models/GameState.ts';
-import { createDefaultPlanet } from '../../models/Planet.ts';
+import { createNewGameState } from '../../models/GameState.ts';
 import type { NPCColony } from '../../models/Galaxy.ts';
 
 // Import from the yet-to-exist rankings utility.
 // The import itself will cause the test to fail until the file is created.
-import { computeRankings, type RankingEntry } from '../rankings.ts';
+import { computeRankings } from '../rankings.ts';
 
 function makeMinimalNPC(overrides: Partial<NPCColony> = {}): NPCColony {
   return {
@@ -48,7 +47,7 @@ function makeMinimalNPC(overrides: Partial<NPCColony> = {}): NPCColony {
     currentDefences: {},
     currentShips: {},
     lastRaidedAt: 0,
-    resourcesAtLastRaid: { metal: 0, crystal: 0, deuterium: 0 },
+    resources: { metal: 0, crystal: 0, deuterium: 0 },
     ...overrides,
   };
 }

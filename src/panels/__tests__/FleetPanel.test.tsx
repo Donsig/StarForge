@@ -12,13 +12,11 @@ vi.mock('../../engine/CombatEngine.ts', async () => {
   );
   return {
     ...actual,
-    // @ts-expect-error simulatePreview does not yet exist — created by dev subagent in Task 19
     simulatePreview: vi.fn(),
   };
 });
 
 // Import after mocking so we get the mocked version
-// @ts-expect-error simulatePreview does not yet exist — created by dev subagent in Task 19
 import { simulatePreview } from '../../engine/CombatEngine.ts';
 
 // ── Shared fixtures ────────────────────────────────────────────────────────────
@@ -403,7 +401,7 @@ describe('FleetPanel', () => {
               currentDefences: {},
               currentShips: {},
               lastRaidedAt: 0,
-              resourcesAtLastRaid: { metal: 0, crystal: 0, deuterium: 0 },
+              resources: { metal: 0, crystal: 0, deuterium: 0 },
             },
           ],
         },

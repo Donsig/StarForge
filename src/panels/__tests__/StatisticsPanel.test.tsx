@@ -63,7 +63,7 @@ function makeMinimalNPC(overrides: Partial<NPCColony> = {}): NPCColony {
     currentDefences: {},
     currentShips: {},
     lastRaidedAt: 0,
-    resourcesAtLastRaid: { metal: 0, crystal: 0, deuterium: 0 },
+    resources: { metal: 0, crystal: 0, deuterium: 0 },
     ...overrides,
   };
 }
