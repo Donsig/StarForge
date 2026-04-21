@@ -8,6 +8,8 @@ import {
   getPlanetType,
 } from '../assets';
 
+const base = import.meta.env.BASE_URL;
+
 describe('getPlanetType', () => {
   it('returns hot for temperature above 60', () => {
     expect(getPlanetType(61)).toBe('hot');
@@ -32,18 +34,18 @@ describe('getPlanetType', () => {
 
 describe('getPlanetImageUrl', () => {
   it('returns portrait path by default', () => {
-    expect(getPlanetImageUrl(80)).toBe('/assets/planets/hot.webp');
+    expect(getPlanetImageUrl(80)).toBe(`${base}assets/planets/hot.webp`);
   });
 
   it('returns icon path when requested', () => {
-    expect(getPlanetImageUrl(0, 'icon')).toBe('/assets/planets/cold-icon.webp');
+    expect(getPlanetImageUrl(0, 'icon')).toBe(`${base}assets/planets/cold-icon.webp`);
   });
 });
 
 describe('asset maps', () => {
   it('BUILDING_IMAGES has all 12 buildings', () => {
     expect(Object.keys(BUILDING_IMAGES)).toHaveLength(12);
-    expect(BUILDING_IMAGES.metalMine).toBe('/assets/buildings/metalMine.webp');
+    expect(BUILDING_IMAGES.metalMine).toBe(`${base}assets/buildings/metalMine.webp`);
   });
 
   it('SHIP_IMAGES has all 13 ships', () => {
@@ -60,7 +62,7 @@ describe('asset maps', () => {
 
   it('PANEL_IMAGES has all 7 panels', () => {
     expect(Object.keys(PANEL_IMAGES)).toHaveLength(7);
-    expect(PANEL_IMAGES.fleet).toBe('/assets/panels/fleet.webp');
-    expect(PANEL_IMAGES.shipyard).toBe('/assets/panels/shipyard.webp');
+    expect(PANEL_IMAGES.fleet).toBe(`${base}assets/panels/fleet.webp`);
+    expect(PANEL_IMAGES.shipyard).toBe(`${base}assets/panels/shipyard.webp`);
   });
 });
