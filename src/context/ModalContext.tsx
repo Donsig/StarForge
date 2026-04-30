@@ -78,6 +78,7 @@ function InternalModalProvider({ children }: { children: ReactNode }) {
   return <ModalContext.Provider value={internalValue}>{children}</ModalContext.Provider>;
 }
 
+/* eslint-disable-next-line react-refresh/only-export-components -- shared modal-context hook is intentionally colocated with the provider, mirroring src/context/GameContext.tsx. */
 export function useModal(): ModalContextValue {
   const context = useContext(ModalContext);
 

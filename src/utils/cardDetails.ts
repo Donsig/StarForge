@@ -538,6 +538,7 @@ export function researchProgression(
   id: ResearchId,
   currentLevel: number,
   queue: QueueItem[],
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- kept for API symmetry with buildingProgression; future research benefits may depend on state.
   _state: GameState,
 ): LevelRow[] {
   const queuedLevels = new Set(queue.map((q) => q.targetLevel));

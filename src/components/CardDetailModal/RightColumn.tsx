@@ -218,6 +218,7 @@ function Footer({ card }: { card: DetailCard }) {
   const speed = gameState.settings.gameSpeed;
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: stepper qty resets to 1 only when the card identity changes (e.g. modal swaps via prereq nav); no loop because card.type/card.id are stable across renders within a single open card.
     setQty(1);
   }, [card.type, card.id]);
 

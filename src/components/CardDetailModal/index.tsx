@@ -41,6 +41,7 @@ export default function CardDetailModal() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect -- guarded mirror: setDisplayedCard/setPhase only fire when selectedCard actually changes (cardsDiffer check) or when transitioning from open→closing, so no cascading-render loop. */
     if (selectedCard !== null && cardsDiffer(displayedCard, selectedCard)) {
       setDisplayedCard(selectedCard);
       setPhase('open');
@@ -50,6 +51,7 @@ export default function CardDetailModal() {
     if (selectedCard === null && displayedCard !== null) {
       setPhase('closing');
     }
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [selectedCard, displayedCard]);
 
   useEffect(() => {
