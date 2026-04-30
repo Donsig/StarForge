@@ -747,7 +747,7 @@ NON-GOALS: do not implement the modal yet.
 DONE MEANS: tests for open/close/origin-preservation/restoreFocus pass; npm run build passes.
 ```
 
-- [ ] **Step 1: Write tests**
+- [x] **Step 1: Write tests**
 
 ```tsx
 // src/context/__tests__/ModalContext.test.tsx
@@ -798,9 +798,9 @@ describe('ModalContext', () => {
 });
 ```
 
-- [ ] **Step 2: Tests fail**
+- [x] **Step 2: Tests fail**
 
-- [ ] **Step 3: Implement provider**
+- [x] **Step 3: Implement provider**
 
 ```tsx
 // src/context/ModalContext.tsx
@@ -857,11 +857,11 @@ export function ModalProvider({
 }
 ```
 
-- [ ] **Step 4: Tests pass**
+- [x] **Step 4: Tests pass** — 4 tests pass.
 
-- [ ] **Step 5: Full suite + build**
+- [x] **Step 5: Full suite + build** — clean.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/context/ModalContext.tsx src/context/__tests__/ModalContext.test.tsx
