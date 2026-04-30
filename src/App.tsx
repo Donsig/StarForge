@@ -2,7 +2,9 @@ import { useState } from 'react';
 import type { ActivePanel } from './models/types.ts';
 import { GameProvider, useGame } from './context/GameContext';
 import type { MessageTab } from './context/GameContext';
+import { ModalProvider } from './context/ModalContext';
 import { NotificationProvider } from './context/NotificationContext.tsx';
+import CardDetailModal from './components/CardDetailModal';
 import { ResourceBar } from './components/ResourceBar';
 import { PlanetSwitcher } from './components/PlanetSwitcher';
 import { NavSidebar } from './components/NavSidebar';
@@ -107,7 +109,10 @@ function NotificationObserverMount() {
 export default function App() {
   return (
     <GameProvider>
-      <GameLayout />
+      <ModalProvider>
+        <GameLayout />
+        <CardDetailModal />
+      </ModalProvider>
     </GameProvider>
   );
 }
