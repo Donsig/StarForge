@@ -601,7 +601,7 @@ STOP CONDITION: if cost helpers are missing, stop.
 DONE MEANS: progression tests pass; existing helper tests still green.
 ```
 
-- [ ] **Step 1: Append tests**
+- [x] **Step 1: Append tests**
 
 ```ts
 import { buildingProgression, researchProgression } from '../cardDetails';
@@ -637,9 +637,9 @@ describe('researchProgression', () => {
 });
 ```
 
-- [ ] **Step 2: Tests fail (helpers don't exist)**
+- [x] **Step 2: Tests fail (helpers don't exist)**
 
-- [ ] **Step 3: Implement progression helpers**
+- [x] **Step 3: Implement progression helpers**
 
 ```ts
 import {
@@ -718,11 +718,11 @@ function energyAtLevel(id: BuildingId, level: number, state: GameState): number 
 }
 ```
 
-- [ ] **Step 4: Tests pass**
+- [x] **Step 4: Tests pass** — 30 tests pass (7 new for progression).
 
-- [ ] **Step 5: Full suite + build**
+- [x] **Step 5: Full suite + build** — clean.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/utils/cardDetails.ts src/utils/__tests__/cardDetails.test.ts

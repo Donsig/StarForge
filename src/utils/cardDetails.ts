@@ -484,3 +484,99 @@ export function cardStatsFor(type: CardType, id: string, state: GameState): Card
     }
   }
 }
+
+import {
+  buildingCostAtLevel,
+  researchCostAtLevel,
+} from '../engine/FormulasEngine.ts';
+import type { QueueItem } from '../models/types.ts';
+
+export interface LevelRow {
+  level: number;
+  benefit: string;
+  metal: number;
+  crystal: number;
+  deuterium: number;
+  energy: number;
+  current: boolean;
+  queued: boolean;
+  next: boolean;
+}
+
+export function buildingProgression(
+  id: BuildingId,
+  currentLevel: number,
+  queue: QueueItem[],
+  state: GameState,
+): LevelRow[] {
+  const queuedLevels = new Set(queue.map((q) => q.targetLevel));
+  const nextLevel = currentLevel + queue.length + 1;
+  const start = Math.max(1, currentLevel - 2);
+  const end = Math.max(currentLevel + 3, nextLevel + 1);
+  const def = BUILDINGS[id];
+  const rows: LevelRow[] = [];
+
+  for (let level = start; level <= end; level += 1) {
+    const cost = buildingCostAtLevel(def.baseCost, def.costMultiplier, level);
+    rows.push({
+      level,
+      benefit: buildingBenefitAtLevel(id, level, state),
+      metal: cost.metal,
+      crystal: cost.crystal,
+      deuterium: cost.deuterium,
+      energy: energyAtLevel(id, level, state),
+      current: level === currentLevel,
+      queued: queuedLevels.has(level) && level !== currentLevel,
+      next: level === nextLevel,
+    });
+  }
+
+  return rows;
+}
+
+export function researchProgression(
+  id: ResearchId,
+  currentLevel: number,
+  queue: QueueItem[],
+  _state: GameState,
+): LevelRow[] {
+  const queuedLevels = new Set(queue.map((q) => q.targetLevel));
+  const nextLevel = currentLevel + queue.length + 1;
+  const end = Math.max(currentLevel + 3, nextLevel + 1);
+  const def = RESEARCH[id];
+  const rows: LevelRow[] = [];
+
+  for (let level = 1; level <= end; level += 1) {
+    const cost = researchCostAtLevel(def.baseCost, def.costMultiplier, level);
+    rows.push({
+      level,
+      benefit: researchBenefitAtLevel(id, level),
+      metal: cost.metal,
+      crystal: cost.crystal,
+      deuterium: cost.deuterium,
+      energy: 0,
+      current: level === currentLevel,
+      queued: queuedLevels.has(level) && level !== currentLevel,
+      next: level === nextLevel,
+    });
+  }
+
+  return rows;
+}
+
+function energyAtLevel(id: BuildingId, level: number, state: GameState): number {
+  switch (id) {
+    case 'metalMine':
+      return -metalMineEnergy(level);
+    case 'crystalMine':
+      return -crystalMineEnergy(level);
+    case 'deuteriumSynthesizer':
+      return -deuteriumSynthEnergy(level);
+    case 'solarPlant':
+      return solarPlantEnergy(level);
+    case 'fusionReactor':
+      return fusionReactorEnergy(level, state.research.energyTechnology);
+    default:
+      return 0;
+  }
+}

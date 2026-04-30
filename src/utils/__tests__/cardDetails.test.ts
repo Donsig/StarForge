@@ -216,3 +216,168 @@ describe('cardStatsFor', () => {
     ).toBe('0');
   });
 });
+
+import {
+  buildingProgression,
+  researchProgression,
+} from '../cardDetails.ts';
+import type { QueueItem } from '../../models/types.ts';
+
+function makeQueueItem(
+  type: QueueItem['type'],
+  id: string,
+  targetLevel: number,
+  sourcePlanetIndex?: number,
+): QueueItem {
+  return {
+    type,
+    id,
+    targetLevel,
+    sourcePlanetIndex,
+    startedAt: 0,
+    completesAt: 0,
+  };
+}
+
+describe('buildingProgression', () => {
+  it('returns rows 5..10 for currentLevel=7 with an empty queue', () => {
+    const state = createMockGameContext({
+      gameState: {
+        planet: { buildings: { metalMine: 7 } },
+      },
+    }).gameState;
+
+    const rows = buildingProgression('metalMine', 7, [], state);
+
+    expect(rows.map((row) => row.level)).toEqual([5, 6, 7, 8, 9, 10]);
+    expect(rows.find((row) => row.level === 7)).toMatchObject({
+      current: true,
+      queued: false,
+      next: false,
+    });
+    expect(rows.find((row) => row.level === 8)).toMatchObject({
+      current: false,
+      queued: false,
+      next: true,
+    });
+  });
+
+  it('expands the range when queued levels push NEXT past current+3', () => {
+    const state = createMockGameContext({
+      gameState: {
+        planet: { buildings: { metalMine: 7 } },
+      },
+    }).gameState;
+    const queue = [8, 9, 10, 11].map((level) =>
+      makeQueueItem('building', 'metalMine', level),
+    );
+
+    const rows = buildingProgression('metalMine', 7, queue, state);
+
+    expect(rows.map((row) => row.level)).toEqual([
+      5, 6, 7, 8, 9, 10, 11, 12, 13,
+    ]);
+    expect(rows.find((row) => row.level === 12)?.next).toBe(true);
+  });
+
+  it('never returns rows below level 1', () => {
+    const state = createMockGameContext({
+      gameState: {
+        planet: { buildings: { solarPlant: 1 } },
+      },
+    }).gameState;
+
+    const rows = buildingProgression('solarPlant', 1, [], state);
+
+    expect(rows[0]?.level).toBe(1);
+    expect(rows.map((row) => row.level)).toEqual([1, 2, 3, 4]);
+  });
+
+  it('marks queued/current/next flags without overlap', () => {
+    const state = createMockGameContext({
+      gameState: {
+        planet: { buildings: { metalMine: 7 } },
+      },
+    }).gameState;
+    const queue = [8, 9].map((level) =>
+      makeQueueItem('building', 'metalMine', level),
+    );
+
+    const rows = buildingProgression('metalMine', 7, queue, state);
+    const row7 = rows.find((row) => row.level === 7);
+    const row8 = rows.find((row) => row.level === 8);
+    const row9 = rows.find((row) => row.level === 9);
+    const row10 = rows.find((row) => row.level === 10);
+
+    expect(row7).toMatchObject({ current: true, queued: false, next: false });
+    expect(row8).toMatchObject({ current: false, queued: true, next: false });
+    expect(row9).toMatchObject({ current: false, queued: true, next: false });
+    expect(row10).toMatchObject({ current: false, queued: false, next: true });
+    expect(
+      rows.every(
+        (row) => [row.current, row.queued, row.next].filter(Boolean).length <= 1,
+      ),
+    ).toBe(true);
+  });
+
+  it('uses signed energy deltas for consuming and producing buildings', () => {
+    const state = createMockGameContext({
+      gameState: {
+        planet: { buildings: { metalMine: 1, solarPlant: 1 } },
+      },
+    }).gameState;
+
+    expect(
+      buildingProgression('metalMine', 1, [], state).find((row) => row.level === 1)
+        ?.energy,
+    ).toBeLessThan(0);
+    expect(
+      buildingProgression('solarPlant', 1, [], state).find((row) => row.level === 1)
+        ?.energy,
+    ).toBeGreaterThan(0);
+  });
+});
+
+describe('researchProgression', () => {
+  it('always starts at level 1', () => {
+    const state = createMockGameContext({
+      gameState: {
+        research: { weaponsTechnology: 5 },
+      },
+    }).gameState;
+
+    const rows = researchProgression('weaponsTechnology', 5, [], state);
+
+    expect(rows[0]?.level).toBe(1);
+    expect(rows.map((row) => row.level)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+  });
+
+  it('counts queue entries by id only, ignoring sourcePlanetIndex differences', () => {
+    const state = createMockGameContext({
+      gameState: {
+        research: { weaponsTechnology: 5 },
+      },
+      withMultiplePlanets: true,
+    }).gameState;
+    const queue = [
+      makeQueueItem('research', 'weaponsTechnology', 6, 0),
+      makeQueueItem('research', 'weaponsTechnology', 7, 1),
+    ];
+
+    const rows = researchProgression('weaponsTechnology', 5, queue, state);
+
+    expect(rows.find((row) => row.level === 6)).toMatchObject({
+      queued: true,
+      next: false,
+    });
+    expect(rows.find((row) => row.level === 7)).toMatchObject({
+      queued: true,
+      next: false,
+    });
+    expect(rows.find((row) => row.level === 8)).toMatchObject({
+      queued: false,
+      next: true,
+    });
+    expect(rows.every((row) => row.energy === 0)).toBe(true);
+  });
+});
