@@ -112,3 +112,107 @@ describe('enablesFor', () => {
     expect(out.find((u) => u.id === 'gaussCannon')).toBeDefined();
   });
 });
+
+import {
+  buildingBenefitAtLevel,
+  cardStatsFor,
+  researchBenefitAtLevel,
+} from '../cardDetails.ts';
+
+describe('buildingBenefitAtLevel', () => {
+  it('formats metal mine production at level 7 as +N/h', () => {
+    const state = createMockGameContext({
+      gameState: {
+        planet: { buildings: { metalMine: 7 } },
+        research: { plasmaTechnology: 0 },
+      },
+    }).gameState;
+
+    expect(buildingBenefitAtLevel('metalMine', 7, state)).toMatch(/^\+[\d,]+\/h$/);
+  });
+
+  it('formats solar plant energy without an hourly suffix', () => {
+    const state = createMockGameContext().gameState;
+
+    expect(buildingBenefitAtLevel('solarPlant', 6, state)).toMatch(/^\+\d+$/);
+  });
+
+  it('formats storage capacity with the compact number helper', () => {
+    const state = createMockGameContext().gameState;
+
+    expect(buildingBenefitAtLevel('metalStorage', 5, state)).toMatch(/^\d+K$/);
+  });
+
+  it('formats robotics factory as build-time reduction', () => {
+    const state = createMockGameContext().gameState;
+
+    expect(buildingBenefitAtLevel('roboticsFactory', 4, state)).toMatch(
+      /^−\d+% build time$/,
+    );
+  });
+
+  it('formats fusion as combined energy and deuterium consumption', () => {
+    const state = createMockGameContext({
+      gameState: { research: { energyTechnology: 5 } },
+    }).gameState;
+
+    expect(buildingBenefitAtLevel('fusionReactor', 7, state)).toMatch(
+      /^\+[\d.KM,]+ \/ −[\d.KM,]+\/h$/,
+    );
+  });
+});
+
+describe('researchBenefitAtLevel', () => {
+  it('weaponsTechnology grants +10% attack per level', () => {
+    expect(researchBenefitAtLevel('weaponsTechnology', 3)).toBe('+30% attack');
+  });
+
+  it('computerTechnology grants +1 fleet slot per level', () => {
+    expect(researchBenefitAtLevel('computerTechnology', 5)).toBe('+5 fleet slots');
+  });
+
+  it('astrophysicsTechnology grants +1 colony per 2 levels', () => {
+    expect(researchBenefitAtLevel('astrophysicsTechnology', 4)).toBe('+2 colonies');
+  });
+
+  it('falls back to a generic level label for drive research', () => {
+    expect(researchBenefitAtLevel('combustionDrive', 2)).toBe('Lv 2');
+  });
+});
+
+describe('cardStatsFor', () => {
+  it('returns RAW combat stats for ships without research scaling', () => {
+    const state = createMockGameContext({
+      gameState: { research: { weaponsTechnology: 5 } },
+    }).gameState;
+
+    expect(
+      cardStatsFor('ship', 'cruiser', state).find((stat) => stat.label === 'ATK')
+        ?.value,
+    ).toBe('400');
+  });
+
+  it('adds Energy / unit stat for solarSatellite', () => {
+    const state = createMockGameContext({
+      gameState: { planet: { maxTemperature: 80 } },
+    }).gameState;
+
+    expect(
+      cardStatsFor('ship', 'solarSatellite', state).find(
+        (stat) => stat.label === 'Energy / unit',
+      )?.value,
+    ).toBe('36');
+  });
+
+  it('handles non-finite solarSatellite temperature defensively', () => {
+    const state = createMockGameContext({
+      gameState: { planet: { maxTemperature: Number.NaN } },
+    }).gameState;
+
+    expect(
+      cardStatsFor('ship', 'solarSatellite', state).find(
+        (stat) => stat.label === 'Energy / unit',
+      )?.value,
+    ).toBe('0');
+  });
+});

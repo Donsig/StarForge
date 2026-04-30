@@ -393,7 +393,7 @@ STOP CONDITION: if a referenced formula is missing in FormulasEngine, stop and r
 DONE MEANS: every new test passes; existing tests still pass; npm run build passes.
 ```
 
-- [ ] **Step 1: Append tests**
+- [x] **Step 1: Append tests**
 
 ```ts
 import { cardStatsFor, buildingBenefitAtLevel, researchBenefitAtLevel } from '../cardDetails';
@@ -444,9 +444,9 @@ describe('cardStatsFor', () => {
 });
 ```
 
-- [ ] **Step 2: Run new tests, confirm they fail**
+- [x] **Step 2: Run new tests, confirm they fail**
 
-- [ ] **Step 3: Append helper implementations**
+- [x] **Step 3: Append helper implementations**
 
 ```ts
 // src/utils/cardDetails.ts (appended)
@@ -561,15 +561,16 @@ function formatNumber(n: number): string {
 }
 ```
 
-- [ ] **Step 4: Tests pass**
+- [x] **Step 4: Tests pass** — 23 tests pass (12 new).
 
-Run: `npx vitest run src/utils/__tests__/cardDetails.test.ts`
+- [x] **Step 5: Build + full suite** — clean.
 
-- [ ] **Step 5: Build + full suite**
+- [x] **Step 6: Commit**
 
-Run: `npm run build && npm test`
-
-- [ ] **Step 6: Commit**
+Notes on deviations from skeleton:
+- Codex correctly applied plasma-tech bonuses to mine/synth benefits (the spec listed plasmaTechnology as a state input).
+- Storage format omits the `" cap"` suffix that was in the plan skeleton; the spec only specifies `{capacity}`, so the implementation matches the spec.
+- New imports were appended mid-file rather than at the top of the file. Lint passes; consider tidying in a future cleanup pass.
 
 ```bash
 git add src/utils/cardDetails.ts src/utils/__tests__/cardDetails.test.ts
