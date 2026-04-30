@@ -140,15 +140,7 @@ export default function CardDetailModal() {
     <div
       className="card-detail-modal__backdrop"
       onClick={() => close()}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'rgba(2,4,14,0.55)',
-        zIndex: 100,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
+      data-state={phase}
     >
       <div
         className="card-detail-modal"
@@ -161,16 +153,8 @@ export default function CardDetailModal() {
         onAnimationEnd={onAnimationEnd}
         data-state={phase}
         style={{
-          width: 700,
-          maxWidth: '96vw',
-          maxHeight: '92vh',
-          background: 'rgba(7,10,22,0.97)',
           border: `1px solid ${accent.bd}`,
-          borderRadius: 12,
           boxShadow: `0 0 70px rgba(0,0,0,0.75), 0 0 32px ${accent.glow}`,
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
         }}
       >
         <div className="card-detail-modal__top-bar">
@@ -182,30 +166,9 @@ export default function CardDetailModal() {
         </div>
 
         {hasDefinition ? (
-          <div
-            className="card-detail-modal__body"
-            style={{
-              display: 'flex',
-              flex: 1,
-              minHeight: 0,
-            }}
-          >
-            <div
-              style={{
-                flex: '0 0 250px',
-                borderRight: '1px solid rgba(40,60,120,0.22)',
-              }}
-            >
-              <LeftColumn card={displayedCard} />
-            </div>
-            <div
-              style={{
-                flex: 1,
-                minWidth: 0,
-              }}
-            >
-              <RightColumn card={displayedCard} />
-            </div>
+          <div className="card-detail-modal__body">
+            <LeftColumn card={displayedCard} />
+            <RightColumn card={displayedCard} />
           </div>
         ) : (
           <div>

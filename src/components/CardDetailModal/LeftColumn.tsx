@@ -1,4 +1,3 @@
-import type { CSSProperties } from 'react';
 import { BUILDING_IMAGES, DEFENCE_IMAGES, RESEARCH_IMAGES, SHIP_IMAGES } from '../../data/assets';
 import { useGame } from '../../context/GameContext';
 import { buildingTime, researchTime } from '../../engine/FormulasEngine';
@@ -23,26 +22,6 @@ const IMAGE_MAPS: Record<CardType, Partial<Record<string, string>>> = {
   defence: DEFENCE_IMAGES,
 };
 
-const styles: Record<string, CSSProperties> = {
-  aside: { height: '100%', background: 'rgba(5,8,20,0.4)', overflowY: 'auto' },
-  imageWrap: { position: 'relative' },
-  image: { width: '100%', height: 188, objectFit: 'cover', display: 'block' },
-  placeholder: { height: 188, background: 'rgba(5,8,20,0.88)' },
-  accentBar: { position: 'absolute', top: 0, left: 0, right: 0, height: 3 },
-  overlay: { position: 'absolute', inset: 0, background: 'linear-gradient(transparent 55%, rgba(5,8,20,0.92))' },
-  pad: { padding: '0.75rem 0.8rem' },
-  title: { fontFamily: 'var(--font-display)', fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '0.32rem' },
-  stack: { display: 'flex', flexDirection: 'column', gap: '0.2rem' },
-  row: { display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '0.5rem' },
-  label: { fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' },
-  value: { fontFamily: 'var(--font-mono)', fontSize: '0.72rem', fontWeight: 600, textAlign: 'right' },
-  next: { borderTop: '1px solid rgba(40,60,120,0.28)', paddingTop: '0.6rem', marginTop: '0.75rem' },
-  nextHead: { display: 'flex', alignItems: 'center', gap: '0.42rem', marginBottom: '0.45rem' },
-  nextLabel: { fontFamily: 'var(--font-display)', fontSize: '0.6rem', fontWeight: 700, color: 'rgba(150,180,220,0.4)', textTransform: 'uppercase' },
-  badge: { fontFamily: 'var(--font-display)', fontSize: '0.52rem', borderRadius: 3, padding: '0.03rem 0.28rem' },
-  highlight: { borderBottom: '1px solid rgba(40,60,120,0.2)', paddingBottom: '0.22rem', marginBottom: '0.08rem' },
-};
-
 function hasOwnKey<T extends object>(object: T, key: PropertyKey): key is keyof T {
   return Object.prototype.hasOwnProperty.call(object, key);
 }
@@ -64,22 +43,20 @@ function DetailRow({
   value,
   color,
   labelColor = 'rgba(150,180,220,0.38)',
-  valueSize = '0.72rem',
-  valueWeight = 600,
-  style,
+  highlight = false,
 }: {
   label: string;
   value: string;
   color: string;
   labelColor?: string;
-  valueSize?: string;
-  valueWeight?: CSSProperties['fontWeight'];
-  style?: CSSProperties;
+  highlight?: boolean;
 }) {
   return (
-    <div style={{ ...styles.row, ...style }}>
-      <span style={{ ...styles.label, color: labelColor }}>{label}</span>
-      <span style={{ ...styles.value, color, fontSize: valueSize, fontWeight: valueWeight }}>{value}</span>
+    <div className={`card-detail-modal__detail-row${highlight ? ' card-detail-modal__detail-row--highlight' : ''}`}>
+      <span className="card-detail-modal__detail-label" style={{ color: labelColor }}>{label}</span>
+      <span className={`card-detail-modal__detail-value${highlight ? ' card-detail-modal__detail-value--highlight' : ''}`} style={{ color }}>
+        {value}
+      </span>
     </div>
   );
 }
@@ -140,29 +117,33 @@ export function LeftColumn({ card }: { card: DetailCard }) {
     : [];
 
   return (
-    <aside className="card-detail-modal__left" data-card-type={card.type} data-card-id={card.id} style={styles.aside}>
-      <div style={styles.imageWrap}>
-        {imageUrl ? <img src={imageUrl} alt="" style={styles.image} /> : <div style={styles.placeholder} />}
-        <div aria-hidden="true" style={{ ...styles.accentBar, background: `linear-gradient(90deg, ${accent.c}, transparent)` }} />
-        <div aria-hidden="true" style={styles.overlay} />
+    <aside className="card-detail-modal__left" data-card-type={card.type} data-card-id={card.id}>
+      <div className="card-detail-modal__image-wrap">
+        {imageUrl ? <img className="card-detail-modal__image" src={imageUrl} alt="" /> : <div className="card-detail-modal__image-placeholder" />}
+        <div
+          aria-hidden="true"
+          className="card-detail-modal__image-accent"
+          style={{ background: `linear-gradient(90deg, ${accent.c}, transparent)` }}
+        />
+        <div aria-hidden="true" className="card-detail-modal__image-overlay" />
       </div>
 
-      <div style={styles.pad}>
-        <div style={{ ...styles.title, color: accent.c }}>{currentHeader}</div>
-        <div style={styles.stack}>
+      <div className="card-detail-modal__left-content">
+        <div className="card-detail-modal__left-title" style={{ color: accent.c }}>{currentHeader}</div>
+        <div className="card-detail-modal__detail-stack">
           {stats.slice(0, 3).map((stat) => (
             <DetailRow key={`${stat.label}:${stat.value}`} label={stat.label} value={stat.value} color={stat.color} />
           ))}
         </div>
 
         {nextLevel ? (
-          <div style={styles.next}>
-            <div style={styles.nextHead}>
-              <span style={styles.nextLabel}>Level {nextLevel.level}</span>
-              <span style={{ ...styles.badge, color: accent.c, border: `1px solid ${accent.c}80` }}>NEXT</span>
+          <div className="card-detail-modal__next-block">
+            <div className="card-detail-modal__next-head">
+              <span className="card-detail-modal__next-level">Level {nextLevel.level}</span>
+              <span className="card-detail-modal__state-badge" style={{ color: accent.c, border: `1px solid ${accent.c}80` }}>NEXT</span>
             </div>
-            <div style={styles.stack}>
-              <DetailRow label={nextLevel.label} value={nextLevel.benefit} color={stats[0]?.color ?? accent.c} valueSize="0.76rem" valueWeight={700} style={styles.highlight} />
+            <div className="card-detail-modal__detail-stack">
+              <DetailRow label={nextLevel.label} value={nextLevel.benefit} color={stats[0]?.color ?? accent.c} highlight />
               {nextCostRows.map((row) => (
                 <DetailRow key={row.label} label={row.label} value={row.value} color={row.color} />
               ))}
