@@ -54,5 +54,7 @@ codex-review-output.txt
 codex-prompt.txt
 codex-*.txt
 codex-*.md
+.codex-*.md
+.codex-*.output
 progress.md
 tmp
