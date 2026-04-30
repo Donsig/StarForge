@@ -1,4 +1,4 @@
-import { useEffect, useState, type ChangeEvent, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import { BUILDINGS } from '../../data/buildings';
 import { DEFENCES } from '../../data/defences';
 import { RESEARCH } from '../../data/research';
@@ -10,8 +10,11 @@ import { buildingCostAtLevel, buildingTime, defenceBuildTime, researchCostAtLeve
 import type { GameState } from '../../models/GameState';
 import type { PlanetState } from '../../models/Planet';
 import type { BuildingId, DefenceId, Prerequisite, ResearchId, ResourceCost, ShipId } from '../../models/types';
-import { cardStatsFor, enablesFor, maxAffordable, prereqRowsFor, TYPE_ACCENTS, type CardStat, type CardType } from '../../utils/cardDetails';
+import { buildingProgression, cardStatsFor, enablesFor, prereqRowsFor, researchProgression, TYPE_ACCENTS, type CardStat, type CardType } from '../../utils/cardDetails';
 import { formatDuration } from '../../utils/time';
+import { LevelTable } from './LevelTable';
+import { PrereqPills } from './PrereqPills';
+import { QuantityStepper } from './QuantityStepper';
 
 type DetailCard = { type: CardType; id: string };
 type DetailDefinition = { name: string; description: string; requires: Prerequisite[] };
@@ -130,37 +133,46 @@ function StatsSection({ label, stats }: { label: string; stats: CardStat[] }) {
 }
 
 function PrerequisitesSection({ requires, gameState }: { requires: Prerequisite[]; gameState: GameState }) {
-  const rows = prereqRowsFor(requires, gameState);
   return (
     <Section title="Prerequisites">
-      {requires.length === 0 ? (
-        <span style={S.emptyPrereq}>No prerequisites</span>
-      ) : (
-        <div data-testid="prereq-pills-placeholder" style={S.prereqWrap}>
-          {rows.map((row) => (
-            <span
-              key={row.label}
-              style={{
-                ...S.prereqPill,
-                border: row.met ? '1px solid rgba(52,211,153,0.5)' : '1px solid rgba(248,113,113,0.5)',
-                background: row.met ? 'rgba(52,211,153,0.08)' : 'rgba(248,113,113,0.08)',
-                color: row.met ? '#34d399' : '#f87171',
-              }}
-            >
-              {row.label}
-            </span>
-          ))}
-        </div>
-      )}
+      <PrereqPills rows={prereqRowsFor(requires, gameState)} />
     </Section>
   );
 }
 
-function LevelProgressionPlaceholder() {
+function LevelProgressionSection({ card, gameState }: { card: DetailCard; gameState: GameState }) {
+  const planet = activePlanet(gameState);
+
+  if (card.type === 'building') {
+    if (planet === null || !hasOwnKey(BUILDINGS, card.id)) return null;
+    const id = card.id as BuildingId;
+    const currentLevel = planet.buildings[id] ?? 0;
+    const queue = planet.buildingQueue.filter((item) => item.id === id);
+    const progressionRows = buildingProgression(id, currentLevel, queue, gameState);
+
+    return (
+      <Section title="Level Progression">
+        <LevelTable rows={progressionRows} accentColor={TYPE_ACCENTS[card.type].c} />
+      </Section>
+    );
+  }
+
+  if (card.type === 'research') {
+    if (!hasOwnKey(RESEARCH, card.id)) return null;
+    const id = card.id as ResearchId;
+    const currentLevel = gameState.research[id] ?? 0;
+    const queue = gameState.researchQueue.filter((item) => item.id === id);
+    const progressionRows = researchProgression(id, currentLevel, queue, gameState);
+
+    return (
+      <Section title="Level Progression">
+        <LevelTable rows={progressionRows} accentColor={TYPE_ACCENTS[card.type].c} />
+      </Section>
+    );
+  }
+
   return (
-    <Section title="Level Progression">
-      <div data-testid="level-table-placeholder" style={S.placeholder}>Level table coming in Task 7</div>
-    </Section>
+    null
   );
 }
 
@@ -220,14 +232,6 @@ function CtaButton({ cardType, disabled, onClick, children }: { cardType: CardTy
   );
 }
 
-function QtyPlaceholder({ qty, max, onChange }: { qty: number; max: number; onChange: (event: ChangeEvent<HTMLInputElement>) => void }) {
-  return (
-    <div data-testid="quantity-stepper-placeholder" style={S.qtyPlaceholder}>
-      <input type="number" min={1} max={max > 0 ? max : undefined} aria-label="Quantity" value={qty} onChange={onChange} style={S.qtyInput} />
-    </div>
-  );
-}
-
 function Footer({ card }: { card: DetailCard }) {
   const { gameState, upgradeBuilding, startResearchAction, buildShips, buildDefences } = useGame();
   const planet = activePlanet(gameState);
@@ -239,11 +243,6 @@ function Footer({ card }: { card: DetailCard }) {
   }, [card.type, card.id]);
 
   if (planet === null) return null;
-
-  const onQtyChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const next = Number.parseInt(event.currentTarget.value, 10);
-    setQty(Number.isFinite(next) ? Math.max(1, Math.floor(next)) : 1);
-  };
 
   if (card.type === 'building') {
     if (!hasOwnKey(BUILDINGS, card.id)) return null;
@@ -289,12 +288,11 @@ function Footer({ card }: { card: DetailCard }) {
     const id = card.id as ShipId;
     const definition = SHIPS[id];
     const totalCost = multiplyCost(definition.cost, qty);
-    const seconds = shipBuildTime(definition.structuralIntegrity, planet.buildings.shipyard, planet.buildings.naniteFactory, speed) * qty;
+    const unitTimeSeconds = shipBuildTime(definition.structuralIntegrity, planet.buildings.shipyard, planet.buildings.naniteFactory, speed);
     const disabled = qty < 1 || !canAfford(totalCost, gameState) || !prerequisitesMet(definition.requires, gameState);
     return (
       <footer style={S.footer}>
-        <QtyPlaceholder qty={qty} max={maxAffordable(definition.cost, planet.resources)} onChange={onQtyChange} />
-        <div style={S.footerTop}><CostPills cost={totalCost} /><span style={S.timeText}>{formatDuration(seconds)}</span></div>
+        <QuantityStepper qty={qty} setQty={setQty} cost={definition.cost} timeSeconds={unitTimeSeconds} type={card.type} resources={planet.resources} />
         <CtaButton cardType={card.type} disabled={disabled} onClick={() => { if (buildShips(id, qty)) setQty(1); }}>{`Build Ships ×${qty}`}</CtaButton>
       </footer>
     );
@@ -305,14 +303,13 @@ function Footer({ card }: { card: DetailCard }) {
   const definition = DEFENCES[id];
   const existingCount = (planet.defences[id] ?? 0) + queuedDefenceCount(planet, id);
   const totalCost = multiplyCost(definition.cost, qty);
-  const seconds = defenceBuildTime(definition.structuralIntegrity, planet.buildings.shipyard, planet.buildings.naniteFactory, speed) * qty;
+  const unitTimeSeconds = defenceBuildTime(definition.structuralIntegrity, planet.buildings.shipyard, planet.buildings.naniteFactory, speed);
   const exceedsMaxCount = definition.maxCount !== undefined && existingCount + qty > definition.maxCount;
   const disabled = qty < 1 || !canAfford(totalCost, gameState) || !prerequisitesMet(definition.requires, gameState) || exceedsMaxCount;
 
   return (
     <footer style={S.footer}>
-      <QtyPlaceholder qty={qty} max={maxAffordable(definition.cost, planet.resources, definition.maxCount, existingCount)} onChange={onQtyChange} />
-      <div style={S.footerTop}><CostPills cost={totalCost} /><span style={S.timeText}>{formatDuration(seconds)}</span></div>
+      <QuantityStepper qty={qty} setQty={setQty} cost={definition.cost} timeSeconds={unitTimeSeconds} type={card.type} resources={planet.resources} maxCount={definition.maxCount} existingCount={existingCount} />
       <CtaButton cardType={card.type} disabled={disabled} onClick={() => { if (buildDefences(id, qty)) setQty(1); }}>{`Construct ×${qty}`}</CtaButton>
     </footer>
   );
@@ -332,7 +329,7 @@ export function RightColumn({ card }: { card: { type: CardType; id: string } }) 
         </div>
         <StatsSection label={statsLabelFor(card.type)} stats={cardStatsFor(card.type, card.id, gameState)} />
         <PrerequisitesSection requires={definition.requires} gameState={gameState} />
-        {card.type === 'building' || card.type === 'research' ? <LevelProgressionPlaceholder /> : null}
+        {card.type === 'building' || card.type === 'research' ? <LevelProgressionSection card={card} gameState={gameState} /> : null}
         <UnlocksSection card={card} />
         <StrategicNotesSection card={card} />
       </div>

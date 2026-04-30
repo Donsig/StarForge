@@ -889,13 +889,13 @@ DONE MEANS: <CardDetailModal /> renders for any selectedCard, closes via X / bac
 
 (See spec for layout dimensions, type accents, animation keyframe semantics. Use `createPortal` to render into `document.body`. Wire `useModal()` for state, `useGame()` for data, `cardStatsFor` / `getStrategicNote` from Task 1–3.)
 
-- [ ] Step 1: Stub each file with the empty subcomponents and the portal+backdrop+container structure.
-- [ ] Step 2: Implement two-phase close via local `displayedCard` state and `data-state` attribute. Test manually with a temporary direct call from console.
-- [ ] Step 3: Wire Escape handler (effect with cleanup), backdrop click, X button.
-- [ ] Step 4: Implement focus trap (Tab cycles inside the modal — small inline implementation).
-- [ ] Step 5: After exit animation, call `useModal().restoreFocus()`.
-- [ ] Step 6: `npm run build && npm test` clean.
-- [ ] Step 7: Commit.
+- [x] Step 1: Stub each file with the empty subcomponents and the portal+backdrop+container structure.
+- [x] Step 2: Implement two-phase close via local `displayedCard` state and `data-state` attribute.
+- [x] Step 3: Wire Escape handler (effect with cleanup), backdrop click, X button.
+- [x] Step 4: Implement focus trap (Tab cycles inside the modal — small inline implementation).
+- [x] Step 5: After exit animation, call `useModal().restoreFocus()`.
+- [x] Step 6: `npm run build && npm test` clean.
+- [x] Step 7: Commit. — Split into 6a (`5f47446`), 6b (`6f198a9`), 6c (`f74b428`) due to size; original combined dispatch was too large for one Codex run.
 
 ```bash
 git add src/components/CardDetailModal/
@@ -922,13 +922,13 @@ NON-GOALS: do not change CSS or helpers.
 DONE MEANS: NOW/QUEUE/NEXT badges render correctly; MAX button computes via maxAffordable; clicking unmet prereq calls open() after 150 ms with timer-cancellation on rapid re-click; build/test clean.
 ```
 
-- [ ] **Step 1: LevelTable.tsx** — props `{ rows: LevelRow[]; accentColor: string; hasDeut: boolean; hasEnergy: boolean }`. Renders the table per spec "QUEUE badges in the Level Progression table". `hasDeut` and `hasEnergy` are computed by the caller (`rows.some(r => r.deuterium > 0)` / `rows.some(r => r.energy !== 0)`). Each row tints based on its `current/queued/next` flag.
-- [ ] **Step 2: QuantityStepper.tsx** — props `{ qty: number; setQty: (n:number)=>void; cost: ResourceCost; timeSeconds: number; type: 'ship'|'defence'; resources: ResourcesState; maxCount?: number; existingCount?: number }`. − / + / number-input / MAX / total cost pills / total time. MAX uses `maxAffordable(...)`.
-- [ ] **Step 3: PrereqPills.tsx** — props `{ rows: PrereqRow[] }`. Calls `useModal()` for the click handler. Holds `useRef<ReturnType<typeof setTimeout> | null>(null)` for the deferred nav; clears it before each new schedule and on unmount; uses `useState<string | null>(navigatingTo)` for the inline toast.
-- [ ] **Step 4: RightColumn.tsx** — replace the Task 6 placeholders. Use `prereqRowsFor(...)`, `buildingProgression(...) / researchProgression(...)`, `enablesFor(...)`, `getStrategicNote(...)` to build the props for the new subcomponents.
-- [ ] **Step 5: Manual smoke** — `npm run dev`, click a building card; verify NOW/QUEUE/NEXT render, MAX behaves, prereq pill click swaps the modal after the toast.
-- [ ] **Step 6: `npm run build && npm test`** — clean.
-- [ ] **Step 7: Commit:**
+- [x] **Step 1: LevelTable.tsx** — 206 lines, header + rows with NOW/QUEUE/NEXT badge logic, optional Deut/Energy columns auto-detected from rows.
+- [x] **Step 2: QuantityStepper.tsx** — 200 lines, MAX uses `maxAffordable`, total cost/time recompute on qty change.
+- [x] **Step 3: PrereqPills.tsx** — 130 lines, timer ref + cancellation on rapid re-click and unmount.
+- [x] **Step 4: RightColumn.tsx** — placeholders replaced with the new components; placeholder `<input>` removed.
+- [ ] **Step 5: Manual smoke** — pending; will run after Task 8 (CSS) lands so the visual is presentable.
+- [x] **Step 6: `npm run build && npm test`** — clean. 654 tests still passing.
+- [x] **Step 7: Commit:**
 
 ```bash
 git add src/components/CardDetailModal/
