@@ -52,7 +52,7 @@ STOP CONDITION: if a needed type is missing, stop and report.
 DONE MEANS: file exports the four maps + getStrategicNote, npm run build passes.
 ```
 
-- [ ] **Step 1: Create the file**
+- [x] **Step 1: Create the file**
 
 ```ts
 // src/data/strategicNotes.ts
@@ -147,12 +147,12 @@ export function getStrategicNote(
 }
 ```
 
-- [ ] **Step 2: Type-check passes**
+- [x] **Step 2: Type-check passes**
 
 Run: `npm run build`
-Expected: builds clean (only the new file added; no other changes).
+Expected: builds clean (only the new file added; no other changes). ✅ Verified locally — `vite build` clean.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit** — `3c14efc`
 
 ```bash
 git add src/data/strategicNotes.ts
@@ -182,7 +182,7 @@ STOP CONDITION: if BuildingId / ResearchId / ShipId / DefenceId are not exported
 DONE MEANS: all new tests pass; npm run build passes; no other files changed.
 ```
 
-- [ ] **Step 1: Write tests for `TYPE_ACCENTS`, `maxAffordable`, `prereqRowsFor`, `enablesFor`**
+- [x] **Step 1: Write tests for `TYPE_ACCENTS`, `maxAffordable`, `prereqRowsFor`, `enablesFor`**
 
 ```ts
 // src/utils/__tests__/cardDetails.test.ts
@@ -270,12 +270,12 @@ describe('enablesFor', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests, confirm they all fail**
+- [x] **Step 2: Run tests, confirm they all fail**
 
 Run: `npx vitest run src/utils/__tests__/cardDetails.test.ts`
 Expected: every test fails (module not found / functions undefined).
 
-- [ ] **Step 3: Implement `src/utils/cardDetails.ts` foundation block**
+- [x] **Step 3: Implement `src/utils/cardDetails.ts` foundation block**
 
 Per spec section "Pure Helpers". Skeleton:
 
@@ -359,17 +359,11 @@ export function enablesFor(type: CardType, id: string): UnlockEntry[] {
 }
 ```
 
-- [ ] **Step 4: Tests pass**
+- [x] **Step 4: Tests pass** — 11 tests pass.
 
-Run: `npx vitest run src/utils/__tests__/cardDetails.test.ts`
-Expected: all tests in this file pass.
+- [x] **Step 5: Type-check + full test suite** — `npm run build` clean; full suite 57 files / 631 tests green (Codex's verification matches local re-run).
 
-- [ ] **Step 5: Type-check + full test suite**
-
-Run: `npm run build && npm test`
-Expected: no errors, no test failures.
-
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/utils/cardDetails.ts src/utils/__tests__/cardDetails.test.ts
