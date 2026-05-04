@@ -10,6 +10,7 @@ import {
 } from '../engine/BuildQueue.ts';
 import { buildingCostAtLevel, buildingTime } from '../engine/FormulasEngine.ts';
 import { useGame } from '../context/GameContext';
+import { useModal } from '../context/ModalContext';
 import { PanelBanner } from '../components/PanelBanner';
 import { CardImage } from '../components/CardImage';
 import { LevelRing } from '../components/LevelRing';
@@ -38,6 +39,26 @@ const CATEGORY_ICONS: Record<BuildingCategory, string> = {
   storage: '▣',
 };
 
+const INTERACTIVE_SELECTOR = 'button, input, select, textarea, a';
+
+const FALLBACK_MODAL: ReturnType<typeof useModal> = {
+  selectedCard: null,
+  open: () => {},
+  close: () => {},
+  restoreFocus: () => {},
+};
+
+function usePanelModal(): ReturnType<typeof useModal> {
+  try {
+    return useModal();
+  } catch (error) {
+    if (error instanceof Error && error.message === 'useModal must be used within a ModalProvider') {
+      return FALLBACK_MODAL;
+    }
+    throw error;
+  }
+}
+
 function requirementMet(prerequisite: Prerequisite, buildingState: GameState): boolean {
   const planet = buildingState.planets[buildingState.activePlanetIndex];
   if (prerequisite.type === 'building') {
@@ -64,6 +85,7 @@ export function BuildingsPanel() {
     adminCompleteBuilding,
     cancelBuilding,
   } = useGame();
+  const { open } = usePanelModal();
   const [satelliteQuantityInput, setSatelliteQuantityInput] = useState('1');
   const planet = gameState.planets[gameState.activePlanetIndex];
 
@@ -162,7 +184,22 @@ export function BuildingsPanel() {
                   maxFieldsReached;
 
                 return (
-                  <article key={buildingId} className="item-card">
+                  <article
+                    key={buildingId}
+                    className="item-card"
+                    role="button"
+                    tabIndex={0}
+                    onClick={(e) => {
+                      if ((e.target as HTMLElement).closest(INTERACTIVE_SELECTOR)) return;
+                      open('building', buildingId);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key !== 'Enter' && e.key !== ' ') return;
+                      if ((e.target as HTMLElement).closest(INTERACTIVE_SELECTOR)) return;
+                      e.preventDefault();
+                      open('building', buildingId);
+                    }}
+                  >
                     <CardImage
                       src={BUILDING_IMAGES[buildingId]}
                       label={buildingId}
@@ -227,7 +264,21 @@ export function BuildingsPanel() {
             <>
               <h3 className="section-title">Energy</h3>
               <div className="items-grid">
-                <article className="item-card">
+                <article
+                  className="item-card"
+                  role="button"
+                  tabIndex={0}
+                  onClick={(e) => {
+                    if ((e.target as HTMLElement).closest(INTERACTIVE_SELECTOR)) return;
+                    open('ship', 'solarSatellite');
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key !== 'Enter' && e.key !== ' ') return;
+                    if ((e.target as HTMLElement).closest(INTERACTIVE_SELECTOR)) return;
+                    e.preventDefault();
+                    open('ship', 'solarSatellite');
+                  }}
+                >
                   <CardImage
                     src={SHIP_IMAGES.solarSatellite}
                     label="solarSatellite"

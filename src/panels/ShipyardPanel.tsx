@@ -7,6 +7,7 @@ import { SHIP_ORDER, SHIPS } from '../data/ships.ts';
 import { canAfford, prerequisitesMet } from '../engine/BuildQueue.ts';
 import { shipBuildTime } from '../engine/FormulasEngine.ts';
 import { useGame } from '../context/GameContext';
+import { useModal } from '../context/ModalContext';
 import { PanelBanner } from '../components/PanelBanner';
 import { CardImage } from '../components/CardImage';
 import { CostDisplay } from '../components/CostDisplay';
@@ -30,6 +31,26 @@ const DEFAULT_QUANTITIES: Record<ShipId, string> = SHIP_ORDER.reduce(
   },
   {} as Record<ShipId, string>,
 );
+
+const INTERACTIVE_SELECTOR = 'button, input, select, textarea, a';
+
+const FALLBACK_MODAL: ReturnType<typeof useModal> = {
+  selectedCard: null,
+  open: () => {},
+  close: () => {},
+  restoreFocus: () => {},
+};
+
+function usePanelModal(): ReturnType<typeof useModal> {
+  try {
+    return useModal();
+  } catch (error) {
+    if (error instanceof Error && error.message === 'useModal must be used within a ModalProvider') {
+      return FALLBACK_MODAL;
+    }
+    throw error;
+  }
+}
 
 function requirementMet(prerequisite: Prerequisite, gameState: GameState): boolean {
   const planet = gameState.planets[gameState.activePlanetIndex];
@@ -57,6 +78,7 @@ export function ShipyardPanel() {
     adminCompleteShipyard,
     cancelShipyard,
   } = useGame();
+  const { open } = usePanelModal();
   const [quantities, setQuantities] = useState<Record<ShipId, string>>(DEFAULT_QUANTITIES);
   const planet = gameState.planets[gameState.activePlanetIndex];
   const shipStats = [
@@ -146,7 +168,22 @@ export function ShipyardPanel() {
           );
 
           return (
-            <article key={shipId} className="item-card item-card--ship">
+            <article
+              key={shipId}
+              className="item-card item-card--ship"
+              role="button"
+              tabIndex={0}
+              onClick={(e) => {
+                if ((e.target as HTMLElement).closest(INTERACTIVE_SELECTOR)) return;
+                open('ship', shipId);
+              }}
+              onKeyDown={(e) => {
+                if (e.key !== 'Enter' && e.key !== ' ') return;
+                if ((e.target as HTMLElement).closest(INTERACTIVE_SELECTOR)) return;
+                e.preventDefault();
+                open('ship', shipId);
+              }}
+            >
               <CardImage
                 src={SHIP_IMAGES[shipId]}
                 label={shipId}
