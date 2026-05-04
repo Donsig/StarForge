@@ -5044,7 +5044,7 @@ body::before {
   display: flex;
   flex: 1;
   min-width: 0;
-  height: 100%;
+  min-height: 0;
   flex-direction: column;
   overflow: hidden;
 }
