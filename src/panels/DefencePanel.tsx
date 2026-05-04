@@ -6,6 +6,7 @@ import { RESEARCH } from '../data/research.ts';
 import { canAfford, prerequisitesMet } from '../engine/BuildQueue.ts';
 import { defenceBuildTime } from '../engine/FormulasEngine.ts';
 import { useGame } from '../context/GameContext';
+import { useModal } from '../context/ModalContext';
 import { PanelBanner } from '../components/PanelBanner';
 import { CardImage } from '../components/CardImage';
 import { CostDisplay } from '../components/CostDisplay';
@@ -28,6 +29,26 @@ const DEFAULT_QUANTITIES: Record<DefenceId, string> = DEFENCE_ORDER.reduce(
   {} as Record<DefenceId, string>,
 );
 
+const INTERACTIVE_SELECTOR = 'button, input, select, textarea, a';
+
+const FALLBACK_MODAL: ReturnType<typeof useModal> = {
+  selectedCard: null,
+  open: () => {},
+  close: () => {},
+  restoreFocus: () => {},
+};
+
+function usePanelModal(): ReturnType<typeof useModal> {
+  try {
+    return useModal();
+  } catch (error) {
+    if (error instanceof Error && error.message === 'useModal must be used within a ModalProvider') {
+      return FALLBACK_MODAL;
+    }
+    throw error;
+  }
+}
+
 function requirementMet(prerequisite: Prerequisite, gameState: GameState): boolean {
   const planet = gameState.planets[gameState.activePlanetIndex];
   if (prerequisite.type === 'building') {
@@ -49,6 +70,7 @@ function requirementLabel(prerequisite: Prerequisite): string {
 
 export function DefencePanel() {
   const { gameState, buildDefences } = useGame();
+  const { open } = usePanelModal();
   const [quantities, setQuantities] = useState<Record<DefenceId, string>>(DEFAULT_QUANTITIES);
   const planet = gameState.planets[gameState.activePlanetIndex];
   const defenceSummary = DEFENCE_ORDER.reduce(
@@ -159,7 +181,22 @@ export function DefencePanel() {
               : `Build ${quantity > 0 ? quantity : '?'}`;
 
           return (
-            <article key={defenceId} className="item-card item-card--defence">
+            <article
+              key={defenceId}
+              className="item-card item-card--defence"
+              role="button"
+              tabIndex={0}
+              onClick={(e) => {
+                if ((e.target as HTMLElement).closest(INTERACTIVE_SELECTOR)) return;
+                open('defence', defenceId);
+              }}
+              onKeyDown={(e) => {
+                if (e.key !== 'Enter' && e.key !== ' ') return;
+                if ((e.target as HTMLElement).closest(INTERACTIVE_SELECTOR)) return;
+                e.preventDefault();
+                open('defence', defenceId);
+              }}
+            >
               <CardImage
                 src={DEFENCE_IMAGES[defenceId]}
                 label={definition.name}

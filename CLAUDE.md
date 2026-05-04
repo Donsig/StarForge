@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Implementation Rules
 
 - **Never write code without explicit user approval.** Claude's role is design, planning, review, and orchestration — not implementation.
-- **Codex handles all implementation.** Once a plan is approved, use the `codex-agent` skill to send it to Codex (gpt-5.4, `reasoning_effort: high` for complex tasks).
+- **Codex handles all implementation.** Once a plan is approved, use the `codex-agent` skill to send it to Codex (gpt-5.5, `reasoning_effort: high` for complex tasks).
 - **Codex reviews the plan before implementation.** After a plan is written and user-approved, send it to Codex (`sandbox: "read-only"`) for a review pass. Surface any gaps or issues back to the user before dispatching for implementation.
 - **Codex only implements after user approval.** Present the plan or feature table first, get a "yes", then dispatch to Codex.
 - **Always use the `codex-agent` skill** before invoking any Codex MCP tool or Bash codex command. The skill defines the correct invocation patterns for this project.
@@ -20,6 +20,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Current plan:** `docs/superpowers/plans/2026-04-19-ui-redesign.md` — full UI redesign (17 tasks)
 - **After completing each task:** update the plan file to check off completed steps (`- [ ]` → `- [x]`), and note any deviations or issues discovered during implementation.
 - **On session resume:** read the plan file first to see which tasks are done and which is next. The checkboxes are the source of truth for progress.
+
+## Design Handoffs
+
+- The user occasionally drops design handoffs from **Claude Design** (an external design agent) into a top-level `design handoff/` directory. Layout: `design handoff/<feature>/<topic>/README.md` + an interactive HTML prototype.
+- The README is the spec (visual tokens, layout, interactions, suggested implementation plan); the HTML is **reference-only** — never ship it, never copy its inline-style code into the React tree. Recreate the design with the codebase's existing component patterns and CSS tokens (`src/styles.css`).
+- Specs derived from a handoff go in `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`; the corresponding implementation plan goes in `docs/superpowers/plans/`.
 
 ## Purpose
 

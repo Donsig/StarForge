@@ -3,6 +3,8 @@ import type { ReactElement, ReactNode } from 'react';
 import { render } from '@testing-library/react';
 import type { RenderOptions } from '@testing-library/react';
 import { GameContext, type GameContextType } from '../context/GameContext';
+import { ModalProvider } from '../context/ModalContext';
+import type { ModalContextValue, SelectedCard } from '../context/ModalContext';
 import {
   calculateProduction,
   type ProductionRates,
@@ -40,6 +42,7 @@ interface RenderWithGameOptions {
   actions?: Partial<GameActions>;
   fleetMovements?: MovementEntry[];
   withMultiplePlanets?: boolean;
+  modal?: { value: ModalContextValue } | { selectedCard: SelectedCard | null };
 }
 
 const defaultActions: GameActions = {
@@ -207,9 +210,20 @@ export function renderWithGame(
 ) {
   let gameContext = createMockGameContext(options);
 
-  const Wrapper = ({ children }: { children: ReactNode }) => (
-    <GameContext.Provider value={gameContext}>{children}</GameContext.Provider>
-  );
+  const Wrapper = ({ children }: { children: ReactNode }) => {
+    const game = <GameContext.Provider value={gameContext}>{children}</GameContext.Provider>;
+    if (!options.modal) return game;
+    const modalValue: ModalContextValue =
+      'value' in options.modal
+        ? options.modal.value
+        : {
+            selectedCard: options.modal.selectedCard,
+            open: () => {},
+            close: () => {},
+            restoreFocus: () => {},
+          };
+    return <ModalProvider value={modalValue}>{game}</ModalProvider>;
+  };
 
   const result = render(ui, {
     wrapper: Wrapper,

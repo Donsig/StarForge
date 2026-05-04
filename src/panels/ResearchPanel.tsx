@@ -4,6 +4,7 @@ import { RESEARCH, RESEARCH_ORDER } from '../data/research.ts';
 import { canAfford, effectiveResearchLabLevel, prerequisitesMet } from '../engine/BuildQueue.ts';
 import { researchCostAtLevel, researchTime } from '../engine/FormulasEngine.ts';
 import { useGame } from '../context/GameContext';
+import { useModal } from '../context/ModalContext';
 import { PanelBanner } from '../components/PanelBanner';
 import { LevelRing } from '../components/LevelRing';
 import { CostDisplay } from '../components/CostDisplay';
@@ -48,6 +49,26 @@ const RESEARCH_CATEGORY: Record<ResearchId, ResearchCategoryId> = {
   intergalacticResearchNetwork: 'intel',
 };
 
+const INTERACTIVE_SELECTOR = 'button, input, select, textarea, a';
+
+const FALLBACK_MODAL: ReturnType<typeof useModal> = {
+  selectedCard: null,
+  open: () => {},
+  close: () => {},
+  restoreFocus: () => {},
+};
+
+function usePanelModal(): ReturnType<typeof useModal> {
+  try {
+    return useModal();
+  } catch (error) {
+    if (error instanceof Error && error.message === 'useModal must be used within a ModalProvider') {
+      return FALLBACK_MODAL;
+    }
+    throw error;
+  }
+}
+
 function requirementMet(prerequisite: Prerequisite, gameState: GameState): boolean {
   const planet = gameState.planets[gameState.activePlanetIndex];
   if (prerequisite.type === 'building') {
@@ -74,6 +95,7 @@ export function ResearchPanel() {
     adminCompleteResearch,
     cancelResearch,
   } = useGame();
+  const { open } = usePanelModal();
   const planet = gameState.planets[gameState.activePlanetIndex];
 
   return (
@@ -162,6 +184,18 @@ export function ResearchPanel() {
                   <article
                     key={researchId}
                     className={`research-card${currentLevel === 0 && !prereqMet ? ' research-card--locked' : ''}`}
+                    role="button"
+                    tabIndex={0}
+                    onClick={(e) => {
+                      if ((e.target as HTMLElement).closest(INTERACTIVE_SELECTOR)) return;
+                      open('research', researchId);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key !== 'Enter' && e.key !== ' ') return;
+                      if ((e.target as HTMLElement).closest(INTERACTIVE_SELECTOR)) return;
+                      e.preventDefault();
+                      open('research', researchId);
+                    }}
                   >
                     <div className="research-card__header">
                       <LevelRing level={currentLevel} color={category.color} size={32} maxLevel={15} />
