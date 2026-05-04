@@ -131,7 +131,7 @@ export function LevelTable({ rows, accentColor }: { rows: LevelRow[]; accentColo
                     <LevelBadge row={row} accentColor={accentColor} />
                   </div>
                 </td>
-                <td className="card-detail-modal__level-td card-detail-modal__level-benefit" style={{ color: `rgba(150,180,220,${alpha})` }}>{row.benefit}</td>
+                <td className="card-detail-modal__level-td card-detail-modal__level-benefit" style={{ color: `rgba(150,180,220,${alpha})` }}>{row.benefitDelta ?? row.benefit}</td>
                 <CostCell value={row.metal} color={RESOURCE_COLORS.metal} active={active} />
                 <CostCell value={row.crystal} color={RESOURCE_COLORS.crystal} active={active} />
                 {showDeuterium ? <CostCell value={row.deuterium} color={RESOURCE_COLORS.deuterium} active={active} /> : null}

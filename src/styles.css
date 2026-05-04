@@ -5626,6 +5626,34 @@ body::before {
   font-weight: 700;
 }
 
+/* Scrollbar — modal columns */
+.card-detail-modal__scroll-body,
+.card-detail-modal__left {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(77, 143, 255, 0.25) transparent;
+}
+
+.card-detail-modal__scroll-body::-webkit-scrollbar,
+.card-detail-modal__left::-webkit-scrollbar {
+  width: 3px;
+}
+
+.card-detail-modal__scroll-body::-webkit-scrollbar-track,
+.card-detail-modal__left::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.card-detail-modal__scroll-body::-webkit-scrollbar-thumb,
+.card-detail-modal__left::-webkit-scrollbar-thumb {
+  background: rgba(77, 143, 255, 0.25);
+  border-radius: 2px;
+}
+
+.card-detail-modal__scroll-body::-webkit-scrollbar-thumb:hover,
+.card-detail-modal__left::-webkit-scrollbar-thumb:hover {
+  background: rgba(77, 143, 255, 0.5);
+}
+
 @keyframes card-detail-modal-backdrop-in {
   from { opacity: 0; }
   to { opacity: 1; }

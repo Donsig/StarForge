@@ -336,6 +336,96 @@ export function researchBenefitAtLevel(id: ResearchId, level: number): string {
   }
 }
 
+function buildingBenefitRaw(id: BuildingId, level: number, state: GameState): number {
+  const plasmaLevel = state.research.plasmaTechnology ?? 0;
+  switch (id) {
+    case 'metalMine':
+      return metalProductionPerHour(level) * plasmaMetalBonus(plasmaLevel);
+    case 'crystalMine':
+      return crystalProductionPerHour(level) * plasmaCrystalBonus(plasmaLevel);
+    case 'deuteriumSynthesizer':
+      return deuteriumProductionPerHour(level, finiteMaxTemperature(state)) * plasmaDeuteriumBonus(plasmaLevel);
+    case 'solarPlant':
+      return solarPlantEnergy(level);
+    case 'fusionReactor':
+      return fusionReactorEnergy(level, state.research.energyTechnology ?? 0);
+    case 'metalStorage':
+    case 'crystalStorage':
+    case 'deuteriumTank':
+      return storageCapacity(level);
+    case 'roboticsFactory':
+    case 'naniteFactory':
+    case 'shipyard':
+    case 'researchLab': {
+      const factor = id === 'naniteFactory' ? Math.pow(2, level) : 1 + level;
+      return Math.round((1 - 1 / factor) * 100);
+    }
+    default:
+      return level;
+  }
+}
+
+function formatBuildingDelta(id: BuildingId, delta: number): string {
+  if (delta === 0) return '—';
+  const abs = Math.abs(delta);
+  switch (id) {
+    case 'metalMine':
+    case 'crystalMine':
+    case 'deuteriumSynthesizer':
+      return `+${formatNumber(abs)}/h`;
+    case 'solarPlant':
+    case 'fusionReactor':
+    case 'metalStorage':
+    case 'crystalStorage':
+    case 'deuteriumTank':
+      return `+${formatNumber(abs)}`;
+    case 'roboticsFactory':
+    case 'naniteFactory':
+    case 'shipyard':
+    case 'researchLab':
+      return `+${Math.round(abs)}% faster`;
+    default:
+      return `+${formatNumber(abs)}`;
+  }
+}
+
+function researchBenefitRaw(id: ResearchId, level: number): number {
+  switch (id) {
+    case 'weaponsTechnology':
+    case 'shieldingTechnology':
+    case 'armourTechnology':
+      return level * 10;
+    case 'computerTechnology':
+      return level;
+    case 'astrophysicsTechnology':
+      return Math.floor(level / 2);
+    case 'plasmaTechnology':
+      return level;
+    default:
+      return level;
+  }
+}
+
+function formatResearchDelta(id: ResearchId, delta: number): string {
+  if (delta === 0) return '—';
+  switch (id) {
+    case 'weaponsTechnology':
+      return `+${delta}% attack`;
+    case 'shieldingTechnology':
+      return `+${delta}% shields`;
+    case 'armourTechnology':
+      return `+${delta}% hull`;
+    case 'computerTechnology':
+      return `+${delta} fleet slot${delta !== 1 ? 's' : ''}`;
+    case 'astrophysicsTechnology':
+      return `+${delta} colon${delta !== 1 ? 'ies' : 'y'}`;
+    case 'plasmaTechnology':
+      return `+${delta}% production`;
+    default:
+      return `+${delta} lv`;
+  }
+}
+
 function buildingEnergyStat(id: BuildingId, level: number): CardStat | null {
   switch (id) {
     case 'metalMine':
@@ -494,6 +584,7 @@ import type { QueueItem } from '../models/types.ts';
 export interface LevelRow {
   level: number;
   benefit: string;
+  benefitDelta: string | null;
   metal: number;
   crystal: number;
   deuterium: number;
@@ -514,13 +605,17 @@ export function buildingProgression(
   const start = Math.max(1, currentLevel - 2);
   const end = Math.max(currentLevel + 3, nextLevel + 1);
   const def = BUILDINGS[id];
+  const currentRaw = buildingBenefitRaw(id, currentLevel, state);
   const rows: LevelRow[] = [];
 
   for (let level = start; level <= end; level += 1) {
     const cost = buildingCostAtLevel(def.baseCost, def.costMultiplier, level);
+    const isFuture = level > currentLevel;
+    const delta = isFuture ? buildingBenefitRaw(id, level, state) - currentRaw : 0;
     rows.push({
       level,
       benefit: buildingBenefitAtLevel(id, level, state),
+      benefitDelta: isFuture ? formatBuildingDelta(id, delta) : null,
       metal: cost.metal,
       crystal: cost.crystal,
       deuterium: cost.deuterium,
@@ -545,13 +640,17 @@ export function researchProgression(
   const nextLevel = currentLevel + queue.length + 1;
   const end = Math.max(currentLevel + 3, nextLevel + 1);
   const def = RESEARCH[id];
+  const currentRaw = researchBenefitRaw(id, currentLevel);
   const rows: LevelRow[] = [];
 
   for (let level = 1; level <= end; level += 1) {
     const cost = researchCostAtLevel(def.baseCost, def.costMultiplier, level);
+    const isFuture = level > currentLevel;
+    const delta = isFuture ? researchBenefitRaw(id, level) - currentRaw : 0;
     rows.push({
       level,
       benefit: researchBenefitAtLevel(id, level),
+      benefitDelta: isFuture ? formatResearchDelta(id, delta) : null,
       metal: cost.metal,
       crystal: cost.crystal,
       deuterium: cost.deuterium,

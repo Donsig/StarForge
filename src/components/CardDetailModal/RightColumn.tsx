@@ -145,8 +145,8 @@ function LevelProgressionSection({ card, gameState }: { card: DetailCard; gameSt
   );
 }
 
-function UnlocksSection({ card }: { card: DetailCard }) {
-  const unlocks = enablesFor(card.type, card.id);
+function UnlocksSection({ card, currentLevel }: { card: DetailCard; currentLevel: number }) {
+  const unlocks = enablesFor(card.type, card.id).filter((u) => u.atLevel > currentLevel);
   if (unlocks.length === 0) return null;
   return (
     <Section title="Unlocks">
@@ -300,6 +300,14 @@ export function RightColumn({ card }: { card: { type: CardType; id: string } }) 
   const definition = definitionFor(card);
   if (definition === null) return <></>;
 
+  const planet = activePlanet(gameState);
+  let currentLevel = 0;
+  if (card.type === 'building' && planet !== null && hasOwnKey(planet.buildings, card.id)) {
+    currentLevel = planet.buildings[card.id as BuildingId] ?? 0;
+  } else if (card.type === 'research' && hasOwnKey(gameState.research, card.id)) {
+    currentLevel = gameState.research[card.id as ResearchId] ?? 0;
+  }
+
   return (
     <section className="card-detail-modal__right" data-card-type={card.type} data-card-id={card.id}>
       <div className="card-detail-modal__scroll-body">
@@ -310,7 +318,7 @@ export function RightColumn({ card }: { card: { type: CardType; id: string } }) 
         <StatsSection label={statsLabelFor(card.type)} stats={cardStatsFor(card.type, card.id, gameState)} />
         <PrerequisitesSection requires={definition.requires} gameState={gameState} />
         {card.type === 'building' || card.type === 'research' ? <LevelProgressionSection card={card} gameState={gameState} /> : null}
-        <UnlocksSection card={card} />
+        <UnlocksSection card={card} currentLevel={currentLevel} />
         <StrategicNotesSection card={card} />
       </div>
       <Footer card={card} />
