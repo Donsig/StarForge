@@ -952,10 +952,10 @@ NON-GOALS: no token changes; no new CSS files.
 DONE MEANS: visual output matches the prototype; existing styles unchanged.
 ```
 
-- [ ] Step 1: Add a `/* ── Card Detail Modal (Issue #44) ─────────── */` marker comment.
-- [ ] Step 2: Backdrop (`.card-detail-modal__backdrop`), container, top bar, columns, badges, pills, stepper, CTA button, animation `@keyframes`.
+- [x] Step 1: Add a `/* ── Card Detail Modal (Issue #44) ─────────── */` marker comment.
+- [x] Step 2: Backdrop (`.card-detail-modal__backdrop`), container, top bar, columns, badges, pills, stepper, CTA button, animation `@keyframes`.
 - [ ] Step 3: Visually verify with `npm run dev` and clicking through all 4 card types.
-- [ ] Step 4: Commit:
+- [x] Step 4: Commit: `c095445`
 
 ```bash
 git add src/styles.css
@@ -976,10 +976,10 @@ NON-GOALS: do NOT touch panels yet.
 DONE MEANS: App still renders; opening a modal from the React DevTools (calling open() in a hook) shows the modal.
 ```
 
-- [ ] Step 1: Add `import { ModalProvider } from './context/ModalContext'`; `import { CardDetailModal } from './components/CardDetailModal'`.
-- [ ] Step 2: Wrap children in `<ModalProvider>`; render `<CardDetailModal />` as a sibling of the existing app shell (so it's portaled but mounted under the provider).
-- [ ] Step 3: `npm run build && npm test`
-- [ ] Step 4: Commit:
+- [x] Step 1: Add `import { ModalProvider } from './context/ModalContext'`; `import { CardDetailModal } from './components/CardDetailModal'`.
+- [x] Step 2: Wrap children in `<ModalProvider>`; render `<CardDetailModal />` as a sibling of the existing app shell (so it's portaled but mounted under the provider).
+- [x] Step 3: `npm run build && npm test` — clean (654 tests pass).
+- [x] Step 4: Commit: `f0806a2`
 
 ```bash
 git add src/App.tsx
@@ -1006,7 +1006,7 @@ NON-GOALS: no logic changes to existing buttons.
 DONE MEANS: clicking any card opens the modal; clicking the inner Build/Upgrade button still triggers ONLY the existing action and does NOT open the modal; Solar Satellite input is type-able without opening the modal; all existing tests still pass.
 ```
 
-- [ ] Step 1: In a shared place (could be inline in each panel — or a tiny `src/panels/_useCardOpenHandlers.ts` if you prefer), define:
+- [x] Step 1: In a shared place (could be inline in each panel — or a tiny `src/panels/_useCardOpenHandlers.ts` if you prefer), define:
 
 ```ts
 const INTERACTIVE_SELECTOR = 'button, input, select, textarea, a';
@@ -1027,11 +1027,11 @@ function useCardOpenHandlers(type: CardType, id: string) {
 }
 ```
 
-- [ ] Step 2: BuildingsPanel: spread the handlers onto each `<article className="item-card">` for buildings AND onto the Solar Satellite article (calling `useCardOpenHandlers('ship', 'solarSatellite')`).
-- [ ] Step 3: ResearchPanel: spread onto `<article className="research-card">`.
-- [ ] Step 4: Shipyard + Defence: spread onto each `<article className="item-card">`.
+- [x] Step 2: BuildingsPanel: spread the handlers onto each `<article className="item-card">` for buildings AND onto the Solar Satellite article (calling `open('ship', 'solarSatellite')`).
+- [x] Step 3: ResearchPanel: spread onto `<article className="research-card">`.
+- [x] Step 4: Shipyard + Defence: spread onto each `<article className="item-card">`.
 - [ ] Step 5: Manual smoke: open every card type, verify the inner Build/Upgrade button still works without bubbling, verify typing in Solar Satellite input doesn't open the modal.
-- [ ] Step 6: Commit:
+- [x] Step 6: Commit: `2812a88` — Codex added a `usePanelModal()` try/catch wrapper in each file (unnecessary since ModalProvider is at App root, but harmless).
 
 ```bash
 git add src/panels/
@@ -1054,11 +1054,11 @@ READ-ONLY CONTEXT: spec "Test Plan", "Test infra".
 DONE MEANS: 4 happy-path tests pass + prereq-nav test using SpyModalProvider passes; npm test green.
 ```
 
-- [ ] Step 1: Extend `renderWithGame()` to optionally accept `modal?: { selectedCard?: SelectedCard } | { value?: ModalContextValue }`. Default = no modal wrapper (keeps existing tests untouched). Document the two forms inline.
-- [ ] Step 2: Create `SpyModalProvider.tsx` exporting both the wrapper component and a `createSpyModalValue(initial?: SelectedCard)` factory that returns `{ value, spies: { open, close, restoreFocus } }`.
-- [ ] Step 3: Component tests — see spec "Component tests" for the four cases. Use `vi.useFakeTimers()` for the prereq-nav case. Replace any earlier draft test code that asserted on `useModal().open` directly: now use `spies.open.mock.calls`.
-- [ ] Step 4: `npm test`
-- [ ] Step 5: Commit:
+- [x] Step 1: Extend `renderWithGame()` to optionally accept `modal?: { selectedCard?: SelectedCard } | { value?: ModalContextValue }`. Default = no modal wrapper (keeps existing tests untouched). Document the two forms inline.
+- [x] Step 2: Create `SpyModalProvider.tsx` exporting both the wrapper component and a `createSpyModalValue(initial?: SelectedCard)` factory that returns `{ value, spies: { open, close, restoreFocus } }`.
+- [x] Step 3: Component tests — see spec "Component tests" for the four cases. Use `vi.useFakeTimers()` for the prereq-nav case. Replace any earlier draft test code that asserted on `useModal().open` directly: now use `spies.open.mock.calls`.
+- [x] Step 4: `npm test` — 660 tests passing.
+- [x] Step 5: Commit: `40dd9b6`
 
 ```bash
 git add src/test/ src/components/CardDetailModal/__tests__/
@@ -1079,9 +1079,9 @@ READ-ONLY CONTEXT: spec "Integration test"; existing integration tests in src/te
 DONE MEANS: the test passes; existing integration tests still pass.
 ```
 
-- [ ] Step 1: Write the test per spec — DOM assertions only (`waitFor`, `getByRole`, badge visibility), no direct `gameState` reads.
-- [ ] Step 2: `npm test`
-- [ ] Step 3: Commit:
+- [x] Step 1: Write the test per spec — DOM assertions only (`waitFor`, `getByRole`, badge visibility), no direct `gameState` reads.
+- [x] Step 2: `npm test` — 661 tests passing.
+- [x] Step 3: Commit: `b951321`
 
 ```bash
 git add src/test/integration/
