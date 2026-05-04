@@ -2,6 +2,7 @@ import { BUILDING_IMAGES, DEFENCE_IMAGES, RESEARCH_IMAGES, SHIP_IMAGES } from '.
 import { useGame } from '../../context/GameContext';
 import { buildingTime, researchTime } from '../../engine/FormulasEngine';
 import type { BuildingId, DefenceId, ResearchId, ShipId } from '../../models/types';
+import { CardImage } from '../CardImage';
 import {
   buildingProgression,
   cardStatsFor,
@@ -119,7 +120,7 @@ export function LeftColumn({ card }: { card: DetailCard }) {
   return (
     <aside className="card-detail-modal__left" data-card-type={card.type} data-card-id={card.id}>
       <div className="card-detail-modal__image-wrap">
-        {imageUrl ? <img className="card-detail-modal__image" src={imageUrl} alt="" /> : <div className="card-detail-modal__image-placeholder" />}
+        <CardImage src={imageUrl ?? ''} label={card.id} height={188} />
         <div
           aria-hidden="true"
           className="card-detail-modal__image-accent"
