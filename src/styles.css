@@ -5046,6 +5046,7 @@ body::before {
   min-width: 0;
   height: 100%;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .card-detail-modal__image-wrap {
