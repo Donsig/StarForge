@@ -240,7 +240,7 @@ function makeQueueItem(
 }
 
 describe('buildingProgression', () => {
-  it('returns rows 5..10 for currentLevel=7 with an empty queue', () => {
+  it('returns rows 7..10 for currentLevel=7 with an empty queue', () => {
     const state = createMockGameContext({
       gameState: {
         planet: { buildings: { metalMine: 7 } },
@@ -249,7 +249,7 @@ describe('buildingProgression', () => {
 
     const rows = buildingProgression('metalMine', 7, [], state);
 
-    expect(rows.map((row) => row.level)).toEqual([5, 6, 7, 8, 9, 10]);
+    expect(rows.map((row) => row.level)).toEqual([7, 8, 9, 10]);
     expect(rows.find((row) => row.level === 7)).toMatchObject({
       current: true,
       queued: false,
@@ -275,7 +275,7 @@ describe('buildingProgression', () => {
     const rows = buildingProgression('metalMine', 7, queue, state);
 
     expect(rows.map((row) => row.level)).toEqual([
-      5, 6, 7, 8, 9, 10, 11, 12, 13,
+      7, 8, 9, 10, 11, 12, 13,
     ]);
     expect(rows.find((row) => row.level === 12)?.next).toBe(true);
   });
@@ -339,7 +339,7 @@ describe('buildingProgression', () => {
 });
 
 describe('researchProgression', () => {
-  it('always starts at level 1', () => {
+  it('starts at currentLevel', () => {
     const state = createMockGameContext({
       gameState: {
         research: { weaponsTechnology: 5 },
@@ -348,8 +348,8 @@ describe('researchProgression', () => {
 
     const rows = researchProgression('weaponsTechnology', 5, [], state);
 
-    expect(rows[0]?.level).toBe(1);
-    expect(rows.map((row) => row.level)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+    expect(rows[0]?.level).toBe(5);
+    expect(rows.map((row) => row.level)).toEqual([5, 6, 7, 8]);
   });
 
   it('counts queue entries by id only, ignoring sourcePlanetIndex differences', () => {

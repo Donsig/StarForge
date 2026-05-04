@@ -602,7 +602,7 @@ export function buildingProgression(
 ): LevelRow[] {
   const queuedLevels = new Set(queue.map((q) => q.targetLevel));
   const nextLevel = currentLevel + queue.length + 1;
-  const start = Math.max(1, currentLevel - 2);
+  const start = Math.max(1, currentLevel);
   const end = Math.max(currentLevel + 3, nextLevel + 1);
   const def = BUILDINGS[id];
   const currentRaw = buildingBenefitRaw(id, currentLevel, state);
@@ -643,7 +643,7 @@ export function researchProgression(
   const currentRaw = researchBenefitRaw(id, currentLevel);
   const rows: LevelRow[] = [];
 
-  for (let level = 1; level <= end; level += 1) {
+  for (let level = Math.max(1, currentLevel); level <= end; level += 1) {
     const cost = researchCostAtLevel(def.baseCost, def.costMultiplier, level);
     const isFuture = level > currentLevel;
     const delta = isFuture ? researchBenefitRaw(id, level) - currentRaw : 0;

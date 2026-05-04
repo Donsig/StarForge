@@ -102,9 +102,11 @@ function StatsSection({ label, stats }: { label: string; stats: CardStat[] }) {
 }
 
 function PrerequisitesSection({ requires, gameState }: { requires: Prerequisite[]; gameState: GameState }) {
+  const rows = prereqRowsFor(requires, gameState);
+  if (rows.length === 0 || rows.every((r) => r.met)) return null;
   return (
     <Section title="Prerequisites">
-      <PrereqPills rows={prereqRowsFor(requires, gameState)} />
+      <PrereqPills rows={rows} />
     </Section>
   );
 }
