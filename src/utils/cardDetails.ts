@@ -675,7 +675,7 @@ function energyAtLevel(id: BuildingId, level: number, state: GameState): number 
     case 'solarPlant':
       return solarPlantEnergy(level);
     case 'fusionReactor':
-      return fusionReactorEnergy(level, state.research.energyTechnology);
+      return fusionReactorEnergy(level, state.research.energyTechnology ?? 0);
     default:
       return 0;
   }
