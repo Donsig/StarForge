@@ -1,0 +1,882 @@
+{
+  "/home/claude/workspace/StarForge/eslint.config.js": {
+    "mtime": 1776725387.3501604,
+    "ast_hash": "cc94b61e00fea240d9602d752ea5feeb",
+    "semantic_hash": "cc94b61e00fea240d9602d752ea5feeb"
+  },
+  "/home/claude/workspace/StarForge/package.json": {
+    "mtime": 1776725387.356464,
+    "ast_hash": "6b913151aa68977d8cb20f45cf1f88b9",
+    "semantic_hash": "6b913151aa68977d8cb20f45cf1f88b9"
+  },
+  "/home/claude/workspace/StarForge/scripts/convert-assets.mjs": {
+    "mtime": 1776725387.4060216,
+    "ast_hash": "8c5850460eadd6bb607a4a7333e81092",
+    "semantic_hash": "8c5850460eadd6bb607a4a7333e81092"
+  },
+  "/home/claude/workspace/StarForge/src/App.tsx": {
+    "mtime": 1776725387.4060216,
+    "ast_hash": "73c419542e81dcbadbf34ef660921fcb",
+    "semantic_hash": "73c419542e81dcbadbf34ef660921fcb"
+  },
+  "/home/claude/workspace/StarForge/src/components/CardImage.tsx": {
+    "mtime": 1776725387.4068365,
+    "ast_hash": "391cdeb8359ffeba35fa6384332877b0",
+    "semantic_hash": "391cdeb8359ffeba35fa6384332877b0"
+  },
+  "/home/claude/workspace/StarForge/src/components/CostDisplay.tsx": {
+    "mtime": 1776725387.4070575,
+    "ast_hash": "34419874c8547804ac3d3fdf9946b8d5",
+    "semantic_hash": "34419874c8547804ac3d3fdf9946b8d5"
+  },
+  "/home/claude/workspace/StarForge/src/components/CursorTooltip.tsx": {
+    "mtime": 1776725387.4072235,
+    "ast_hash": "3f14fb6f716ecaf88c025f65b0060a26",
+    "semantic_hash": "3f14fb6f716ecaf88c025f65b0060a26"
+  },
+  "/home/claude/workspace/StarForge/src/components/FleetMovementsBar.tsx": {
+    "mtime": 1776725387.4074364,
+    "ast_hash": "bdaacdb46f7b7a7a27fe231a3d5948ad",
+    "semantic_hash": "bdaacdb46f7b7a7a27fe231a3d5948ad"
+  },
+  "/home/claude/workspace/StarForge/src/components/HoverPortal.tsx": {
+    "mtime": 1776725387.4082003,
+    "ast_hash": "76bc4507e2c786c37108a41552abae4a",
+    "semantic_hash": "76bc4507e2c786c37108a41552abae4a"
+  },
+  "/home/claude/workspace/StarForge/src/components/LevelRing.tsx": {
+    "mtime": 1776725387.4086716,
+    "ast_hash": "eec5481f03175dd9166bab051bce84df",
+    "semantic_hash": "eec5481f03175dd9166bab051bce84df"
+  },
+  "/home/claude/workspace/StarForge/src/components/NavSidebar.tsx": {
+    "mtime": 1776725387.409072,
+    "ast_hash": "872bee05326ab036bac9a253e29bc000",
+    "semantic_hash": "872bee05326ab036bac9a253e29bc000"
+  },
+  "/home/claude/workspace/StarForge/src/components/PanelBanner.tsx": {
+    "mtime": 1776725387.409262,
+    "ast_hash": "5e928e57f95d2e412e9518c0bb3e44d9",
+    "semantic_hash": "5e928e57f95d2e412e9518c0bb3e44d9"
+  },
+  "/home/claude/workspace/StarForge/src/components/PlanetSwitcher.tsx": {
+    "mtime": 1776725387.4095595,
+    "ast_hash": "5d2268a44c4a06def80896542b47c5a5",
+    "semantic_hash": "5d2268a44c4a06def80896542b47c5a5"
+  },
+  "/home/claude/workspace/StarForge/src/components/QueueDisplay.tsx": {
+    "mtime": 1776725387.409974,
+    "ast_hash": "087f048ac7645353860cc614527cd863",
+    "semantic_hash": "087f048ac7645353860cc614527cd863"
+  },
+  "/home/claude/workspace/StarForge/src/components/QueueRow.tsx": {
+    "mtime": 1776725387.4102492,
+    "ast_hash": "fbf0ef64250ad3e9732631362724235a",
+    "semantic_hash": "fbf0ef64250ad3e9732631362724235a"
+  },
+  "/home/claude/workspace/StarForge/src/components/ResourceBar.tsx": {
+    "mtime": 1776725387.4107983,
+    "ast_hash": "cf5651358ea60aea1ac8ddd8ee46a6dc",
+    "semantic_hash": "cf5651358ea60aea1ac8ddd8ee46a6dc"
+  },
+  "/home/claude/workspace/StarForge/src/components/Toast.tsx": {
+    "mtime": 1776725387.4115279,
+    "ast_hash": "e512bf83b55575c17b6accc6082f1092",
+    "semantic_hash": "e512bf83b55575c17b6accc6082f1092"
+  },
+  "/home/claude/workspace/StarForge/src/components/ToastContainer.tsx": {
+    "mtime": 1776725387.4118466,
+    "ast_hash": "81bd3215a021611106d5c089d2aa2e8d",
+    "semantic_hash": "81bd3215a021611106d5c089d2aa2e8d"
+  },
+  "/home/claude/workspace/StarForge/src/components/Toggle.tsx": {
+    "mtime": 1776725387.412173,
+    "ast_hash": "0eeeb8c9632aa66e63b28883edeff123",
+    "semantic_hash": "0eeeb8c9632aa66e63b28883edeff123"
+  },
+  "/home/claude/workspace/StarForge/src/components/__tests__/CostDisplay.test.tsx": {
+    "mtime": 1776725387.4126742,
+    "ast_hash": "181b951375d6f8775c3e4729a015c539",
+    "semantic_hash": "181b951375d6f8775c3e4729a015c539"
+  },
+  "/home/claude/workspace/StarForge/src/components/__tests__/CursorTooltip.test.tsx": {
+    "mtime": 1776725387.4130185,
+    "ast_hash": "ff9171cd5612be4ae0c781d9cd99ea22",
+    "semantic_hash": "ff9171cd5612be4ae0c781d9cd99ea22"
+  },
+  "/home/claude/workspace/StarForge/src/components/__tests__/FleetMovementsBar.test.tsx": {
+    "mtime": 1776725387.4133034,
+    "ast_hash": "b9182a01d106d427a11cb97816899d45",
+    "semantic_hash": "b9182a01d106d427a11cb97816899d45"
+  },
+  "/home/claude/workspace/StarForge/src/components/__tests__/NavSidebar.test.tsx": {
+    "mtime": 1776725387.4136968,
+    "ast_hash": "72949fd47368ed26c2717a8d388e633a",
+    "semantic_hash": "72949fd47368ed26c2717a8d388e633a"
+  },
+  "/home/claude/workspace/StarForge/src/components/__tests__/PlanetSwitcher.test.tsx": {
+    "mtime": 1776725387.414157,
+    "ast_hash": "ce2c65289d6a3eb69f2ca101be5f526a",
+    "semantic_hash": "ce2c65289d6a3eb69f2ca101be5f526a"
+  },
+  "/home/claude/workspace/StarForge/src/components/__tests__/QueueDisplay.test.tsx": {
+    "mtime": 1776725387.4148128,
+    "ast_hash": "33f98da9845db5cea246a060a875f6da",
+    "semantic_hash": "33f98da9845db5cea246a060a875f6da"
+  },
+  "/home/claude/workspace/StarForge/src/components/__tests__/ResourceBar.test.tsx": {
+    "mtime": 1776725387.41522,
+    "ast_hash": "6f3d1cc9828aa5e75477788301b8c6fa",
+    "semantic_hash": "6f3d1cc9828aa5e75477788301b8c6fa"
+  },
+  "/home/claude/workspace/StarForge/src/components/__tests__/Toast.test.tsx": {
+    "mtime": 1776725387.4156985,
+    "ast_hash": "9cd66b1acf268f9da67dacfaf800be47",
+    "semantic_hash": "9cd66b1acf268f9da67dacfaf800be47"
+  },
+  "/home/claude/workspace/StarForge/src/components/__tests__/ToastContainer.test.tsx": {
+    "mtime": 1776725387.4162176,
+    "ast_hash": "33a9bdc00c82f51746b604fa8382b53d",
+    "semantic_hash": "33a9bdc00c82f51746b604fa8382b53d"
+  },
+  "/home/claude/workspace/StarForge/src/components/__tests__/Toggle.test.tsx": {
+    "mtime": 1776725387.4167023,
+    "ast_hash": "8646f0eb84f91a8996ea922597f100cb",
+    "semantic_hash": "8646f0eb84f91a8996ea922597f100cb"
+  },
+  "/home/claude/workspace/StarForge/src/context/GameContext.tsx": {
+    "mtime": 1776725387.417167,
+    "ast_hash": "8065713ab21e1383443eff5a53b0340e",
+    "semantic_hash": "8065713ab21e1383443eff5a53b0340e"
+  },
+  "/home/claude/workspace/StarForge/src/context/NotificationContext.tsx": {
+    "mtime": 1776725387.417895,
+    "ast_hash": "987b6079e62a9914f2bd49269476c4c5",
+    "semantic_hash": "987b6079e62a9914f2bd49269476c4c5"
+  },
+  "/home/claude/workspace/StarForge/src/context/__tests__/GameContext.test.tsx": {
+    "mtime": 1776725387.4191875,
+    "ast_hash": "2b9da3b8a834842c1df36d620b047d21",
+    "semantic_hash": "2b9da3b8a834842c1df36d620b047d21"
+  },
+  "/home/claude/workspace/StarForge/src/data/__tests__/assets.test.ts": {
+    "mtime": 1776725387.4196742,
+    "ast_hash": "7bfa980cc9b3fa8527c2856815f11981",
+    "semantic_hash": "7bfa980cc9b3fa8527c2856815f11981"
+  },
+  "/home/claude/workspace/StarForge/src/data/assets.ts": {
+    "mtime": 1776725387.4199755,
+    "ast_hash": "6082a30def1c07c43ed5fb4567676710",
+    "semantic_hash": "6082a30def1c07c43ed5fb4567676710"
+  },
+  "/home/claude/workspace/StarForge/src/data/buildings.ts": {
+    "mtime": 1776725387.421687,
+    "ast_hash": "e62d3209abdd196120f844f4425cd9cb",
+    "semantic_hash": "e62d3209abdd196120f844f4425cd9cb"
+  },
+  "/home/claude/workspace/StarForge/src/data/combat.ts": {
+    "mtime": 1776725387.4224987,
+    "ast_hash": "43f12c651ea4968f18398d9b7eb4c440",
+    "semantic_hash": "43f12c651ea4968f18398d9b7eb4c440"
+  },
+  "/home/claude/workspace/StarForge/src/data/defences.ts": {
+    "mtime": 1776725387.4235432,
+    "ast_hash": "78ada96e6b09508dd444d9523b185608",
+    "semantic_hash": "78ada96e6b09508dd444d9523b185608"
+  },
+  "/home/claude/workspace/StarForge/src/data/galaxy.ts": {
+    "mtime": 1776725387.4239054,
+    "ast_hash": "bd3289a3ee56881cd59685d4becd2115",
+    "semantic_hash": "bd3289a3ee56881cd59685d4becd2115"
+  },
+  "/home/claude/workspace/StarForge/src/data/research.ts": {
+    "mtime": 1776725387.424545,
+    "ast_hash": "2e2e901d27f4f144daa4d6fec7f26bdf",
+    "semantic_hash": "2e2e901d27f4f144daa4d6fec7f26bdf"
+  },
+  "/home/claude/workspace/StarForge/src/data/resources.ts": {
+    "mtime": 1776725387.4264135,
+    "ast_hash": "5ef9d31b3a24dded308b47a4560e3498",
+    "semantic_hash": "5ef9d31b3a24dded308b47a4560e3498"
+  },
+  "/home/claude/workspace/StarForge/src/data/ships.ts": {
+    "mtime": 1776725387.4269893,
+    "ast_hash": "dd4cf54ce2f0321f4545bee6cf643896",
+    "semantic_hash": "dd4cf54ce2f0321f4545bee6cf643896"
+  },
+  "/home/claude/workspace/StarForge/src/engine/BuildQueue.ts": {
+    "mtime": 1776725387.4290905,
+    "ast_hash": "3f119388ada98520a1aa4339a0ef67c3",
+    "semantic_hash": "3f119388ada98520a1aa4339a0ef67c3"
+  },
+  "/home/claude/workspace/StarForge/src/engine/CombatEngine.ts": {
+    "mtime": 1776725387.430051,
+    "ast_hash": "e8841dcdea6fd4c62170173a289564d2",
+    "semantic_hash": "e8841dcdea6fd4c62170173a289564d2"
+  },
+  "/home/claude/workspace/StarForge/src/engine/EspionageEngine.ts": {
+    "mtime": 1776725387.4304872,
+    "ast_hash": "6613d8b828313f75d8c13cb58bc82a48",
+    "semantic_hash": "6613d8b828313f75d8c13cb58bc82a48"
+  },
+  "/home/claude/workspace/StarForge/src/engine/FleetEngine.ts": {
+    "mtime": 1776725387.4319813,
+    "ast_hash": "3a5f713b1fa00e3deaadcfdd60486f9e",
+    "semantic_hash": "3a5f713b1fa00e3deaadcfdd60486f9e"
+  },
+  "/home/claude/workspace/StarForge/src/engine/FormulasEngine.ts": {
+    "mtime": 1776725387.4323452,
+    "ast_hash": "e0ff2b0cb304d54e43dc99b515d4cb18",
+    "semantic_hash": "e0ff2b0cb304d54e43dc99b515d4cb18"
+  },
+  "/home/claude/workspace/StarForge/src/engine/GalaxyEngine.ts": {
+    "mtime": 1776725387.4335337,
+    "ast_hash": "a549a55f3b9d0dad5805925d90670c23",
+    "semantic_hash": "a549a55f3b9d0dad5805925d90670c23"
+  },
+  "/home/claude/workspace/StarForge/src/engine/NPCUpgradeEngine.ts": {
+    "mtime": 1776725387.4347425,
+    "ast_hash": "c7a113687b79197a4a8d6a62be5893f8",
+    "semantic_hash": "c7a113687b79197a4a8d6a62be5893f8"
+  },
+  "/home/claude/workspace/StarForge/src/engine/ProductionSampling.ts": {
+    "mtime": 1776725387.4350922,
+    "ast_hash": "619bbaa03ea71350842568fdf6b112c8",
+    "semantic_hash": "619bbaa03ea71350842568fdf6b112c8"
+  },
+  "/home/claude/workspace/StarForge/src/engine/ResourceEngine.ts": {
+    "mtime": 1776725387.435562,
+    "ast_hash": "999ff2a1842b427722428d45ea616d9f",
+    "semantic_hash": "999ff2a1842b427722428d45ea616d9f"
+  },
+  "/home/claude/workspace/StarForge/src/engine/ScoreEngine.ts": {
+    "mtime": 1776725387.435944,
+    "ast_hash": "ef2892b928ea34cea4a3f996e798135d",
+    "semantic_hash": "ef2892b928ea34cea4a3f996e798135d"
+  },
+  "/home/claude/workspace/StarForge/src/engine/StateManager.ts": {
+    "mtime": 1776725387.4374094,
+    "ast_hash": "0b5148919b397c1caa08cd8597d766a0",
+    "semantic_hash": "0b5148919b397c1caa08cd8597d766a0"
+  },
+  "/home/claude/workspace/StarForge/src/engine/__tests__/BuildQueue.test.ts": {
+    "mtime": 1776725387.438633,
+    "ast_hash": "a6df5a668c04e3d6f734fbf89d129c6c",
+    "semantic_hash": "a6df5a668c04e3d6f734fbf89d129c6c"
+  },
+  "/home/claude/workspace/StarForge/src/engine/__tests__/CombatEngine.test.ts": {
+    "mtime": 1776725387.4389424,
+    "ast_hash": "b031403771c34b0cf10e188042d4f593",
+    "semantic_hash": "b031403771c34b0cf10e188042d4f593"
+  },
+  "/home/claude/workspace/StarForge/src/engine/__tests__/CombatPreview.test.ts": {
+    "mtime": 1776725387.4393194,
+    "ast_hash": "edaa089d91b5e81912d62961a4c93489",
+    "semantic_hash": "edaa089d91b5e81912d62961a4c93489"
+  },
+  "/home/claude/workspace/StarForge/src/engine/__tests__/EspionageEngine.test.ts": {
+    "mtime": 1776725387.439845,
+    "ast_hash": "526a7592965607a5b8163101e807a43c",
+    "semantic_hash": "526a7592965607a5b8163101e807a43c"
+  },
+  "/home/claude/workspace/StarForge/src/engine/__tests__/FleetColonise.test.ts": {
+    "mtime": 1776725387.440132,
+    "ast_hash": "84f754329488e5d879d4f27c29cc23fe",
+    "semantic_hash": "84f754329488e5d879d4f27c29cc23fe"
+  },
+  "/home/claude/workspace/StarForge/src/engine/__tests__/FleetDeploy.test.ts": {
+    "mtime": 1776725387.440132,
+    "ast_hash": "b75575610022b71e6c9bf40ee1a5f56f",
+    "semantic_hash": "b75575610022b71e6c9bf40ee1a5f56f"
+  },
+  "/home/claude/workspace/StarForge/src/engine/__tests__/FleetEngine.test.ts": {
+    "mtime": 1776725387.4413242,
+    "ast_hash": "63b2447eecb1bb7fe9510583bd0819a5",
+    "semantic_hash": "63b2447eecb1bb7fe9510583bd0819a5"
+  },
+  "/home/claude/workspace/StarForge/src/engine/__tests__/FormulasEngine.test.ts": {
+    "mtime": 1776725387.441758,
+    "ast_hash": "3dc7d44b49dfc469c81b0e16eb8e411f",
+    "semantic_hash": "3dc7d44b49dfc469c81b0e16eb8e411f"
+  },
+  "/home/claude/workspace/StarForge/src/engine/__tests__/GalaxyEngine.test.ts": {
+    "mtime": 1776725387.442661,
+    "ast_hash": "cb4144c88dcbc4547a938f2a38073b9e",
+    "semantic_hash": "cb4144c88dcbc4547a938f2a38073b9e"
+  },
+  "/home/claude/workspace/StarForge/src/engine/__tests__/NPCEconomy.test.ts": {
+    "mtime": 1776725387.443149,
+    "ast_hash": "7947aad886794fa68beb8bef2a42e021",
+    "semantic_hash": "7947aad886794fa68beb8bef2a42e021"
+  },
+  "/home/claude/workspace/StarForge/src/engine/__tests__/NPCScaling.test.ts": {
+    "mtime": 1776725387.443544,
+    "ast_hash": "6d3f536fd2adf08067fa9fced38dddb5",
+    "semantic_hash": "6d3f536fd2adf08067fa9fced38dddb5"
+  },
+  "/home/claude/workspace/StarForge/src/engine/__tests__/NPCUpgradeEngine.test.ts": {
+    "mtime": 1776725387.444254,
+    "ast_hash": "990452dc6ab0ac895f63fe5c9820d4fe",
+    "semantic_hash": "990452dc6ab0ac895f63fe5c9820d4fe"
+  },
+  "/home/claude/workspace/StarForge/src/engine/__tests__/ProductionSampling.test.ts": {
+    "mtime": 1776725387.444742,
+    "ast_hash": "a97f02a119e12640c585e4744f4c309d",
+    "semantic_hash": "a97f02a119e12640c585e4744f4c309d"
+  },
+  "/home/claude/workspace/StarForge/src/engine/__tests__/ResourceEngine.test.ts": {
+    "mtime": 1776725387.4452183,
+    "ast_hash": "d2cf317652d17f8900ed93ed5500ed75",
+    "semantic_hash": "d2cf317652d17f8900ed93ed5500ed75"
+  },
+  "/home/claude/workspace/StarForge/src/engine/__tests__/ScoreEngine.test.ts": {
+    "mtime": 1776725387.4455194,
+    "ast_hash": "5826008b838f91e3d5aba8b7d84d6694",
+    "semantic_hash": "5826008b838f91e3d5aba8b7d84d6694"
+  },
+  "/home/claude/workspace/StarForge/src/engine/__tests__/ScoreTracking.test.ts": {
+    "mtime": 1776725387.4460604,
+    "ast_hash": "02b093163718c627953337bf40b83ed5",
+    "semantic_hash": "02b093163718c627953337bf40b83ed5"
+  },
+  "/home/claude/workspace/StarForge/src/engine/__tests__/StateManager.test.ts": {
+    "mtime": 1776725387.4468853,
+    "ast_hash": "c2ae771d19faaaf08d9c8629f5ffc721",
+    "semantic_hash": "c2ae771d19faaaf08d9c8629f5ffc721"
+  },
+  "/home/claude/workspace/StarForge/src/engine/__tests__/StateManagerCatchUp.test.ts": {
+    "mtime": 1776725387.4473965,
+    "ast_hash": "1d4943035a59a1e3e6d2402eeeeeb76d",
+    "semantic_hash": "1d4943035a59a1e3e6d2402eeeeeb76d"
+  },
+  "/home/claude/workspace/StarForge/src/engine/__tests__/StateManagerMigration.test.ts": {
+    "mtime": 1776725387.4483843,
+    "ast_hash": "819b07acc1933d7d6e3af0ad5013146d",
+    "semantic_hash": "819b07acc1933d7d6e3af0ad5013146d"
+  },
+  "/home/claude/workspace/StarForge/src/engine/__tests__/Statistics.test.ts": {
+    "mtime": 1776725387.4487467,
+    "ast_hash": "db6e9e8aa836c332cbd442d48d9df524",
+    "semantic_hash": "db6e9e8aa836c332cbd442d48d9df524"
+  },
+  "/home/claude/workspace/StarForge/src/engine/__tests__/TotalBuiltCounter.test.ts": {
+    "mtime": 1776725387.4489083,
+    "ast_hash": "f94465b726d3ecf92233a76b67b6c5e9",
+    "semantic_hash": "f94465b726d3ecf92233a76b67b6c5e9"
+  },
+  "/home/claude/workspace/StarForge/src/engine/helpers.ts": {
+    "mtime": 1776725387.4491029,
+    "ast_hash": "443e544f166953e16d08bc5e971b20a8",
+    "semantic_hash": "443e544f166953e16d08bc5e971b20a8"
+  },
+  "/home/claude/workspace/StarForge/src/hooks/__tests__/fleetMovements.test.ts": {
+    "mtime": 1776725387.4493659,
+    "ast_hash": "a0a5845b414dd320c49c3c97b07544ab",
+    "semantic_hash": "a0a5845b414dd320c49c3c97b07544ab"
+  },
+  "/home/claude/workspace/StarForge/src/hooks/__tests__/useNotificationObserver.test.tsx": {
+    "mtime": 1776725387.449726,
+    "ast_hash": "cd3e445c781e4511a0620862df76fb55",
+    "semantic_hash": "cd3e445c781e4511a0620862df76fb55"
+  },
+  "/home/claude/workspace/StarForge/src/hooks/__tests__/useNow.test.ts": {
+    "mtime": 1776725387.4504874,
+    "ast_hash": "1374f68bb669e3a648bbc295049f73cc",
+    "semantic_hash": "1374f68bb669e3a648bbc295049f73cc"
+  },
+  "/home/claude/workspace/StarForge/src/hooks/useCountdown.ts": {
+    "mtime": 1776725387.45084,
+    "ast_hash": "fb1606002ccdb462a9688ccedbfc5984",
+    "semantic_hash": "fb1606002ccdb462a9688ccedbfc5984"
+  },
+  "/home/claude/workspace/StarForge/src/hooks/useGameEngine.ts": {
+    "mtime": 1776725387.45284,
+    "ast_hash": "47270b2f8aea0b3644be58cd1519ad03",
+    "semantic_hash": "47270b2f8aea0b3644be58cd1519ad03"
+  },
+  "/home/claude/workspace/StarForge/src/hooks/useNotificationObserver.ts": {
+    "mtime": 1776725387.4538403,
+    "ast_hash": "482d2d0f58ff3fb10bf4a23cae0d0550",
+    "semantic_hash": "482d2d0f58ff3fb10bf4a23cae0d0550"
+  },
+  "/home/claude/workspace/StarForge/src/hooks/useNotifications.ts": {
+    "mtime": 1776725387.4538403,
+    "ast_hash": "ed39e52ca7dd719354951d57965fa536",
+    "semantic_hash": "ed39e52ca7dd719354951d57965fa536"
+  },
+  "/home/claude/workspace/StarForge/src/hooks/useNow.ts": {
+    "mtime": 1776725387.4551487,
+    "ast_hash": "53ddd59f78c764fd1be1f9ff7c4a135e",
+    "semantic_hash": "53ddd59f78c764fd1be1f9ff7c4a135e"
+  },
+  "/home/claude/workspace/StarForge/src/main.tsx": {
+    "mtime": 1776725387.4551487,
+    "ast_hash": "249968aaf4ca74ebd2d22c2d9d7c4396",
+    "semantic_hash": "249968aaf4ca74ebd2d22c2d9d7c4396"
+  },
+  "/home/claude/workspace/StarForge/src/models/Combat.ts": {
+    "mtime": 1776725387.4551487,
+    "ast_hash": "e51ccecdc4fc0b74bac66ffcd6dc9cb8",
+    "semantic_hash": "e51ccecdc4fc0b74bac66ffcd6dc9cb8"
+  },
+  "/home/claude/workspace/StarForge/src/models/Fleet.ts": {
+    "mtime": 1776725387.45607,
+    "ast_hash": "d977d8412112fdf8bdae63cb87af7671",
+    "semantic_hash": "d977d8412112fdf8bdae63cb87af7671"
+  },
+  "/home/claude/workspace/StarForge/src/models/Galaxy.ts": {
+    "mtime": 1776725387.4572604,
+    "ast_hash": "a53f1b254e47293c95195e75fbb498e6",
+    "semantic_hash": "a53f1b254e47293c95195e75fbb498e6"
+  },
+  "/home/claude/workspace/StarForge/src/models/GameState.ts": {
+    "mtime": 1776725387.4588406,
+    "ast_hash": "a20cda94054e3918d7e1b2b2584ac1f8",
+    "semantic_hash": "a20cda94054e3918d7e1b2b2584ac1f8"
+  },
+  "/home/claude/workspace/StarForge/src/models/Planet.ts": {
+    "mtime": 1776725387.4605281,
+    "ast_hash": "6a71ee0a8486c2df0ca115fcb7fa63d8",
+    "semantic_hash": "6a71ee0a8486c2df0ca115fcb7fa63d8"
+  },
+  "/home/claude/workspace/StarForge/src/models/types.ts": {
+    "mtime": 1776725387.460861,
+    "ast_hash": "a9fd6a701e5878a7ef65564792add1fe",
+    "semantic_hash": "a9fd6a701e5878a7ef65564792add1fe"
+  },
+  "/home/claude/workspace/StarForge/src/panels/AdminPanel.tsx": {
+    "mtime": 1776725387.4633052,
+    "ast_hash": "8b7e9ede08800419582e259fadfcd861",
+    "semantic_hash": "8b7e9ede08800419582e259fadfcd861"
+  },
+  "/home/claude/workspace/StarForge/src/panels/BuildingsPanel.tsx": {
+    "mtime": 1776725387.4640825,
+    "ast_hash": "8ee8cd619c1a93afb16976c998460342",
+    "semantic_hash": "8ee8cd619c1a93afb16976c998460342"
+  },
+  "/home/claude/workspace/StarForge/src/panels/DefencePanel.tsx": {
+    "mtime": 1776725387.4651265,
+    "ast_hash": "f5ffde579d0c0571a239e2d2c40eb167",
+    "semantic_hash": "f5ffde579d0c0571a239e2d2c40eb167"
+  },
+  "/home/claude/workspace/StarForge/src/panels/FleetPanel.tsx": {
+    "mtime": 1776725387.4672155,
+    "ast_hash": "c269b552fa41df750b1944a120ec493f",
+    "semantic_hash": "c269b552fa41df750b1944a120ec493f"
+  },
+  "/home/claude/workspace/StarForge/src/panels/GalaxyPanel.tsx": {
+    "mtime": 1776725387.4698656,
+    "ast_hash": "eef38b236d22613e922c792fc89da6a3",
+    "semantic_hash": "eef38b236d22613e922c792fc89da6a3"
+  },
+  "/home/claude/workspace/StarForge/src/panels/MessagesPanel.tsx": {
+    "mtime": 1776725387.4709752,
+    "ast_hash": "3970cb16011b7c16ecd8ee178ef372cc",
+    "semantic_hash": "3970cb16011b7c16ecd8ee178ef372cc"
+  },
+  "/home/claude/workspace/StarForge/src/panels/OverviewPanel.tsx": {
+    "mtime": 1776725387.4725099,
+    "ast_hash": "d358c1dcf629040e290640cc97bcdcef",
+    "semantic_hash": "d358c1dcf629040e290640cc97bcdcef"
+  },
+  "/home/claude/workspace/StarForge/src/panels/ResearchPanel.tsx": {
+    "mtime": 1776725387.4731672,
+    "ast_hash": "58872a221c3c6d4de6dcca461366434f",
+    "semantic_hash": "58872a221c3c6d4de6dcca461366434f"
+  },
+  "/home/claude/workspace/StarForge/src/panels/SettingsPanel.tsx": {
+    "mtime": 1776725387.4737525,
+    "ast_hash": "a08e1f519058cc64073869c44549ea45",
+    "semantic_hash": "a08e1f519058cc64073869c44549ea45"
+  },
+  "/home/claude/workspace/StarForge/src/panels/ShipyardPanel.tsx": {
+    "mtime": 1776725387.4740317,
+    "ast_hash": "1424b4ed4fa9e297906b6488afe1470e",
+    "semantic_hash": "1424b4ed4fa9e297906b6488afe1470e"
+  },
+  "/home/claude/workspace/StarForge/src/panels/StatisticsPanel.tsx": {
+    "mtime": 1776725387.4749486,
+    "ast_hash": "46108349973ad552072f9fdf230c161d",
+    "semantic_hash": "46108349973ad552072f9fdf230c161d"
+  },
+  "/home/claude/workspace/StarForge/src/panels/__tests__/AdminPanel.test.tsx": {
+    "mtime": 1776725387.4754055,
+    "ast_hash": "49f39c3199a644fd54a55dc017e3db54",
+    "semantic_hash": "49f39c3199a644fd54a55dc017e3db54"
+  },
+  "/home/claude/workspace/StarForge/src/panels/__tests__/BuildingsPanel.test.tsx": {
+    "mtime": 1776725387.476233,
+    "ast_hash": "0bd4995c760bf76e693e641d12c6c52c",
+    "semantic_hash": "0bd4995c760bf76e693e641d12c6c52c"
+  },
+  "/home/claude/workspace/StarForge/src/panels/__tests__/DefencePanel.test.tsx": {
+    "mtime": 1776725387.476927,
+    "ast_hash": "b4d68e3c112899b4c6cb7322dd53a50c",
+    "semantic_hash": "b4d68e3c112899b4c6cb7322dd53a50c"
+  },
+  "/home/claude/workspace/StarForge/src/panels/__tests__/FleetPanel.test.tsx": {
+    "mtime": 1776725387.478367,
+    "ast_hash": "a65104b67e255e4e503c5ab9bbccc3e7",
+    "semantic_hash": "a65104b67e255e4e503c5ab9bbccc3e7"
+  },
+  "/home/claude/workspace/StarForge/src/panels/__tests__/GalaxyPanel.test.tsx": {
+    "mtime": 1776725387.4788778,
+    "ast_hash": "7e1657aba66c608f9f914669d3bebc06",
+    "semantic_hash": "7e1657aba66c608f9f914669d3bebc06"
+  },
+  "/home/claude/workspace/StarForge/src/panels/__tests__/MessagesPanel.test.tsx": {
+    "mtime": 1776725387.4793088,
+    "ast_hash": "6113d35139c69ca27a59b34d0613ed01",
+    "semantic_hash": "6113d35139c69ca27a59b34d0613ed01"
+  },
+  "/home/claude/workspace/StarForge/src/panels/__tests__/OverviewPanel.test.tsx": {
+    "mtime": 1776725387.479664,
+    "ast_hash": "4b912e572ebd5c5e3af0ae2885a65099",
+    "semantic_hash": "4b912e572ebd5c5e3af0ae2885a65099"
+  },
+  "/home/claude/workspace/StarForge/src/panels/__tests__/ResearchPanel.test.tsx": {
+    "mtime": 1776725387.4801168,
+    "ast_hash": "ad9f913e36340d1db5c2d35e0e6937f2",
+    "semantic_hash": "ad9f913e36340d1db5c2d35e0e6937f2"
+  },
+  "/home/claude/workspace/StarForge/src/panels/__tests__/SettingsPanel.test.tsx": {
+    "mtime": 1776725387.4806497,
+    "ast_hash": "04f1a08d638a2089a8b0ec0e4be357bc",
+    "semantic_hash": "04f1a08d638a2089a8b0ec0e4be357bc"
+  },
+  "/home/claude/workspace/StarForge/src/panels/__tests__/ShipyardPanel.test.tsx": {
+    "mtime": 1776725387.4806497,
+    "ast_hash": "ae4bb8d7cf4b3e2f6181331bb8c43d32",
+    "semantic_hash": "ae4bb8d7cf4b3e2f6181331bb8c43d32"
+  },
+  "/home/claude/workspace/StarForge/src/panels/__tests__/StatisticsPanel.test.tsx": {
+    "mtime": 1776725387.4815133,
+    "ast_hash": "598d432d569f17a8b41e3a50084a2027",
+    "semantic_hash": "598d432d569f17a8b41e3a50084a2027"
+  },
+  "/home/claude/workspace/StarForge/src/panels/galaxyStrength.ts": {
+    "mtime": 1776725387.4817193,
+    "ast_hash": "530b66a21bc878be8ae5607b16a54a4b",
+    "semantic_hash": "530b66a21bc878be8ae5607b16a54a4b"
+  },
+  "/home/claude/workspace/StarForge/src/test/integration/galaxy-colonization.test.ts": {
+    "mtime": 1776725387.4859552,
+    "ast_hash": "9c5860d8fee34fa34da09dd261b1995d",
+    "semantic_hash": "9c5860d8fee34fa34da09dd261b1995d"
+  },
+  "/home/claude/workspace/StarForge/src/test/integration/game-session.test.ts": {
+    "mtime": 1776725387.4864378,
+    "ast_hash": "b6c328f6c8b9b48f0cdf6d657010a78b",
+    "semantic_hash": "b6c328f6c8b9b48f0cdf6d657010a78b"
+  },
+  "/home/claude/workspace/StarForge/src/test/integration/research-chains.test.ts": {
+    "mtime": 1776725387.4867713,
+    "ast_hash": "d8feae4a7414fb540cc81b9b1cf25409",
+    "semantic_hash": "d8feae4a7414fb540cc81b9b1cf25409"
+  },
+  "/home/claude/workspace/StarForge/src/test/integration/save-load-cycle.test.ts": {
+    "mtime": 1776725387.4871993,
+    "ast_hash": "e69ba89f9a8054ed53f9326a85e32683",
+    "semantic_hash": "e69ba89f9a8054ed53f9326a85e32683"
+  },
+  "/home/claude/workspace/StarForge/src/test/integration/ship-production.test.ts": {
+    "mtime": 1776725387.4875674,
+    "ast_hash": "e0214b3613ac333bdcaf80d77b777e23",
+    "semantic_hash": "e0214b3613ac333bdcaf80d77b777e23"
+  },
+  "/home/claude/workspace/StarForge/src/test/setup.ts": {
+    "mtime": 1776725387.487955,
+    "ast_hash": "9d9745957a3c535cb654cea2bc2a4806",
+    "semantic_hash": "9d9745957a3c535cb654cea2bc2a4806"
+  },
+  "/home/claude/workspace/StarForge/src/test/test-utils.tsx": {
+    "mtime": 1776725387.4883132,
+    "ast_hash": "9908486592665303587bbda5eee7d8d4",
+    "semantic_hash": "9908486592665303587bbda5eee7d8d4"
+  },
+  "/home/claude/workspace/StarForge/src/utils/__tests__/fleet.test.ts": {
+    "mtime": 1776725387.4885902,
+    "ast_hash": "c401c38208ad77b74d637b7b221f3998",
+    "semantic_hash": "c401c38208ad77b74d637b7b221f3998"
+  },
+  "/home/claude/workspace/StarForge/src/utils/__tests__/format.test.ts": {
+    "mtime": 1776725387.488851,
+    "ast_hash": "122fb584c63ebc322efe385846815773",
+    "semantic_hash": "122fb584c63ebc322efe385846815773"
+  },
+  "/home/claude/workspace/StarForge/src/utils/__tests__/rankings.test.ts": {
+    "mtime": 1776725387.489838,
+    "ast_hash": "2ac5135386a3210387d4bbe0674a7c05",
+    "semantic_hash": "2ac5135386a3210387d4bbe0674a7c05"
+  },
+  "/home/claude/workspace/StarForge/src/utils/__tests__/time.test.ts": {
+    "mtime": 1776725387.4903119,
+    "ast_hash": "f9bcbdd80fbd914e16f50ea45bf833ee",
+    "semantic_hash": "f9bcbdd80fbd914e16f50ea45bf833ee"
+  },
+  "/home/claude/workspace/StarForge/src/utils/fleet.ts": {
+    "mtime": 1776725387.4905927,
+    "ast_hash": "3bd076cf12f8e2f627585a39350b0da9",
+    "semantic_hash": "3bd076cf12f8e2f627585a39350b0da9"
+  },
+  "/home/claude/workspace/StarForge/src/utils/format.ts": {
+    "mtime": 1776725387.490806,
+    "ast_hash": "e1dc267b26237970185b82620fda6af2",
+    "semantic_hash": "e1dc267b26237970185b82620fda6af2"
+  },
+  "/home/claude/workspace/StarForge/src/utils/rankings.ts": {
+    "mtime": 1776725387.4910748,
+    "ast_hash": "876adf1f7bbe74fb2931772dec28e049",
+    "semantic_hash": "876adf1f7bbe74fb2931772dec28e049"
+  },
+  "/home/claude/workspace/StarForge/src/utils/time.ts": {
+    "mtime": 1776725387.4912784,
+    "ast_hash": "244fef4259f0a62b3c1938282baf5e48",
+    "semantic_hash": "244fef4259f0a62b3c1938282baf5e48"
+  },
+  "/home/claude/workspace/StarForge/src/vite-env.d.ts": {
+    "mtime": 1776725387.4912784,
+    "ast_hash": "0352474ba2918efe13895edbc3780d94",
+    "semantic_hash": "0352474ba2918efe13895edbc3780d94"
+  },
+  "/home/claude/workspace/StarForge/tsconfig.app.json": {
+    "mtime": 1776725387.4916127,
+    "ast_hash": "06fed9d2d293837c0571529eaae7204a",
+    "semantic_hash": "06fed9d2d293837c0571529eaae7204a"
+  },
+  "/home/claude/workspace/StarForge/tsconfig.json": {
+    "mtime": 1776725387.4917474,
+    "ast_hash": "a3d39fa780ebff65444de257f291ce6c",
+    "semantic_hash": "a3d39fa780ebff65444de257f291ce6c"
+  },
+  "/home/claude/workspace/StarForge/tsconfig.node.json": {
+    "mtime": 1776725387.4919374,
+    "ast_hash": "eec85c9d7c6b599801557f1afd86672c",
+    "semantic_hash": "eec85c9d7c6b599801557f1afd86672c"
+  },
+  "/home/claude/workspace/StarForge/vite.config.ts": {
+    "mtime": 1776725387.4920952,
+    "ast_hash": "0b71d5a0e1bfa384802ad2fa5ffc7872",
+    "semantic_hash": "0b71d5a0e1bfa384802ad2fa5ffc7872"
+  },
+  "/home/claude/workspace/StarForge/.github/workflows/create-missing-features-issues.yml": {
+    "mtime": 1776725387.315798,
+    "ast_hash": "f8ccd782b6abe55e3eb4480cedd68cd1",
+    "semantic_hash": "f8ccd782b6abe55e3eb4480cedd68cd1"
+  },
+  "/home/claude/workspace/StarForge/AGENTS.md": {
+    "mtime": 1776725387.3158286,
+    "ast_hash": "906fe10756285b4cebe4bbe6f2e67b7e",
+    "semantic_hash": "906fe10756285b4cebe4bbe6f2e67b7e"
+  },
+  "/home/claude/workspace/StarForge/CLAUDE.md": {
+    "mtime": 1776725387.3168287,
+    "ast_hash": "88b189f905d6f14d157d0123edace370",
+    "semantic_hash": "88b189f905d6f14d157d0123edace370"
+  },
+  "/home/claude/workspace/StarForge/PLAN.md": {
+    "mtime": 1776725387.3211324,
+    "ast_hash": "ce93890e1d8bcbf2684bb993a2c438c0",
+    "semantic_hash": "ce93890e1d8bcbf2684bb993a2c438c0"
+  },
+  "/home/claude/workspace/StarForge/README.md": {
+    "mtime": 1776725387.3227658,
+    "ast_hash": "61d063f815475ad47ebd4c875198afca",
+    "semantic_hash": "61d063f815475ad47ebd4c875198afca"
+  },
+  "/home/claude/workspace/StarForge/SECURITY_REVIEW.md": {
+    "mtime": 1776725742.2540698,
+    "ast_hash": "bc1ddef012b8634550126a7d4bb3aab6",
+    "semantic_hash": "bc1ddef012b8634550126a7d4bb3aab6"
+  },
+  "/home/claude/workspace/StarForge/docs/plans/2026-03-05-phase-3.2-economy-polish-design.md": {
+    "mtime": 1776725387.3238294,
+    "ast_hash": "78ea325c7c37183789eddca5929c9eea",
+    "semantic_hash": "78ea325c7c37183789eddca5929c9eea"
+  },
+  "/home/claude/workspace/StarForge/docs/plans/2026-03-05-phase-3.2-implementation.md": {
+    "mtime": 1776725387.327213,
+    "ast_hash": "f290127303f25e5c53dc8f85e71d600b",
+    "semantic_hash": "f290127303f25e5c53dc8f85e71d600b"
+  },
+  "/home/claude/workspace/StarForge/docs/plans/2026-03-06-bugfix-balance-design.md": {
+    "mtime": 1776725387.3277555,
+    "ast_hash": "d1bef949a07dc02d257185b2cc65b4f3",
+    "semantic_hash": "d1bef949a07dc02d257185b2cc65b4f3"
+  },
+  "/home/claude/workspace/StarForge/docs/plans/2026-03-06-bugfix-balance-implementation.md": {
+    "mtime": 1776725387.3300853,
+    "ast_hash": "4c7a7df698cec2216f92e4ac35895418",
+    "semantic_hash": "4c7a7df698cec2216f92e4ac35895418"
+  },
+  "/home/claude/workspace/StarForge/docs/plans/2026-03-06-phase-3.3-implementation.md": {
+    "mtime": 1776725387.3321757,
+    "ast_hash": "6a8802e59c66a8adec2688a281612996",
+    "semantic_hash": "6a8802e59c66a8adec2688a281612996"
+  },
+  "/home/claude/workspace/StarForge/docs/plans/2026-03-06-phase-3.3-messages-panel-design.md": {
+    "mtime": 1776725387.3329308,
+    "ast_hash": "3d95b863ad7038cd19e9a28993d71997",
+    "semantic_hash": "3d95b863ad7038cd19e9a28993d71997"
+  },
+  "/home/claude/workspace/StarForge/docs/plans/2026-03-06-phase-3.4-implementation.md": {
+    "mtime": 1776725387.3341887,
+    "ast_hash": "ca921707b181f0f8bf22997b6c069a88",
+    "semantic_hash": "ca921707b181f0f8bf22997b6c069a88"
+  },
+  "/home/claude/workspace/StarForge/docs/plans/2026-03-06-phase-3.4-ui-polish-design.md": {
+    "mtime": 1776725387.3346496,
+    "ast_hash": "8d4893dcb4d26a0c1fe172c89cf575ab",
+    "semantic_hash": "8d4893dcb4d26a0c1fe172c89cf575ab"
+  },
+  "/home/claude/workspace/StarForge/docs/plans/2026-03-06-ui-improvements.md": {
+    "mtime": 1776725387.3356469,
+    "ast_hash": "e6e3b53eb746743c4fd9bd5fbc483b1c",
+    "semantic_hash": "e6e3b53eb746743c4fd9bd5fbc483b1c"
+  },
+  "/home/claude/workspace/StarForge/docs/plans/2026-03-07-artwork-design.md": {
+    "mtime": 1776725387.3361866,
+    "ast_hash": "9d03aef2a51679f2a92f1e308f251126",
+    "semantic_hash": "9d03aef2a51679f2a92f1e308f251126"
+  },
+  "/home/claude/workspace/StarForge/docs/plans/2026-03-07-artwork-implementation.md": {
+    "mtime": 1776725387.338272,
+    "ast_hash": "6f01ca4432c8f8a1c66f5d781b17005c",
+    "semantic_hash": "6f01ca4432c8f8a1c66f5d781b17005c"
+  },
+  "/home/claude/workspace/StarForge/docs/plans/2026-03-07-artwork-prompts.md": {
+    "mtime": 1776725387.339214,
+    "ast_hash": "95c1e8f6eb5f4d8688284b1546936609",
+    "semantic_hash": "95c1e8f6eb5f4d8688284b1546936609"
+  },
+  "/home/claude/workspace/StarForge/docs/plans/2026-03-07-phase-4-implementation.md": {
+    "mtime": 1776725387.34149,
+    "ast_hash": "796f43783b175f7273c2799515f7c108",
+    "semantic_hash": "796f43783b175f7273c2799515f7c108"
+  },
+  "/home/claude/workspace/StarForge/docs/plans/2026-03-15-ui-review-fixes.md": {
+    "mtime": 1776725387.3422637,
+    "ast_hash": "5581241e2f2a3292ab832e076a9c192c",
+    "semantic_hash": "5581241e2f2a3292ab832e076a9c192c"
+  },
+  "/home/claude/workspace/StarForge/docs/superpowers/plans/2026-03-14-fleet-movements-bar.md": {
+    "mtime": 1776725387.345114,
+    "ast_hash": "f59d943764ed85b5def86235e9bae1f6",
+    "semantic_hash": "f59d943764ed85b5def86235e9bae1f6"
+  },
+  "/home/claude/workspace/StarForge/docs/superpowers/plans/2026-04-19-ui-redesign.md": {
+    "mtime": 1776725387.3481836,
+    "ast_hash": "83a8f4ae5fb2107da53ffef1ce17f767",
+    "semantic_hash": "83a8f4ae5fb2107da53ffef1ce17f767"
+  },
+  "/home/claude/workspace/StarForge/docs/superpowers/specs/2026-03-14-fleet-movements-bar-design.md": {
+    "mtime": 1776725387.3481836,
+    "ast_hash": "e7fce4af9474a943b90dc9583fd0b258",
+    "semantic_hash": "e7fce4af9474a943b90dc9583fd0b258"
+  },
+  "/home/claude/workspace/StarForge/index.html": {
+    "mtime": 1776725387.3504624,
+    "ast_hash": "e781c880cc97cbc73bde1ad5264c7ebb",
+    "semantic_hash": "e781c880cc97cbc73bde1ad5264c7ebb"
+  },
+  "/home/claude/workspace/StarForge/public/assets/buildings/crystalMine.webp": {
+    "mtime": 1776725387.364675,
+    "ast_hash": "a8533c182d36c4d78ac652e5b14389bf",
+    "semantic_hash": "a8533c182d36c4d78ac652e5b14389bf"
+  },
+  "/home/claude/workspace/StarForge/public/assets/buildings/deuteriumSynthesizer.webp": {
+    "mtime": 1776725387.3710136,
+    "ast_hash": "a7c600c2c45fb1ef6f9a4315eb18caf7",
+    "semantic_hash": "a7c600c2c45fb1ef6f9a4315eb18caf7"
+  },
+  "/home/claude/workspace/StarForge/public/assets/buildings/fusionReactor.webp": {
+    "mtime": 1776725387.376865,
+    "ast_hash": "25bfc7e258f92399422c95a80ee56ad2",
+    "semantic_hash": "25bfc7e258f92399422c95a80ee56ad2"
+  },
+  "/home/claude/workspace/StarForge/public/assets/buildings/metalMine.webp": {
+    "mtime": 1776725387.3799348,
+    "ast_hash": "0ffd1e9b22a41ea88b20f68494e8ec74",
+    "semantic_hash": "0ffd1e9b22a41ea88b20f68494e8ec74"
+  },
+  "/home/claude/workspace/StarForge/public/assets/buildings/solarPlant.webp": {
+    "mtime": 1776725387.3865917,
+    "ast_hash": "8130ac6d4ed860bc2589bd776d8122d2",
+    "semantic_hash": "8130ac6d4ed860bc2589bd776d8122d2"
+  },
+  "/home/claude/workspace/StarForge/public/assets/panels/buildings.webp": {
+    "mtime": 1776725387.3900235,
+    "ast_hash": "0e1ae454dd85c3cf05be38aae62c8945",
+    "semantic_hash": "0e1ae454dd85c3cf05be38aae62c8945"
+  },
+  "/home/claude/workspace/StarForge/public/assets/panels/defence.webp": {
+    "mtime": 1776725387.3935966,
+    "ast_hash": "6f9a7dbb6adb29ec65f800675ada1adb",
+    "semantic_hash": "6f9a7dbb6adb29ec65f800675ada1adb"
+  },
+  "/home/claude/workspace/StarForge/public/assets/panels/fleet.webp": {
+    "mtime": 1776725387.3943894,
+    "ast_hash": "9b738b9a87e1975015942952fa511a63",
+    "semantic_hash": "9b738b9a87e1975015942952fa511a63"
+  },
+  "/home/claude/workspace/StarForge/public/assets/panels/galaxy.webp": {
+    "mtime": 1776725387.3952248,
+    "ast_hash": "d18f73190bd3b4428e54527b1f5d9609",
+    "semantic_hash": "d18f73190bd3b4428e54527b1f5d9609"
+  },
+  "/home/claude/workspace/StarForge/public/assets/panels/research.webp": {
+    "mtime": 1776725387.3963275,
+    "ast_hash": "4c08862517293f16a224dbd91d695795",
+    "semantic_hash": "4c08862517293f16a224dbd91d695795"
+  },
+  "/home/claude/workspace/StarForge/public/assets/panels/shipyard.webp": {
+    "mtime": 1776725387.3981469,
+    "ast_hash": "a3be39f2fb9c9fd6900a7b979c5c3014",
+    "semantic_hash": "a3be39f2fb9c9fd6900a7b979c5c3014"
+  },
+  "/home/claude/workspace/StarForge/public/assets/planets/cold-icon.webp": {
+    "mtime": 1776725387.3993337,
+    "ast_hash": "c43df0ff376b8febc0e5bd4d8d5e9d9b",
+    "semantic_hash": "c43df0ff376b8febc0e5bd4d8d5e9d9b"
+  },
+  "/home/claude/workspace/StarForge/public/assets/planets/cold.webp": {
+    "mtime": 1776725387.4002705,
+    "ast_hash": "ae2975e31d5e2b1a0ff954f5aede7b96",
+    "semantic_hash": "ae2975e31d5e2b1a0ff954f5aede7b96"
+  },
+  "/home/claude/workspace/StarForge/public/assets/planets/frozen-icon.webp": {
+    "mtime": 1776725387.4002705,
+    "ast_hash": "ac6e305c58dd5f96890ea597e6d4abc2",
+    "semantic_hash": "ac6e305c58dd5f96890ea597e6d4abc2"
+  },
+  "/home/claude/workspace/StarForge/public/assets/planets/frozen.webp": {
+    "mtime": 1776725387.4009907,
+    "ast_hash": "5ae91dce6f8294acbdc5b9a3831f9e37",
+    "semantic_hash": "5ae91dce6f8294acbdc5b9a3831f9e37"
+  },
+  "/home/claude/workspace/StarForge/public/assets/planets/hot-icon.webp": {
+    "mtime": 1776725387.4009907,
+    "ast_hash": "d2cfe6c9df7adec1057d01913bf9070b",
+    "semantic_hash": "d2cfe6c9df7adec1057d01913bf9070b"
+  },
+  "/home/claude/workspace/StarForge/public/assets/planets/hot.webp": {
+    "mtime": 1776725387.4016864,
+    "ast_hash": "ef26be7e64e18e3990f59a3a537c294f",
+    "semantic_hash": "ef26be7e64e18e3990f59a3a537c294f"
+  },
+  "/home/claude/workspace/StarForge/public/assets/planets/temperate-icon.webp": {
+    "mtime": 1776725387.4016864,
+    "ast_hash": "807cae817288250b0c15b7ca128ed19f",
+    "semantic_hash": "807cae817288250b0c15b7ca128ed19f"
+  },
+  "/home/claude/workspace/StarForge/public/assets/planets/temperate.webp": {
+    "mtime": 1776725387.4024003,
+    "ast_hash": "27cb97ec0b61b624b92b8f63044be775",
+    "semantic_hash": "27cb97ec0b61b624b92b8f63044be775"
+  },
+  "/home/claude/workspace/StarForge/public/assets/ships/solarSatellite.webp": {
+    "mtime": 1776725387.4057703,
+    "ast_hash": "0264a24d8e0c95c34ecee4d945890130",
+    "semantic_hash": "0264a24d8e0c95c34ecee4d945890130"
+  }
+}
