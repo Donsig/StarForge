@@ -82,7 +82,8 @@ export function HoverPortal({
   // After measuring pass: flip above anchor if panel would overflow viewport bottom
   useLayoutEffect(() => {
     if (!pos || pos.ready || !panelRef.current || !anchorRef.current) return;
-    const panelHeight = panelRef.current.getBoundingClientRect().height;
+    const panelRect = panelRef.current.getBoundingClientRect();
+    const panelHeight = panelRect.height;
     const anchorRect = anchorRef.current.getBoundingClientRect();
     const belowTop = anchorRect.bottom + ANCHOR_GAP;
     const aboveTop = anchorRect.top - panelHeight - ANCHOR_GAP;
@@ -93,14 +94,26 @@ export function HoverPortal({
     if (belowOverflows && canFitAbove) {
       top = aboveTop;
     }
+
+    // For right-aligned panels, keep the panel's left edge on-screen: a wide
+    // panel anchored near the viewport's left edge would otherwise extend
+    // past the left boundary and get clipped.
+    let right = anchorRect.right;
+    if (align === 'below-right') {
+      const panelLeft = anchorRect.right - panelRect.width;
+      if (panelLeft < VIEWPORT_PADDING) {
+        right = VIEWPORT_PADDING + panelRect.width;
+      }
+    }
+
     setPos({
       top: Math.max(VIEWPORT_PADDING, top),
       left: anchorRect.left,
-      right: anchorRect.right,
+      right,
       width: anchorRect.width,
       ready: true,
     });
-  }, [pos, anchorRef]);
+  }, [pos, anchorRef, align]);
 
   if (!open || !pos) {
     return null;
